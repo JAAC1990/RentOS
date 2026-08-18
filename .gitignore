@@ -1,0 +1,36 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Archivos temporales
+temp/
+tmp/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de VS Code
+.vscode/
+
+# Archivos generados
+dist/
+build/
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Dependencias
+node_modules/
+
+# Archivos compilados
+dist/
