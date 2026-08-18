@@ -1,15 +1,21 @@
 {
   "name": "rentos",
   "version": "1.0.0",
-  "description": "",
+  "description": "RentOS - Sistema operativo para empresas Rent a Car",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -p backend/tsconfig.json",
+    "start": "node backend/dist/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   }
 }
