@@ -337,6 +337,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** RentOS cuenta con un flujo seguro de onboarding y control total de altas de empresas para el SuperAdministrador.
 
+### [2026-08-22] - Funcionalidades de "Recordar Contraseña", "Ver Contraseña" & Recuperación
+- **Problema/Necesidad:** Facilitar la experiencia de inicio de sesión permitiendo a los usuarios ver u ocultar su contraseña con un botón de ojo interactivo, recordar sus credenciales en su navegador y solicitar restablecimiento si la olvidan.
+- **Decisión técnica:**
+  - `LoginPage.tsx`: Checkbox **"Recordar contraseña"** con persistencia en `localStorage`, toggle interactivo **"👁️ Ver contraseña / 🙈 Ocultar"** integrado en el input, y modal de recuperación con enlace directo a WhatsApp del SuperAdmin.
+  - `RegistroRentCarPage.tsx` & `UsuariosPage.tsx`: Toggles de visualización de contraseña añadidos a los formularios de registro y creación/edición de empleados.
+- **Archivos afectados:** `frontend/src/pages/Auth/LoginPage.tsx`, `frontend/src/pages/Auth/RegistroRentCarPage.tsx`, `frontend/src/pages/Usuarios/UsuariosPage.tsx`.
+- **Pruebas realizadas:**
+  - Verificación del cambio de tipo de input (`password` &lt;-&gt; `text`) con iconos dinámicos.
+  - Persistencia de credenciales con checkbox activado.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Interfaz de acceso optimizada con usabilidad moderna.
+
+
 
 
 

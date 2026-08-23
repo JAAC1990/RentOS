@@ -48,6 +48,7 @@ export default function UsuariosPage() {
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroRol, setFiltroRol] = useState("TODOS");
@@ -430,17 +431,54 @@ export default function UsuariosPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="userPass">
-                  {editandoId === null ? "Contraseña *" : "Nueva Contraseña (Opcional)"}
-                </label>
-                <input
-                  id="userPass"
-                  type="password"
-                  placeholder={editandoId === null ? "Mínimo 6 caracteres" : "Dejar en blanco para no cambiar"}
-                  value={formulario.password}
-                  onChange={(e) => setFormulario((prev) => ({ ...prev, password: e.target.value }))}
-                  required={editandoId === null}
-                />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <label htmlFor="userPass" style={{ margin: 0 }}>
+                    {editandoId === null ? "Contraseña *" : "Nueva Contraseña (Opcional)"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarPassword(!mostrarPassword)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--primary)",
+                      fontSize: "11px",
+                      cursor: "pointer",
+                      padding: 0,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {mostrarPassword ? "🙈 Ocultar" : "👁️ Ver"}
+                  </button>
+                </div>
+                <div style={{ position: "relative" }}>
+                  <input
+                    id="userPass"
+                    type={mostrarPassword ? "text" : "password"}
+                    placeholder={editandoId === null ? "Mínimo 6 caracteres" : "Dejar en blanco para no cambiar"}
+                    value={formulario.password}
+                    onChange={(e) => setFormulario((prev) => ({ ...prev, password: e.target.value }))}
+                    style={{ paddingRight: "36px" }}
+                    required={editandoId === null}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarPassword(!mostrarPassword)}
+                    style={{
+                      position: "absolute",
+                      right: "8px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    {mostrarPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
               </div>
 
               <div className="form-field">

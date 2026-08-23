@@ -10,6 +10,7 @@ export default function RegistroRentCarPage() {
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [password, setPassword] = useState("");
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [direccion, setDireccion] = useState("");
 
   const [enviando, setEnviando] = useState(false);
@@ -215,15 +216,52 @@ export default function RegistroRentCarPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
                 <div className="form-field">
-                  <label htmlFor="regPass">Contraseña Deseada *</label>
-                  <input
-                    id="regPass"
-                    type="password"
-                    placeholder="Mínimo 6 caracteres"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <label htmlFor="regPass" style={{ margin: 0 }}>Contraseña Deseada *</label>
+                    <button
+                      type="button"
+                      onClick={() => setMostrarPassword(!mostrarPassword)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--primary)",
+                        fontSize: "11px",
+                        cursor: "pointer",
+                        padding: 0,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {mostrarPassword ? "🙈 Ocultar" : "👁️ Ver"}
+                    </button>
+                  </div>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="regPass"
+                      type={mostrarPassword ? "text" : "password"}
+                      placeholder="Mínimo 6 caracteres"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      style={{ paddingRight: "36px" }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarPassword(!mostrarPassword)}
+                      style={{
+                        position: "absolute",
+                        right: "8px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {mostrarPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-field">
