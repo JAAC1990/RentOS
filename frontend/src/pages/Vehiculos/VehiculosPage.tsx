@@ -3,15 +3,16 @@ import { API_URLS } from "../../services/api";
 
 type Vehiculo = {
   id: number;
+  rentCarId: number;
   marca: string;
   modelo: string;
   anio: number;
-  color: string;
+  color: string | null;
   placa: string;
-  vin: string;
+  vin: string | null;
   kilometraje: number;
-  estado: string;
-  tarifaDiaria: string;
+  estado: "DISPONIBLE" | "ALQUILADO" | "MANTENIMIENTO" | "INACTIVO";
+  tarifaDiaria: string | number;
 };
 
 type FormularioVehiculo = {
@@ -29,7 +30,7 @@ type FormularioVehiculo = {
 const formularioInicial: FormularioVehiculo = {
   marca: "",
   modelo: "",
-  anio: "",
+  anio: new Date().getFullYear().toString(),
   color: "",
   placa: "",
   vin: "",
@@ -40,12 +41,15 @@ const formularioInicial: FormularioVehiculo = {
 
 export default function VehiculosPage() {
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
-  const [formulario, setFormulario] =
-    useState<FormularioVehiculo>(formularioInicial);
+  const [formulario, setFormulario] = useState<FormularioVehiculo>(formularioInicial);
 
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("TODOS");
 
   const [error, setError] = useState("");
   const [errorFormulario, setErrorFormulario] = useState("");
@@ -65,13 +69,11 @@ export default function VehiculosPage() {
       }
 
       const datos = await respuesta.json();
-
       setVehiculos(datos);
-    } catch (error) {
-      console.error(error);
-
+    } catch (err) {
+      console.error(err);
       setError(
-        "No se pudieron cargar los vehículos. No fue posible conectar con el servidor de RentOS."
+        "No se pudieron cargar los vehículos. Verifique que el servidor backend esté en ejecución."
       );
     } finally {
       setCargando(false);
@@ -82,15 +84,33 @@ export default function VehiculosPage() {
     cargarVehiculos();
   }, []);
 
-  const actualizarCampo = (
-    campo: keyof FormularioVehiculo,
-    valor: string
-  ) => {
+  // Estadísticas calculadas en tiempo real
+  const stats = useMemo(() => {
+    const total = vehiculos.length;
+    const disponibles = vehiculos.filter((v) => v.estado === "DISPONIBLE").length;
+    const alquilados = vehiculos.filter((v) => v.estado === "ALQUILADO").length;
+    const mantenimiento = vehiculos.filter((v) => v.estado === "MANTENIMIENTO").length;
+    return { total, disponibles, alquilados, mantenimiento };
+  }, [vehiculos]);
+
+  // Filtrado y búsqueda
+  const vehiculosFiltrados = useMemo(() => {
+    return vehiculos.filter((v) => {
+      const cumpleFiltroEstado =
+        filtroEstado === "TODOS" || v.estado === filtroEstado;
+
+      const texto = `${v.marca} ${v.modelo} ${v.placa} ${v.vin || ""} ${v.color || ""} ${v.anio}`.toLowerCase();
+      const cumpleBusqueda = texto.includes(busqueda.toLowerCase());
+
+      return cumpleFiltroEstado && cumpleBusqueda;
+    });
+  }, [vehiculos, busqueda, filtroEstado]);
+
+  const actualizarCampo = (campo: keyof FormularioVehiculo, valor: string) => {
     setFormulario((actual) => ({
       ...actual,
       [campo]: valor,
     }));
-
     setErrorFormulario("");
     setMensaje("");
   };
@@ -102,33 +122,18 @@ export default function VehiculosPage() {
       setErrorFormulario("La marca es obligatoria.");
       return false;
     }
-
     if (!formulario.modelo.trim()) {
       setErrorFormulario("El modelo es obligatorio.");
       return false;
     }
-
     if (!formulario.anio.trim()) {
       setErrorFormulario("El año es obligatorio.");
       return false;
     }
 
     const anio = Number(formulario.anio);
-
-    if (!Number.isInteger(anio) || anio < 1900) {
+    if (!Number.isInteger(anio) || anio < 1900 || anio > new Date().getFullYear() + 2) {
       setErrorFormulario("El año no es válido.");
-      return false;
-    }
-
-    // El color es obligatorio.
-    if (!formulario.color.trim()) {
-      setErrorFormulario("El color es obligatorio.");
-      return false;
-    }
-
-    // El VIN es obligatorio.
-    if (!formulario.vin.trim()) {
-      setErrorFormulario("El VIN es obligatorio.");
       return false;
     }
 
@@ -137,18 +142,9 @@ export default function VehiculosPage() {
       return false;
     }
 
-    if (!formulario.kilometraje.trim()) {
-      setErrorFormulario("El kilometraje es obligatorio.");
-      return false;
-    }
-
     const kilometraje = Number(formulario.kilometraje);
-
-    // El kilometraje mínimo permitido es 0.
     if (!Number.isFinite(kilometraje) || kilometraje < 0) {
-      setErrorFormulario(
-        "El kilometraje debe ser un valor igual o superior a 0."
-      );
+      setErrorFormulario("El kilometraje debe ser mayor o igual a 0.");
       return false;
     }
 
@@ -157,12 +153,9 @@ export default function VehiculosPage() {
       return false;
     }
 
-    const tarifaDiaria = Number(formulario.tarifaDiaria);
-
-    if (!Number.isFinite(tarifaDiaria) || tarifaDiaria < 0) {
-      setErrorFormulario(
-        "La tarifa diaria debe ser un valor igual o superior a 0."
-      );
+    const tarifa = Number(formulario.tarifaDiaria);
+    if (!Number.isFinite(tarifa) || tarifa <= 0) {
+      setErrorFormulario("La tarifa diaria debe ser mayor a 0.");
       return false;
     }
 
@@ -173,12 +166,11 @@ export default function VehiculosPage() {
     setFormulario(formularioInicial);
     setEditandoId(null);
     setErrorFormulario("");
+    setMostrarFormulario(false);
   };
 
   const guardarVehiculo = async () => {
-    if (!validarFormulario()) {
-      return;
-    }
+    if (!validarFormulario()) return;
 
     try {
       setGuardando(true);
@@ -189,26 +181,20 @@ export default function VehiculosPage() {
         marca: formulario.marca.trim(),
         modelo: formulario.modelo.trim(),
         anio: Number(formulario.anio),
-        color: formulario.color.trim(),
-        placa: formulario.placa.trim(),
-        vin: formulario.vin.trim(),
+        color: formulario.color.trim() || undefined,
+        placa: formulario.placa.trim().toUpperCase(),
+        vin: formulario.vin.trim().toUpperCase() || undefined,
         kilometraje: Number(formulario.kilometraje),
         estado: formulario.estado,
         tarifaDiaria: Number(formulario.tarifaDiaria),
       };
 
-      const url =
-        editandoId === null
-          ? API_URL
-          : `${API_URL}/${editandoId}`;
-
+      const url = editandoId === null ? API_URL : `${API_URL}/${editandoId}`;
       const metodo = editandoId === null ? "POST" : "PUT";
 
       const respuesta = await fetch(url, {
         method: metodo,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(datos),
       });
 
@@ -222,22 +208,18 @@ export default function VehiculosPage() {
         );
       }
 
-      if (editandoId === null) {
-        setMensaje("Vehículo guardado correctamente.");
-      } else {
-        setMensaje("Vehículo actualizado correctamente.");
-      }
+      setMensaje(
+        editandoId === null
+          ? "✅ Vehículo registrado exitosamente."
+          : "✅ Vehículo actualizado correctamente."
+      );
 
       limpiarFormulario();
-
       await cargarVehiculos();
-    } catch (error) {
-      console.error(error);
-
+    } catch (err) {
+      console.error(err);
       setErrorFormulario(
-        error instanceof Error
-          ? error.message
-          : "No fue posible guardar el vehículo."
+        err instanceof Error ? err.message : "Error al guardar vehículo."
       );
     } finally {
       setGuardando(false);
@@ -246,7 +228,6 @@ export default function VehiculosPage() {
 
   const editarVehiculo = (vehiculo: Vehiculo) => {
     setEditandoId(vehiculo.id);
-
     setFormulario({
       marca: vehiculo.marca ?? "",
       modelo: vehiculo.modelo ?? "",
@@ -258,24 +239,17 @@ export default function VehiculosPage() {
       estado: vehiculo.estado ?? "DISPONIBLE",
       tarifaDiaria: String(vehiculo.tarifaDiaria ?? ""),
     });
-
+    setMostrarFormulario(true);
     setErrorFormulario("");
     setMensaje("");
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const eliminarVehiculo = async (id: number) => {
     const confirmar = window.confirm(
-      "¿Está seguro de que desea eliminar este vehículo?"
+      "¿Está seguro de que desea eliminar este vehículo de su flota?"
     );
-
-    if (!confirmar) {
-      return;
-    }
+    if (!confirmar) return;
 
     try {
       setError("");
@@ -295,354 +269,365 @@ export default function VehiculosPage() {
         );
       }
 
-      setMensaje("Vehículo eliminado correctamente.");
-
-      if (editandoId === id) {
-        limpiarFormulario();
-      }
-
+      setMensaje("🗑️ Vehículo eliminado correctamente.");
+      if (editandoId === id) limpiarFormulario();
       await cargarVehiculos();
-    } catch (error) {
-      console.error(error);
-
+    } catch (err) {
+      console.error(err);
       setError(
-        error instanceof Error
-          ? error.message
-          : "No fue posible eliminar el vehículo."
+        err instanceof Error ? err.message : "No fue posible eliminar el vehículo."
       );
     }
   };
 
-  const cancelarEdicion = () => {
-    limpiarFormulario();
-    setMensaje("");
-  };
-
-  const cantidadVehiculos = useMemo(
-    () => vehiculos.length,
-    [vehiculos]
-  );
-
-  if (cargando) {
-    return (
-      <div>
-        <h1>Vehículos</h1>
-        <p>Cargando vehículos...</p>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <h1>Vehículos</h1>
-
-      <p>
-        Total de vehículos: <strong>{cantidadVehiculos}</strong>
-      </p>
-<button
-  type="button"
-  onClick={() => {
-    limpiarFormulario();
-    setMensaje("");
-    setErrorFormulario("");
-
-    setTimeout(() => {
-      document
-        .getElementById("formulario-vehiculo")
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-    }, 0);
-  }}
->
-  + Nuevo vehículo
-</button>
-      {error && (
-        <div role="alert">
-          <strong>No se pudieron cargar los vehículos</strong>
-          <p>{error}</p>
+    <div className="vehiculos-container">
+      {/* Encabezado Principal */}
+      <div className="page-heading">
+        <div>
+          <h1>Gestión de Vehículos</h1>
+          <p>Administra la flota, tarifas, estados y disponibilidad de tus vehículos.</p>
         </div>
-      )}
 
-      {mensaje && (
-        <div role="status">
-          {mensaje}
-        </div>
-      )}
-
-      <section id="formulario-vehiculo">
-        <h2>
-          {editandoId === null
-            ? "Registrar vehículo"
-            : "Editar vehículo"}
-        </h2>
-
-        {errorFormulario && (
-          <div role="alert">
-            <strong>Revise el formulario</strong>
-            <p>{errorFormulario}</p>
-          </div>
-        )}
-
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            guardarVehiculo();
+        <button
+          className="primary-button"
+          onClick={() => {
+            if (mostrarFormulario && editandoId === null) {
+              setMostrarFormulario(false);
+            } else {
+              limpiarFormulario();
+              setMostrarFormulario(true);
+            }
           }}
         >
-          <div>
-            <label htmlFor="marca">
-              Marca *
-            </label>
+          {mostrarFormulario && editandoId === null ? "Cerrar Formulario" : "+ Nuevo Vehículo"}
+        </button>
+      </div>
 
-            <input
-              id="marca"
-              type="text"
-              value={formulario.marca}
-              onChange={(event) =>
-                actualizarCampo("marca", event.target.value)
-              }
-              required
-            />
+      {/* Tarjetas de Estadísticas */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon">🚗</div>
+          <div className="stat-info">
+            <span className="stat-label">Total Flota</span>
+            <strong className="stat-value">{stats.total}</strong>
           </div>
+        </div>
 
-          <div>
-            <label htmlFor="modelo">
-              Modelo *
-            </label>
-
-            <input
-              id="modelo"
-              type="text"
-              value={formulario.modelo}
-              onChange={(event) =>
-                actualizarCampo("modelo", event.target.value)
-              }
-              required
-            />
+        <div className="stat-card">
+          <div className="stat-icon available">✅</div>
+          <div className="stat-info">
+            <span className="stat-label">Disponibles</span>
+            <strong className="stat-value">{stats.disponibles}</strong>
           </div>
+        </div>
 
-          <div>
-            <label htmlFor="anio">
-              Año *
-            </label>
-
-            <input
-              id="anio"
-              type="number"
-              min="1900"
-              value={formulario.anio}
-              onChange={(event) =>
-                actualizarCampo("anio", event.target.value)
-              }
-              required
-            />
+        <div className="stat-card">
+          <div className="stat-icon rented">🔑</div>
+          <div className="stat-info">
+            <span className="stat-label">Alquilados</span>
+            <strong className="stat-value">{stats.alquilados}</strong>
           </div>
+        </div>
 
-          <div>
-            <label htmlFor="color">
-              Color *
-            </label>
-
-            <input
-              id="color"
-              type="text"
-              value={formulario.color}
-              onChange={(event) =>
-                actualizarCampo("color", event.target.value)
-              }
-              required
-            />
+        <div className="stat-card">
+          <div className="stat-icon maintenance">🛠️</div>
+          <div className="stat-info">
+            <span className="stat-label">Mantenimiento</span>
+            <strong className="stat-value">{stats.mantenimiento}</strong>
           </div>
+        </div>
+      </div>
 
-          <div>
-            <label htmlFor="placa">
-              Placa *
-            </label>
+      {/* Alertas Globales */}
+      {mensaje && <div className="alert-box success">{mensaje}</div>}
+      {error && <div className="alert-box error">{error}</div>}
 
-            <input
-              id="placa"
-              type="text"
-              value={formulario.placa}
-              onChange={(event) =>
-                actualizarCampo("placa", event.target.value)
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="vin">
-              VIN *
-            </label>
-
-            <input
-              id="vin"
-              type="text"
-              value={formulario.vin}
-              onChange={(event) =>
-                actualizarCampo("vin", event.target.value)
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="kilometraje">
-              Kilometraje *
-            </label>
-
-            <input
-              id="kilometraje"
-              type="number"
-              min="0"
-              value={formulario.kilometraje}
-              onChange={(event) =>
-                actualizarCampo(
-                  "kilometraje",
-                  event.target.value
-                )
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="estado">
-              Estado *
-            </label>
-
-            <select
-              id="estado"
-              value={formulario.estado}
-              onChange={(event) =>
-                actualizarCampo("estado", event.target.value)
-              }
-              required
-            >
-              <option value="DISPONIBLE">
-                Disponible
-              </option>
-
-              <option value="ALQUILADO">
-                Alquilado
-              </option>
-
-              <option value="MANTENIMIENTO">
-                Mantenimiento
-              </option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="tarifaDiaria">
-              Tarifa diaria *
-            </label>
-
-            <input
-              id="tarifaDiaria"
-              type="number"
-              min="0"
-              step="0.01"
-              value={formulario.tarifaDiaria}
-              onChange={(event) =>
-                actualizarCampo(
-                  "tarifaDiaria",
-                  event.target.value
-                )
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={guardando}
-            >
-              {guardando
-                ? "Guardando..."
-                : editandoId === null
-                ? "Guardar vehículo"
-                : "Guardar cambios"}
+      {/* Formulario de Creación / Edición */}
+      {mostrarFormulario && (
+        <section className="content-panel" id="formulario-vehiculo">
+          <div className="panel-header">
+            <h2>{editandoId === null ? "Registrar Nuevo Vehículo" : "Editar Vehículo"}</h2>
+            <button className="secondary-button" onClick={limpiarFormulario}>
+              Cancelar
             </button>
-
-            {editandoId !== null && (
-              <button
-                type="button"
-                onClick={cancelarEdicion}
-                disabled={guardando}
-              >
-                Cancelar edición
-              </button>
-            )}
           </div>
-        </form>
-      </section>
 
-      <section>
-        <h2>Listado de vehículos</h2>
+          {errorFormulario && <div className="alert-box error" style={{ margin: "20px 24px 0" }}>{errorFormulario}</div>}
 
-        {vehiculos.length === 0 ? (
-          <p>No hay vehículos registrados.</p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              guardarVehiculo();
+            }}
+          >
+            <div className="form-grid">
+              <div className="form-field">
+                <label htmlFor="marca">Marca *</label>
+                <input
+                  id="marca"
+                  type="text"
+                  placeholder="Ej. Toyota, Kia, Hyundai"
+                  value={formulario.marca}
+                  onChange={(e) => actualizarCampo("marca", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="modelo">Modelo *</label>
+                <input
+                  id="modelo"
+                  type="text"
+                  placeholder="Ej. Corolla, Sportage, Tucson"
+                  value={formulario.modelo}
+                  onChange={(e) => actualizarCampo("modelo", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="anio">Año *</label>
+                <input
+                  id="anio"
+                  type="number"
+                  min="1990"
+                  max={new Date().getFullYear() + 2}
+                  value={formulario.anio}
+                  onChange={(e) => actualizarCampo("anio", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="color">Color</label>
+                <input
+                  id="color"
+                  type="text"
+                  placeholder="Ej. Blanco, Negro, Gris"
+                  value={formulario.color}
+                  onChange={(e) => actualizarCampo("color", e.target.value)}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="placa">Placa (Matrícula) *</label>
+                <input
+                  id="placa"
+                  type="text"
+                  placeholder="Ej. A123456"
+                  value={formulario.placa}
+                  onChange={(e) => actualizarCampo("placa", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="vin">VIN / Chasis</label>
+                <input
+                  id="vin"
+                  type="text"
+                  placeholder="Número de chasis (17 caracteres)"
+                  value={formulario.vin}
+                  onChange={(e) => actualizarCampo("vin", e.target.value)}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="kilometraje">Kilometraje Actual (km) *</label>
+                <input
+                  id="kilometraje"
+                  type="number"
+                  min="0"
+                  value={formulario.kilometraje}
+                  onChange={(e) => actualizarCampo("kilometraje", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="estado">Estado *</label>
+                <select
+                  id="estado"
+                  value={formulario.estado}
+                  onChange={(e) => actualizarCampo("estado", e.target.value)}
+                  required
+                >
+                  <option value="DISPONIBLE">Disponible</option>
+                  <option value="ALQUILADO">Alquilado</option>
+                  <option value="MANTENIMIENTO">Mantenimiento</option>
+                  <option value="INACTIVO">Inactivo</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="tarifaDiaria">Tarifa Diaria (USD / DOP) *</label>
+                <input
+                  id="tarifaDiaria"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder="Ej. 50.00"
+                  value={formulario.tarifaDiaria}
+                  onChange={(e) => actualizarCampo("tarifaDiaria", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-actions">
+                <button type="submit" className="primary-button" disabled={guardando}>
+                  {guardando
+                    ? "Guardando..."
+                    : editandoId === null
+                    ? "Guardar Vehículo"
+                    : "Guardar Cambios"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={limpiarFormulario}
+                  disabled={guardando}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+      )}
+
+      {/* Barra de Búsqueda y Filtros */}
+      <div className="filter-bar">
+        <div className="search-input-wrapper">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Buscar por marca, modelo, placa o VIN..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="filtro-estado" style={{ fontSize: "12px", fontWeight: 600 }}>
+            Estado:
+          </label>
+          <select
+            id="filtro-estado"
+            className="filter-select"
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value)}
+          >
+            <option value="TODOS">Todos los estados</option>
+            <option value="DISPONIBLE">Disponibles</option>
+            <option value="ALQUILADO">Alquilados</option>
+            <option value="MANTENIMIENTO">En Mantenimiento</option>
+            <option value="INACTIVO">Inactivos</option>
+          </select>
+
+          {(busqueda || filtroEstado !== "TODOS") && (
+            <button
+              className="secondary-button"
+              style={{ padding: "8px 12px", fontSize: "12px" }}
+              onClick={() => {
+                setBusqueda("");
+                setFiltroEstado("TODOS");
+              }}
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Tabla de Vehículos */}
+      <div className="content-panel">
+        <div className="panel-header">
+          <h2>
+            Listado de Flota{" "}
+            <span style={{ color: "var(--text-secondary)", fontWeight: 500, fontSize: "13px" }}>
+              ({vehiculosFiltrados.length} de {vehiculos.length} vehículos)
+            </span>
+          </h2>
+        </div>
+
+        {cargando ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">⏳</div>
+            <strong>Cargando flota de vehículos...</strong>
+          </div>
+        ) : vehiculosFiltrados.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">🚗</div>
+            <strong>No se encontraron vehículos</strong>
+            <span>
+              {vehiculos.length === 0
+                ? "Aún no has registrado ningún vehículo en tu flota. Haz clic en '+ Nuevo Vehículo' para comenzar."
+                : "No hay vehículos que coincidan con los criterios de búsqueda o filtros seleccionados."}
+            </span>
+          </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Año</th>
-                <th>Color</th>
-                <th>Placa</th>
-                <th>VIN</th>
-                <th>Kilometraje</th>
-                <th>Estado</th>
-                <th>Tarifa diaria</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {vehiculos.map((vehiculo) => (
-                <tr key={vehiculo.id}>
-                  <td>{vehiculo.id}</td>
-                  <td>{vehiculo.marca}</td>
-                  <td>{vehiculo.modelo}</td>
-                  <td>{vehiculo.anio}</td>
-                  <td>{vehiculo.color}</td>
-                  <td>{vehiculo.placa}</td>
-                  <td>{vehiculo.vin}</td>
-                  <td>{vehiculo.kilometraje}</td>
-                  <td>{vehiculo.estado}</td>
-                  <td>{vehiculo.tarifaDiaria}</td>
-
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        editarVehiculo(vehiculo)
-                      }
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        eliminarVehiculo(vehiculo.id)
-                      }
-                    >
-                      Eliminar
-                    </button>
-                  </td>
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Vehículo</th>
+                  <th>Año</th>
+                  <th>Placa / VIN</th>
+                  <th>Color</th>
+                  <th>Kilometraje</th>
+                  <th>Estado</th>
+                  <th>Tarifa / Día</th>
+                  <th style={{ textAlign: "right" }}>Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {vehiculosFiltrados.map((v) => (
+                  <tr key={v.id}>
+                    <td>
+                      <strong>{v.marca} {v.modelo}</strong>
+                    </td>
+                    <td>{v.anio}</td>
+                    <td>
+                      <div><code>{v.placa}</code></div>
+                      {v.vin && <small style={{ color: "var(--text-secondary)", fontSize: "10px" }}>{v.vin}</small>}
+                    </td>
+                    <td>{v.color || "-"}</td>
+                    <td>{Number(v.kilometraje).toLocaleString()} km</td>
+                    <td>
+                      <span className={`badge badge-${v.estado.toLowerCase()}`}>
+                        {v.estado}
+                      </span>
+                    </td>
+                    <td>
+                      <strong>${Number(v.tarifaDiaria).toFixed(2)}</strong>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <div className="actions-cell" style={{ justifyContent: "flex-end" }}>
+                        <button
+                          type="button"
+                          className="btn-action-edit"
+                          onClick={() => editarVehiculo(v)}
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-action-delete"
+                          onClick={() => eliminarVehiculo(v.id)}
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }

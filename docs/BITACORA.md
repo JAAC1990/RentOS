@@ -108,3 +108,14 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Consulta de aislamiento comprobando que la flota del Rent Car 1 (8 vehículos) y Rent Car 2 (1 vehículo) operan con total independencia.
 - **Resultado:** Base de datos sincronizada (`prisma db push`), frontend y backend compilando al 100% con cero errores de TypeScript.
 
+### [2026-08-22] - Modernización Visual de la Flota de Vehículos y Header SaaS
+- **Problema/Necesidad:** La pantalla de Vehículos utilizaba controles HTML sin estilo que desentonaban con la interfaz principal de RentOS. Se requería un diseño profesional acorde a un SaaS moderno.
+- **Decisión técnica:** Implementación de tarjetas de estadísticas en tiempo real (Total, Disponibles, Alquilados, Mantenimiento), barra de búsqueda en tiempo real, filtros por estado, badges visuales de color (`DISPONIBLE` en verde, `ALQUILADO` en azul, `MANTENIMIENTO` en naranja) y encabezado dinámico con badge de la empresa activa.
+- **Archivos afectados:** `frontend/src/index.css`, `frontend/src/pages/Vehiculos/VehiculosPage.tsx`, `frontend/src/components/Header.tsx`.
+- **Pruebas realizadas:**
+  - Build de producción Vite completado exitosamente sin errores de TypeScript.
+  - Verificación de cálculo de métricas en tiempo real según la flota registrada.
+  - Verificación de filtros y búsqueda instantánea por marca, modelo, placa y VIN.
+- **Resultado:** Interfaz moderna, responsiva y totalmente alineada con la identidad visual de RentOS.
+
+
