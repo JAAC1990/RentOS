@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import MainLayout from "./layouts/MainLayout";
 import DashboardPage from "./pages/Dashboard/DashboardPage";
 import VehiculosPage from "./pages/Vehiculos/VehiculosPage";
+import CalendarioFlotaPage from "./pages/Calendario/CalendarioFlotaPage";
 import ClientesPage from "./pages/Clientes/ClientesPage";
 import ContratosPage from "./pages/Contratos/ContratosPage";
 import EntregasPage from "./pages/Entregas/EntregasPage";
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/solicitudes" element={<SolicitudesPage />} />
         <Route path="/vehiculos" element={<VehiculosPage />} />
+        <Route path="/calendario" element={<CalendarioFlotaPage />} />
         <Route path="/clientes" element={<ClientesPage />} />
         <Route path="/contratos" element={<ContratosPage />} />
         <Route path="/entregas" element={<EntregasPage />} />

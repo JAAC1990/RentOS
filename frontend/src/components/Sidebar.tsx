@@ -13,6 +13,11 @@ const menuItems = [
     icon: "🚗",
   },
   {
+    path: "/calendario",
+    label: "Calendario de Flota",
+    icon: "📅",
+  },
+  {
     path: "/clientes",
     label: "Clientes",
     icon: "👥",

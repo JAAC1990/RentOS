@@ -448,19 +448,22 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Guardado rápido y confiable de logotipos sin errores de tamaño.
 
-### [2026-08-22] - Logotipo Oficial en Contratos Imprimibles & Reglas CSS de Impresión a 1 Sola Página
-- **Problema/Necesidad:** Al emitir o imprimir el contrato de alquiler (`window.print()`), el logotipo empresarial no se visualizaba en la cabecera y el fondo de la pantalla junto a los botones de navegación generaban saltos de página innecesarios (3 hojas).
+### [2026-08-22] - Suite Comercial Premium: 5 Nuevas Funcionalidades Operativas y Financieras
+- **Problema/Necesidad:** Dotar a RentOS de herramientas comerciales avanzadas para gestión visual de daños, prevención de sobreventas, analítica de caja, facturación con comprobantes y fidelización automatizada por WhatsApp.
 - **Decisión técnica:**
-  - `ContratosPage.tsx`:
-    - Incorporación de `rentCarInfo.logoUrl` en el encabezado oficial del contrato, adaptado al color corporativo de la empresa.
-    - Conexión dinámica con `useAuth()` y `tenantActivoId` para cargar la información y logo de la empresa correspondiente.
-    - Reglas CSS de `@media print` que aíslan únicamente el documento de contrato, ocultan los botones de acción (`no-print`), eliminan el sombreado/overlay y ajustan los márgenes para que el documento encaje de forma pulcra y profesional en **1 sola página**.
-- **Archivos afectados:** `frontend/src/pages/Contratos/ContratosPage.tsx`.
+  1. **📸 Inspección 360° & Fotos en Devolución (`EntregasPage.tsx`, `entregas.routes.ts`):** Diagrama interactivo de carrocería con colocación de pines de daño táctiles, subida/captura directa de fotos comprimidas con Canvas, selector visual de nivel de combustible (E a Full) y control de reembolso/deducción de depósito de garantía.
+  2. **📅 Calendario de Flota (Gantt / Timeline) (`CalendarioFlotaPage.tsx`, `Sidebar.tsx`, `App.tsx`):** Malla interactiva mes por mes por vehículo con barras de contratos, cálculo automático de ocupación mensual y navegación temporal.
+  3. **📊 Dashboard Financiero Avanzado (`DashboardPage.tsx`):** Gráfico circular de distribución de flota, cierre de caja en vivo por método de pago (Efectivo, Tarjeta, Transferencia) y ranking de los 5 autos más rentables.
+  4. **🧾 Facturación & Recibos Fiscales NCF (`PagosPage.tsx`):** Emisión de comprobantes fiscales/NCF con logotipo de empresa, desglose formal, envío instantáneo por WhatsApp e impresión aislada a 1 hoja.
+  5. **🤖 Recordatorio de Devolución & Extensión Rápida (`ContratosPage.tsx`):** Despacho en 1 clic de avisos de devolución por WhatsApp y modal de extensión (+1, +2, +3, +7 días) con recálculo automático de ingresos.
+- **Archivos afectados:** `frontend/src/pages/Entregas/EntregasPage.tsx`, `backend/src/routes/entregas.routes.ts`, `frontend/src/pages/Calendario/CalendarioFlotaPage.tsx`, `frontend/src/pages/Dashboard/DashboardPage.tsx`, `frontend/src/pages/Pagos/PagosPage.tsx`, `frontend/src/pages/Contratos/ContratosPage.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/App.tsx`.
 - **Pruebas realizadas:**
-  - Renderizado del logotipo en la vista previa del contrato.
-  - Verificación de impresión limpia sin elementos del panel.
+  - Creación de entregas con fotos y mapa de daños interactivo.
+  - Navegación y cálculo de ocupación en el calendario de flota.
+  - Emisión de recibos y facturas con logo y NCF.
+  - Extensión de contratos en vivo y comprobación de enlaces WhatsApp.
   - Compilación limpia de TypeScript (0 errores).
-- **Resultado:** Contrato de arrendamiento formal, con logotipo institucional y formato de impresión a 1 página listo para firma y archivo.
+- **Resultado:** RentOS consolidado como SaaS integral de nivel empresarial para Rent a Cars.
 
 
 

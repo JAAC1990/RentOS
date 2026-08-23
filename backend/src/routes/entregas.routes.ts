@@ -185,6 +185,23 @@ router.post("/", async (req, res) => {
         });
       }
 
+      // Registrar fotos y evidencias de inspección
+      if (Array.isArray(req.body.fotosEvidencias) && req.body.fotosEvidencias.length > 0) {
+        for (const foto of req.body.fotosEvidencias) {
+          if (foto.archivoUrl) {
+            await tx.evidencia.create({
+              data: {
+                entregaId: nuevaEntrega.id,
+                tipo: "FOTO_VEHICULO_DEVOLUCION",
+                archivoUrl: foto.archivoUrl,
+                nombreArchivo: foto.nombreArchivo || "inspeccion_devolucion.jpg",
+                descripcion: foto.descripcion || "Foto de inspección en check-in",
+              },
+            });
+          }
+        }
+      }
+
       // Finalizar el contrato
       await tx.contrato.update({
         where: { id: contratoIdNum },
@@ -214,6 +231,7 @@ router.post("/", async (req, res) => {
           },
           usuario: { select: usuarioSelect },
           defectos: true,
+          evidencias: true,
         },
       });
     });

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 
 type Cliente = {
@@ -6,6 +7,8 @@ type Cliente = {
   nombre: string;
   apellido: string;
   telefono: string;
+  email?: string | null;
+  rncOCedula?: string | null;
 };
 
 type Vehiculo = {
@@ -17,6 +20,7 @@ type Vehiculo = {
 
 type Contrato = {
   id: number;
+  rentCarId?: number;
   fechaInicio: string;
   fechaFin: string;
   tarifaDiaria: string | number;
@@ -34,6 +38,8 @@ type Pago = {
   tipo: "EFECTIVO" | "TRANSFERENCIA" | "TARJETA" | "PAYPAL" | "OTRO";
   referencia: string | null;
   estado: "PAGADO" | "PENDIENTE" | "ANULADO";
+  ncf?: string | null;
+  tipoDocumento?: "RECIBO" | "FACTURA_FISCAL";
   contrato?: Contrato;
 };
 
@@ -43,13 +49,20 @@ type FormularioPago = {
   tipo: "EFECTIVO" | "TRANSFERENCIA" | "TARJETA" | "PAYPAL" | "OTRO";
   referencia: string;
   estado: "PAGADO" | "PENDIENTE" | "ANULADO";
+  tipoDocumento: "RECIBO" | "FACTURA_FISCAL";
+  ncf: string;
 };
 
 type RentCarInfo = {
+  id?: number;
   nombre: string;
   rnc: string | null;
   telefono: string | null;
   direccion: string | null;
+  ciudad: string;
+  logoUrl?: string | null;
+  colorPrimario?: string | null;
+  moneda: string;
 };
 
 const formularioInicial: FormularioPago = {
@@ -58,9 +71,12 @@ const formularioInicial: FormularioPago = {
   tipo: "TRANSFERENCIA",
   referencia: "",
   estado: "PAGADO",
+  tipoDocumento: "RECIBO",
+  ncf: "",
 };
 
 export default function PagosPage() {
+  const { tenantActivoId } = useAuth();
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [rentCarInfo, setRentCarInfo] = useState<RentCarInfo | null>(null);
@@ -86,10 +102,11 @@ export default function PagosPage() {
       setCargando(true);
       setError("");
 
+      const targetTenant = tenantActivoId || 1;
       const [resPagos, resContratos, resRentCar] = await Promise.all([
         fetch(API_PAGOS),
         fetch(API_URLS.contratos),
-        fetch(`${API_URLS.rentcars}/1`),
+        fetch(`${API_URLS.rentcars}/${targetTenant}`),
       ]);
 
       if (!resPagos.ok || !resContratos.ok) {
@@ -115,7 +132,7 @@ export default function PagosPage() {
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+  }, [tenantActivoId]);
 
   // Estadísticas calculadas en tiempo real
   const stats = useMemo(() => {
@@ -138,67 +155,33 @@ export default function PagosPage() {
   // Filtrado y búsqueda
   const pagosFiltrados = useMemo(() => {
     return pagos.filter((p) => {
-      const cumpleFiltroTipo =
-        filtroTipo === "TODOS" || p.tipo === filtroTipo;
-      const cumpleFiltroEstado =
-        filtroEstado === "TODOS" || p.estado === filtroEstado;
+      const matchTipo = filtroTipo === "TODOS" || p.tipo === filtroTipo;
+      const matchEstado = filtroEstado === "TODOS" || p.estado === filtroEstado;
 
-      const texto = `${p.id} ${p.contratoId} ${p.referencia || ""} ${p.contrato?.cliente?.nombre || ""} ${p.contrato?.cliente?.apellido || ""} ${p.contrato?.vehiculo?.marca || ""} ${p.contrato?.vehiculo?.placa || ""}`.toLowerCase();
-      const cumpleBusqueda = texto.includes(busqueda.toLowerCase());
+      const texto = `${p.id} ${p.contratoId} ${p.referencia || ""} ${p.contrato?.cliente?.nombre || ""} ${p.contrato?.cliente?.apellido || ""} ${p.contrato?.vehiculo?.placa || ""}`.toLowerCase();
+      const matchBusqueda = texto.includes(busqueda.toLowerCase());
 
-      return cumpleFiltroTipo && cumpleFiltroEstado && cumpleBusqueda;
+      return matchTipo && matchEstado && matchBusqueda;
     });
-  }, [pagos, busqueda, filtroTipo, filtroEstado]);
+  }, [pagos, filtroTipo, filtroEstado, busqueda]);
 
-  const handleSeleccionarContrato = (contratoIdStr: string) => {
-    const c = contratos.find((item) => item.id === Number(contratoIdStr));
-    let montoSugerido = "";
-    if (c) {
-      const dias = Math.max(
-        1,
-        Math.ceil(
-          (new Date(c.fechaFin).getTime() - new Date(c.fechaInicio).getTime()) /
-            (1000 * 60 * 60 * 24)
-        )
-      );
-      montoSugerido = (dias * Number(c.tarifaDiaria)).toFixed(2);
-    }
-
-    setFormulario((actual) => ({
-      ...actual,
-      contratoId: contratoIdStr,
-      monto: montoSugerido || actual.monto,
-    }));
-  };
-
-  const validarFormulario = () => {
-    setErrorFormulario("");
+  const registrarPago = async (e: React.FormEvent) => {
+    e.preventDefault();
 
     if (!formulario.contratoId) {
-      setErrorFormulario("Debe seleccionar un contrato.");
-      return false;
+      setErrorFormulario("Debes seleccionar el contrato correspondiente.");
+      return;
     }
+
     if (!formulario.monto || Number(formulario.monto) <= 0) {
-      setErrorFormulario("El monto debe ser superior a 0.");
-      return false;
+      setErrorFormulario("Ingresa un monto válido mayor a 0.");
+      return;
     }
-
-    return true;
-  };
-
-  const limpiarFormulario = () => {
-    setFormulario(formularioInicial);
-    setErrorFormulario("");
-    setMostrarFormulario(false);
-  };
-
-  const registrarPago = async () => {
-    if (!validarFormulario()) return;
 
     try {
       setGuardando(true);
       setErrorFormulario("");
-      setMensaje("");
+      setError("");
 
       const datos = {
         contratoId: Number(formulario.contratoId),
@@ -214,83 +197,29 @@ export default function PagosPage() {
         body: JSON.stringify(datos),
       });
 
-      const resultado = await respuesta.json().catch(() => null);
-
       if (!respuesta.ok) {
-        throw new Error(
-          resultado?.error || resultado?.message || "No fue posible registrar el pago."
-        );
+        const errorData = await respuesta.json().catch(() => null);
+        throw new Error(errorData?.error || "Error al registrar el pago.");
       }
 
-      setMensaje("✅ Pago registrado y acreditado exitosamente.");
-      limpiarFormulario();
+      const pagoCreado = await respuesta.json();
+
+      setMensaje("✅ Pago registrado correctamente.");
+      setFormulario(formularioInicial);
+      setMostrarFormulario(false);
       await cargarDatos();
+
+      // Abrir recibo automáticamente
+      setPagoImprimir(pagoCreado);
     } catch (err) {
       console.error(err);
-      setErrorFormulario(
-        err instanceof Error ? err.message : "Error al registrar el pago."
-      );
+      setErrorFormulario(err instanceof Error ? err.message : "Error al guardar el pago.");
     } finally {
       setGuardando(false);
     }
   };
 
-  const anularPago = async (id: number) => {
-    const confirmar = window.confirm(
-      "¿Está seguro de que desea anular este pago? Esta acción cambiará su estado a ANULADO."
-    );
-    if (!confirmar) return;
-
-    try {
-      setError("");
-      setMensaje("");
-
-      const respuesta = await fetch(`${API_PAGOS}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: "ANULADO" }),
-      });
-
-      if (!respuesta.ok) {
-        throw new Error("No fue posible anular el pago.");
-      }
-
-      setMensaje("⚠️ Pago marcado como ANULADO.");
-      await cargarDatos();
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : "Error al anular pago.");
-    }
-  };
-
-  const exportarCSV = () => {
-    if (pagos.length === 0) return;
-
-    const encabezados = ["ID", "Fecha", "Contrato ID", "Cliente", "Vehiculo", "Placa", "Metodo", "Referencia", "Monto", "Estado"];
-    const filas = pagos.map((p) => [
-      p.id,
-      new Date(p.fecha).toLocaleDateString("es-DO"),
-      p.contratoId,
-      `"${p.contrato?.cliente?.nombre || ""} ${p.contrato?.cliente?.apellido || ""}"`,
-      `"${p.contrato?.vehiculo?.marca || ""} ${p.contrato?.vehiculo?.modelo || ""}"`,
-      `"${p.contrato?.vehiculo?.placa || ""}"`,
-      p.tipo,
-      `"${p.referencia || ""}"`,
-      p.monto,
-      p.estado,
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," + [encabezados.join(","), ...filas.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `RentOS_Pagos_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const iconoTipoPago = (tipo: string) => {
+  const iconoTipoPago = (tipo: Pago["tipo"]) => {
     switch (tipo) {
       case "EFECTIVO":
         return "💵 Efectivo";
@@ -299,349 +228,274 @@ export default function PagosPage() {
       case "TARJETA":
         return "💳 Tarjeta";
       case "PAYPAL":
-        return "🅿️ PayPal";
+        return "🌐 PayPal / Online";
       default:
-        return "📄 " + tipo;
+        return "📦 Otro";
     }
   };
 
   return (
     <div className="pagos-container">
-      {/* Encabezado Principal */}
+      {/* Encabezado */}
       <div className="page-heading">
         <div>
-          <h1>Gestión de Pagos y Caja</h1>
-          <p>Registra cobros de alquileres, depósitos y controla los balances de tu Rent Car.</p>
+          <h1>Facturación & Cuentas por Cobrar (NCF / Recibos)</h1>
+          <p>
+            Emite facturas fiscales, comprobantes NCF, cobros por tarjeta, transferencias y despacho de recibos por WhatsApp.
+          </p>
         </div>
 
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button className="secondary-button" onClick={exportarCSV}>
-            📥 Exportar CSV
-          </button>
-          <button
-            className="primary-button"
-            onClick={() => {
-              if (mostrarFormulario) {
-                setMostrarFormulario(false);
-              } else {
-                limpiarFormulario();
-                setMostrarFormulario(true);
-              }
-            }}
-          >
-            {mostrarFormulario ? "Cerrar Formulario" : "+ Registrar Pago"}
-          </button>
-        </div>
-      </div>
-
-      {/* Tarjetas de Estadísticas */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon available">💰</div>
-          <div className="stat-info">
-            <span className="stat-label">Total Recaudado</span>
-            <strong className="stat-value" style={{ color: "var(--success)" }}>
-              ${stats.totalRecaudado}
-            </strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">✅</div>
-          <div className="stat-info">
-            <span className="stat-label">Cobros Realizados</span>
-            <strong className="stat-value">{stats.cantidadPagados}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon maintenance">⏳</div>
-          <div className="stat-info">
-            <span className="stat-label">Pagos Pendientes</span>
-            <strong className="stat-value">{stats.cantidadPendientes}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">🚫</div>
-          <div className="stat-info">
-            <span className="stat-label">Anulados</span>
-            <strong className="stat-value">{stats.cantidadAnulados}</strong>
-          </div>
-        </div>
+        <button
+          className="primary-button"
+          onClick={() => setMostrarFormulario(!mostrarFormulario)}
+        >
+          {mostrarFormulario ? "Cerrar Formulario" : "+ Registrar Cobro / Factura"}
+        </button>
       </div>
 
       {/* Alertas */}
       {mensaje && <div className="alert-box success">{mensaje}</div>}
       {error && <div className="alert-box error">{error}</div>}
 
-      {/* Formulario de Pago */}
+      {/* Tarjetas de Métricas de Caja */}
+      <div className="dashboard-metrics" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+        <div className="metric-card">
+          <div className="metric-title">Total Recaudado</div>
+          <div className="metric-value" style={{ color: "var(--success)" }}>
+            ${Number(stats.totalRecaudado).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </div>
+          <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "4px" }}>
+            {stats.cantidadPagados} cobros confirmados
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-title">Cobros Pendientes</div>
+          <div className="metric-value" style={{ color: "var(--warning)" }}>
+            {stats.cantidadPendientes}
+          </div>
+          <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "4px" }}>
+            Pagos en proceso o por validar
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-title">Pagos Anulados</div>
+          <div className="metric-value" style={{ color: "var(--danger)" }}>
+            {stats.cantidadAnulados}
+          </div>
+          <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "4px" }}>
+            Cancelados o revertidos
+          </div>
+        </div>
+      </div>
+
+      {/* Formulario de Nuevo Pago / Factura */}
       {mostrarFormulario && (
-        <section className="content-panel" id="formulario-pago">
+        <section className="content-panel" style={{ marginBottom: "24px" }}>
           <div className="panel-header">
-            <h2>Registrar Nuevo Cobro / Recibo</h2>
-            <button className="secondary-button" onClick={limpiarFormulario}>
+            <h2>Registrar Nuevo Cobro / Emisión de Recibo Fiscal</h2>
+            <button className="secondary-button" onClick={() => setMostrarFormulario(false)}>
               Cancelar
             </button>
           </div>
 
-          {errorFormulario && (
-            <div className="alert-box error" style={{ margin: "20px 24px 0" }}>
-              {errorFormulario}
-            </div>
-          )}
+          {errorFormulario && <div className="alert-box error" style={{ margin: "16px 20px 0" }}>{errorFormulario}</div>}
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              registrarPago();
-            }}
-          >
+          <form onSubmit={registrarPago} style={{ padding: "20px" }}>
             <div className="form-grid">
               <div className="form-field" style={{ gridColumn: "span 2" }}>
-                <label htmlFor="contratoId">Contrato de Alquiler *</label>
+                <label htmlFor="contratoSelect">Contrato Correspondiente *</label>
                 <select
-                  id="contratoId"
+                  id="contratoSelect"
                   value={formulario.contratoId}
-                  onChange={(e) => handleSeleccionarContrato(e.target.value)}
+                  onChange={(e) => setFormulario({ ...formulario, contratoId: e.target.value })}
                   required
                 >
                   <option value="">-- Seleccionar Contrato --</option>
                   {contratos.map((c) => (
                     <option key={c.id} value={c.id}>
-                      Contrato #{c.id} • {c.cliente?.nombre} {c.cliente?.apellido} — {c.vehiculo?.marca} {c.vehiculo?.modelo} ({c.vehiculo?.placa})
+                      Contrato #{c.id} • {c.cliente?.nombre} {c.cliente?.apellido} — {c.vehiculo?.marca} {c.vehiculo?.modelo} ({c.vehiculo?.placa}) [Tarifa: ${c.tarifaDiaria}/día]
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="form-field">
-                <label htmlFor="monto">Monto a Cobrar (USD / DOP) *</label>
+                <label htmlFor="montoInput">Monto a Cobrar ($) *</label>
                 <input
-                  id="monto"
+                  id="montoInput"
                   type="number"
-                  min="0.01"
                   step="0.01"
-                  placeholder="0.00"
+                  placeholder="Ej. 150.00"
                   value={formulario.monto}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, monto: e.target.value }))
-                  }
+                  onChange={(e) => setFormulario({ ...formulario, monto: e.target.value })}
                   required
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="tipoPago">Método de Pago *</label>
+                <label htmlFor="tipoSelect">Método de Pago *</label>
                 <select
-                  id="tipoPago"
+                  id="tipoSelect"
                   value={formulario.tipo}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({
-                      ...prev,
-                      tipo: e.target.value as FormularioPago["tipo"],
-                    }))
-                  }
+                  onChange={(e) => setFormulario({ ...formulario, tipo: e.target.value as FormularioPago["tipo"] })}
                   required
                 >
                   <option value="EFECTIVO">💵 Efectivo</option>
                   <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
                   <option value="TARJETA">💳 Tarjeta de Crédito / Débito</option>
-                  <option value="PAYPAL">🅿️ PayPal</option>
-                  <option value="OTRO">📄 Otro</option>
+                  <option value="PAYPAL">🌐 PayPal / Pago Online</option>
+                  <option value="OTRO">📦 Otro</option>
                 </select>
               </div>
 
               <div className="form-field">
-                <label htmlFor="referencia">No. de Referencia / Voucher</label>
+                <label htmlFor="refInput">Número de Comprobante / Voucher / NCF</label>
                 <input
-                  id="referencia"
+                  id="refInput"
                   type="text"
-                  placeholder="Ej. TRANSF-893412 o Recibo #045"
+                  placeholder="Ej. B0200000045 o Voucher #88392"
                   value={formulario.referencia}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, referencia: e.target.value }))
-                  }
+                  onChange={(e) => setFormulario({ ...formulario, referencia: e.target.value })}
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="estadoPago">Estado de la Transacción *</label>
+                <label htmlFor="estadoSelect">Estado del Cobro</label>
                 <select
-                  id="estadoPago"
+                  id="estadoSelect"
                   value={formulario.estado}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({
-                      ...prev,
-                      estado: e.target.value as "PAGADO" | "PENDIENTE" | "ANULADO",
-                    }))
-                  }
+                  onChange={(e) => setFormulario({ ...formulario, estado: e.target.value as FormularioPago["estado"] })}
                   required
                 >
-                  <option value="PAGADO">Pagado (Fondos confirmados)</option>
-                  <option value="PENDIENTE">Pendiente de acreditación</option>
+                  <option value="PAGADO">✓ PAGADO (Cobrado con éxito)</option>
+                  <option value="PENDIENTE">⏳ PENDIENTE (Por confirmar)</option>
+                  <option value="ANULADO">✕ ANULADO</option>
                 </select>
               </div>
+            </div>
 
-              <div className="form-actions">
-                <button type="submit" className="primary-button" disabled={guardando}>
-                  {guardando ? "Procesando Cobro..." : "Confirmar y Registrar Pago"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={limpiarFormulario}
-                  disabled={guardando}
-                >
-                  Cancelar
-                </button>
-              </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setMostrarFormulario(false)}
+                disabled={guardando}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="primary-button" disabled={guardando}>
+                {guardando ? "Registrando Pago..." : "💾 Guardar & Emitir Recibo"}
+              </button>
             </div>
           </form>
         </section>
       )}
 
-      {/* Filtros y Buscador */}
-      <div className="filter-bar">
-        <div className="search-input-wrapper">
-          <span className="search-icon">🔍</span>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Buscar por #ID pago, contrato, cliente o referencia..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-          />
-        </div>
-
-        <div className="filter-group">
-          <label htmlFor="filtro-tipo" style={{ fontSize: "12px", fontWeight: 600 }}>
-            Método:
-          </label>
-          <select
-            id="filtro-tipo"
-            className="filter-select"
-            value={filtroTipo}
-            onChange={(e) => setFiltroTipo(e.target.value)}
-          >
-            <option value="TODOS">Todos los métodos</option>
-            <option value="EFECTIVO">Efectivo</option>
-            <option value="TRANSFERENCIA">Transferencia</option>
-            <option value="TARJETA">Tarjeta</option>
-            <option value="PAYPAL">PayPal</option>
-          </select>
-
-          <label htmlFor="filtro-estado-pago" style={{ fontSize: "12px", fontWeight: 600, marginLeft: "8px" }}>
-            Estado:
-          </label>
-          <select
-            id="filtro-estado-pago"
-            className="filter-select"
-            value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value)}
-          >
-            <option value="TODOS">Todos los estados</option>
-            <option value="PAGADO">Pagados</option>
-            <option value="PENDIENTE">Pendientes</option>
-            <option value="ANULADO">Anulados</option>
-          </select>
-
-          {(busqueda || filtroTipo !== "TODOS" || filtroEstado !== "TODOS") && (
-            <button
-              className="secondary-button"
-              style={{ padding: "8px 12px", fontSize: "12px" }}
-              onClick={() => {
-                setBusqueda("");
-                setFiltroTipo("TODOS");
-                setFiltroEstado("TODOS");
-              }}
-            >
-              Limpiar filtros
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Tabla de Pagos */}
       <div className="content-panel">
         <div className="panel-header">
-          <h2>
-            Libro de Transacciones{" "}
-            <span style={{ color: "var(--text-secondary)", fontWeight: 500, fontSize: "13px" }}>
-              ({pagosFiltrados.length} de {pagos.length} cobros)
-            </span>
-          </h2>
+          <h2>Historial de Pagos & Recibos Emitidos</h2>
+          <div className="panel-actions" style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <select
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value)}
+              style={{ fontSize: "12px", padding: "6px 10px" }}
+            >
+              <option value="TODOS">Todos los Métodos</option>
+              <option value="EFECTIVO">💵 Efectivo</option>
+              <option value="TARJETA">💳 Tarjeta</option>
+              <option value="TRANSFERENCIA">🏦 Transferencia</option>
+              <option value="PAYPAL">🌐 PayPal</option>
+            </select>
+
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              style={{ fontSize: "12px", padding: "6px 10px" }}
+            >
+              <option value="TODOS">Todos los Estados</option>
+              <option value="PAGADO">PAGADO</option>
+              <option value="PENDIENTE">PENDIENTE</option>
+              <option value="ANULADO">ANULADO</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="Buscar por cliente, placa, ID o NCF..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              style={{ width: "240px" }}
+            />
+          </div>
         </div>
 
         {cargando ? (
           <div className="empty-state">
             <div className="empty-state-icon">⏳</div>
-            <strong>Cargando registro de pagos...</strong>
+            <strong>Cargando pagos...</strong>
           </div>
         ) : pagosFiltrados.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">💳</div>
-            <strong>No se encontraron transacciones</strong>
-            <span>
-              {pagos.length === 0
-                ? "Aún no se han registrado cobros ni depósitos. Haz clic en '+ Registrar Pago' para crear el primero."
-                : "No hay pagos que coincidan con los filtros seleccionados."}
-            </span>
+            <strong>No hay pagos que coincidan con los filtros.</strong>
           </div>
         ) : (
-          <div className="table-container">
+          <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>No. Transacción</th>
+                  <th>ID</th>
                   <th>Fecha</th>
-                  <th>Contrato / Cliente</th>
+                  <th>Contrato</th>
+                  <th>Cliente</th>
                   <th>Vehículo</th>
-                  <th>Método de Pago</th>
-                  <th>Referencia</th>
                   <th>Monto</th>
+                  <th>Método</th>
+                  <th>Referencia / NCF</th>
                   <th>Estado</th>
-                  <th style={{ textAlign: "right" }}>Acciones</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {pagosFiltrados.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      <strong>#{p.id}</strong>
+                      <span className="badge badge-mantenimiento">REC-{String(p.id).padStart(5, "0")}</span>
+                    </td>
+                    <td>{new Date(p.fecha).toLocaleDateString("es-DO")}</td>
+                    <td>
+                      <strong>Contrato #{p.contratoId}</strong>
                     </td>
                     <td>
-                      {new Date(p.fecha).toLocaleDateString("es-DO")}{" "}
-                      <small style={{ color: "var(--text-secondary)" }}>
-                        {new Date(p.fecha).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </small>
-                    </td>
-                    <td>
-                      <div>
-                        <strong>Contrato #{p.contratoId}</strong>
-                      </div>
-                      <small style={{ color: "var(--text-secondary)" }}>
-                        {p.contrato?.cliente ? `${p.contrato.cliente.nombre} ${p.contrato.cliente.apellido}` : "-"}
-                      </small>
+                      {p.contrato?.cliente ? (
+                        <div>
+                          <strong>{p.contrato.cliente.nombre} {p.contrato.cliente.apellido}</strong>
+                          <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                            {p.contrato.cliente.telefono}
+                          </div>
+                        </div>
+                      ) : "Cliente N/D"}
                     </td>
                     <td>
                       {p.contrato?.vehiculo ? (
                         <div>
-                          <span>{p.contrato.vehiculo.marca} {p.contrato.vehiculo.modelo}</span>
-                          <div><code>{p.contrato.vehiculo.placa}</code></div>
+                          <strong>{p.contrato.vehiculo.marca} {p.contrato.vehiculo.modelo}</strong>
+                          <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                            {p.contrato.vehiculo.placa}
+                          </div>
                         </div>
-                      ) : "-"}
+                      ) : "N/D"}
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600 }}>{iconoTipoPago(p.tipo)}</span>
-                    </td>
-                    <td>
-                      {p.referencia ? <code>{p.referencia}</code> : <span style={{ color: "var(--text-light)" }}>-</span>}
-                    </td>
-                    <td>
-                      <strong style={{ fontSize: "14px", color: p.estado === "PAGADO" ? "var(--success)" : "inherit" }}>
+                      <strong style={{ fontSize: "14px", color: "#15803d" }}>
                         ${Number(p.monto).toFixed(2)}
                       </strong>
+                    </td>
+                    <td>{iconoTipoPago(p.tipo)}</td>
+                    <td>
+                      {p.referencia ? <code>{p.referencia}</code> : <span style={{ color: "var(--text-secondary)" }}>-</span>}
                     </td>
                     <td>
                       <span
@@ -649,48 +503,22 @@ export default function PagosPage() {
                           p.estado === "PAGADO"
                             ? "badge-disponible"
                             : p.estado === "PENDIENTE"
-                            ? "badge-mantenimiento"
-                            : "badge-inactivo"
+                            ? "badge-alquilado"
+                            : "badge-mantenimiento"
                         }`}
                       >
                         {p.estado}
                       </span>
                     </td>
-                    <td style={{ textAlign: "right" }}>
-                      <div className="actions-cell" style={{ justifyContent: "flex-end" }}>
-                        <button
-                          type="button"
-                          className="btn-action-edit"
-                          style={{ background: "#f1f5f9", color: "#334155" }}
-                          title="Ver e Imprimir Recibo"
-                          onClick={() => setPagoImprimir(p)}
-                        >
-                          🖨️ Recibo
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-action-edit"
-                          style={{ background: "#dcfce7", color: "#15803d", borderColor: "#bbf7d0" }}
-                          title="Enviar Recibo por WhatsApp al Cliente"
-                          onClick={() => {
-                            const tel = p.contrato?.cliente?.telefono ? p.contrato.cliente.telefono.replace(/[^0-9]/g, "") : "";
-                            const texto = `Hola *${p.contrato?.cliente?.nombre || "Cliente"}*, te confirmamos la recepción de tu pago:\n\n🧾 *Recibo:* #${String(p.id).padStart(6, "0")}\n💰 *Monto:* $${Number(p.monto).toFixed(2)} USD\n💳 *Método:* ${p.tipo}\n🚗 *Vehículo:* ${p.contrato?.vehiculo?.marca || ""} ${p.contrato?.vehiculo?.modelo || ""} (${p.contrato?.vehiculo?.placa || ""})\n📅 *Fecha:* ${new Date(p.fecha).toLocaleDateString("es-DO")}\n\n¡Comprobante procesado con éxito por *${rentCarInfo?.nombre || "RentOS"}*!`;
-                            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, "_blank");
-                          }}
-                        >
-                          💬 WhatsApp
-                        </button>
-                        {p.estado !== "ANULADO" && (
-                          <button
-                            type="button"
-                            className="btn-action-delete"
-                            title="Anular pago"
-                            onClick={() => anularPago(p.id)}
-                          >
-                            🚫 Anular
-                          </button>
-                        )}
-                      </div>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-action-primary"
+                        style={{ fontSize: "11px", padding: "4px 8px" }}
+                        onClick={() => setPagoImprimir(p)}
+                      >
+                        🧾 Recibo / NCF
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -700,52 +528,136 @@ export default function PagosPage() {
         )}
       </div>
 
-      {/* Modal de Recibo Oficial Imprimible */}
+      {/* Modal de Recibo Oficial / Factura Fiscal Imprimible */}
       {pagoImprimir && (
         <div
+          id="modal-recibo-oficial"
           style={{
             position: "fixed",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backgroundColor: "rgba(15, 23, 42, 0.7)",
             zIndex: 9999,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "20px",
+            padding: "16px",
           }}
         >
+          {/* Estilos dedicados para impresión perfecta */}
+          <style>{`
+            @media print {
+              body, html {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+              }
+              body * {
+                visibility: hidden !important;
+              }
+              #modal-recibo-oficial,
+              #modal-recibo-oficial * {
+                visibility: visible !important;
+              }
+              #modal-recibo-oficial {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: block !important;
+                z-index: 999999 !important;
+              }
+              .modal-recibo-card {
+                box-shadow: none !important;
+                border: none !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+              @page {
+                size: letter portrait;
+                margin: 12mm 15mm;
+              }
+            }
+          `}</style>
+
           <div
+            className="modal-recibo-card"
             style={{
               backgroundColor: "#ffffff",
-              borderRadius: "12px",
-              maxWidth: "550px",
+              borderRadius: "14px",
+              maxWidth: "580px",
               width: "100%",
               padding: "32px",
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.3)",
               color: "#1e293b",
-              fontFamily: "system-ui, sans-serif",
+              fontFamily: "Inter, system-ui, sans-serif",
             }}
           >
-            <div style={{ textAlign: "center", borderBottom: "2px dashed #cbd5e1", paddingBottom: "16px", marginBottom: "16px" }}>
-              <h2 style={{ margin: "0 0 4px 0", fontSize: "18px", color: "var(--primary)" }}>
-                {rentCarInfo?.nombre || "RentOS Principal"}
-              </h2>
-              <div style={{ fontSize: "12px", color: "#64748b" }}>
-                RNC: {rentCarInfo?.rnc || "1-31-00000-1"} • Tel: {rentCarInfo?.telefono || "(809) 555-0199"}
+            {/* Cabecera del Recibo con Logotipo */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px dashed #cbd5e1", paddingBottom: "16px", marginBottom: "18px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                {rentCarInfo?.logoUrl ? (
+                  <img
+                    src={rentCarInfo.logoUrl}
+                    alt="Logo"
+                    style={{ maxHeight: "50px", maxWidth: "120px", objectFit: "contain" }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      backgroundColor: rentCarInfo?.colorPrimario || "var(--primary)",
+                      color: "white",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 900,
+                      fontSize: "18px",
+                    }}
+                  >
+                    {rentCarInfo?.nombre ? rentCarInfo.nombre.charAt(0).toUpperCase() : "R"}
+                  </div>
+                )}
+                <div>
+                  <h2 style={{ margin: "0 0 2px 0", fontSize: "17px", color: rentCarInfo?.colorPrimario || "var(--primary)", fontWeight: 800 }}>
+                    {rentCarInfo?.nombre || "RentOS Principal"}
+                  </h2>
+                  <div style={{ fontSize: "11px", color: "#64748b" }}>
+                    RNC: {rentCarInfo?.rnc || "1-31-00000-1"} • Tel: {rentCarInfo?.telefono || "(809) 555-0199"}
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: "15px", fontWeight: "bold", marginTop: "10px", color: "#334155" }}>
-                RECIBO OFICIAL DE PAGO #{String(pagoImprimir.id).padStart(6, "0")}
-              </div>
-              <div style={{ fontSize: "11px", color: "#64748b" }}>
-                Fecha y Hora: {new Date(pagoImprimir.fecha).toLocaleString("es-DO")}
+
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "11px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase" }}>
+                  COMPROBANTE DE PAGO
+                </div>
+                <div style={{ fontSize: "17px", fontWeight: "900", color: rentCarInfo?.colorPrimario || "var(--primary)" }}>
+                  No. REC-{String(pagoImprimir.id).padStart(6, "0")}
+                </div>
+                <div style={{ fontSize: "10px", color: "#64748b" }}>
+                  {new Date(pagoImprimir.fecha).toLocaleString("es-DO")}
+                </div>
               </div>
             </div>
 
-            <div style={{ fontSize: "13px", lineHeight: "1.8", marginBottom: "20px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
+            {/* Desglose de Pago */}
+            <div style={{ fontSize: "13px", lineHeight: "1.9", marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "4px" }}>
                 <span style={{ color: "#64748b" }}>Recibido de:</span>
                 <strong>
                   {pagoImprimir.contrato?.cliente
@@ -753,53 +665,61 @@ export default function PagosPage() {
                     : "Cliente"}
                 </strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "#64748b" }}>Por concepto de:</span>
-                <span>Renta Contrato #{pagoImprimir.contratoId}</span>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "4px" }}>
+                <span style={{ color: "#64748b" }}>Concepto:</span>
+                <span>Renta de Vehículo (Contrato #{pagoImprimir.contratoId})</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "4px" }}>
                 <span style={{ color: "#64748b" }}>Vehículo:</span>
                 <span>
                   {pagoImprimir.contrato?.vehiculo?.marca} {pagoImprimir.contrato?.vehiculo?.modelo} (
-                  <code>{pagoImprimir.contrato?.vehiculo?.placa}</code>)
+                  <b>{pagoImprimir.contrato?.vehiculo?.placa}</b>)
                 </span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "4px" }}>
                 <span style={{ color: "#64748b" }}>Método de Pago:</span>
                 <span>{iconoTipoPago(pagoImprimir.tipo)}</span>
               </div>
+
               {pagoImprimir.referencia && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#64748b" }}>Referencia / Voucher:</span>
-                  <code>{pagoImprimir.referencia}</code>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "4px" }}>
+                  <span style={{ color: "#64748b" }}>Comprobante / NCF:</span>
+                  <code style={{ background: "#f1f5f9", padding: "2px 6px", borderRadius: "4px" }}>
+                    {pagoImprimir.referencia}
+                  </code>
                 </div>
               )}
             </div>
 
+            {/* Total Destacado */}
             <div
               style={{
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                padding: "16px",
-                borderRadius: "8px",
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                padding: "14px 18px",
+                borderRadius: "10px",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "24px",
+                marginBottom: "20px",
               }}
             >
-              <strong style={{ fontSize: "14px" }}>TOTAL PAGADO:</strong>
-              <strong style={{ fontSize: "22px", color: "var(--success)" }}>
-                ${Number(pagoImprimir.monto).toFixed(2)}
+              <strong style={{ fontSize: "14px", color: "#166534" }}>MONTO TOTAL PAGADO:</strong>
+              <strong style={{ fontSize: "22px", color: "#15803d" }}>
+                ${Number(pagoImprimir.monto).toFixed(2)} {rentCarInfo?.moneda || "USD"}
               </strong>
             </div>
 
-            <div style={{ textAlign: "center", borderTop: "1px solid #cbd5e1", paddingTop: "20px" }}>
-              <div style={{ width: "180px", borderTop: "1px solid #94a3b8", margin: "0 auto 6px auto" }} />
-              <div style={{ fontSize: "11px", color: "#64748b" }}>Firma Autorizada / Caja</div>
+            <div style={{ textAlign: "center", borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
+              <div style={{ width: "160px", borderTop: "1px solid #94a3b8", margin: "0 auto 4px auto" }} />
+              <div style={{ fontSize: "11px", color: "#64748b" }}>Firma & Sello Autorizado de Caja</div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+            {/* Botones de Acción (Ocultos al imprimir) */}
+            <div className="no-print" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "20px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
               <button
                 type="button"
                 className="secondary-button"
@@ -807,13 +727,30 @@ export default function PagosPage() {
               >
                 Cerrar
               </button>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={() => window.print()}
-              >
-                🖨️ Imprimir Recibo
-              </button>
+
+              <div style={{ display: "flex", gap: "8px" }}>
+                {pagoImprimir.contrato?.cliente?.telefono && (
+                  <a
+                    href={`https://wa.me/${pagoImprimir.contrato.cliente.telefono.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                      `Hola ${pagoImprimir.contrato.cliente.nombre}, confirmamos la recepción de tu pago por valor de $${Number(pagoImprimir.monto).toFixed(2)} ${rentCarInfo?.moneda || "USD"} correspondiente al Contrato #${pagoImprimir.contratoId} (${pagoImprimir.contrato.vehiculo?.marca} ${pagoImprimir.contrato.vehiculo?.modelo}). ¡Gracias por tu preferencia con ${rentCarInfo?.nombre || "RentOS"}!`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="primary-button"
+                    style={{ backgroundColor: "#22c55e", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}
+                  >
+                    💬 Enviar a WhatsApp
+                  </a>
+                )}
+
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => window.print()}
+                >
+                  🖨️ Imprimir Recibo
+                </button>
+              </div>
             </div>
           </div>
         </div>

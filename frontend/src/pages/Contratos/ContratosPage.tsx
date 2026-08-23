@@ -98,6 +98,11 @@ export default function ContratosPage() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [contratoImprimir, setContratoImprimir] = useState<Contrato | null>(null);
 
+  // Extensión de Contrato y Recordatorio de Retorno
+  const [contratoExtender, setContratoExtender] = useState<Contrato | null>(null);
+  const [diasExtra, setDiasExtra] = useState(1);
+  const [guardandoExtension, setGuardandoExtension] = useState(false);
+
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
 
@@ -106,6 +111,40 @@ export default function ContratosPage() {
   const [mensaje, setMensaje] = useState("");
 
   const API_CONTRATOS = API_URLS.contratos;
+
+  const handleGuardarExtension = async () => {
+    if (!contratoExtender) return;
+    try {
+      setGuardandoExtension(true);
+      const fechaFinActual = new Date(contratoExtender.fechaFin);
+      const nuevaFechaFin = new Date(fechaFinActual.getTime() + diasExtra * 86400000);
+      const nuevaFechaFinStr = nuevaFechaFin.toISOString().split("T")[0];
+
+      const res = await fetch(`${API_CONTRATOS}/${contratoExtender.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fechaFin: nuevaFechaFinStr,
+          observaciones: contratoExtender.observaciones
+            ? `${contratoExtender.observaciones} | Extensión de ${diasExtra} día(s) aplicada el ${new Date().toLocaleDateString("es-DO")}`
+            : `Extensión de ${diasExtra} día(s) aplicada el ${new Date().toLocaleDateString("es-DO")}`,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("No fue posible guardar la extensión del contrato.");
+      }
+
+      setMensaje(`✅ Contrato #CT-${String(contratoExtender.id).padStart(5, "0")} extendido por ${diasExtra} día(s) con éxito.`);
+      setContratoExtender(null);
+      await cargarDatos();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Error al extender contrato.");
+    } finally {
+      setGuardandoExtension(false);
+    }
+  };
 
   const cargarDatos = async () => {
     try {
@@ -826,6 +865,7 @@ export default function ContratosPage() {
                           >
                             🖨️ Contrato
                           </button>
+
                           <button
                             type="button"
                             className="btn-action-edit"
@@ -841,16 +881,47 @@ export default function ContratosPage() {
                           >
                             💬 WhatsApp
                           </button>
+
                           {c.estado === "ACTIVO" && (
-                            <button
-                              type="button"
-                              className="btn-action-edit"
-                              style={{ background: "var(--success-soft)", borderColor: "#bbf7d0", color: "var(--success)" }}
-                              onClick={() => finalizarRenta(c)}
-                            >
-                              🏁 Finalizar
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                className="btn-action-edit"
+                                style={{ background: "#fef3c7", color: "#b45309", borderColor: "#fde68a" }}
+                                title="Enviar Recordatorio de Devolución al Cliente"
+                                onClick={() => {
+                                  const tel = c.cliente?.telefono ? c.cliente.telefono.replace(/[^0-9]/g, "") : "";
+                                  const texto = `Hola *${c.cliente?.nombre}*, te saludamos cordialmente de *${rentCarInfo?.nombre || "RentOS"}*.\n\nTe recordamos que tu período de alquiler del vehículo *${c.vehiculo?.marca} ${c.vehiculo?.modelo}* (Placa *${c.vehiculo?.placa}*) finaliza el *${new Date(c.fechaFin).toLocaleDateString("es-DO")}*.\n\nSi deseas *extender tu alquiler por más días*, por favor responde a este mensaje para actualizar tu contrato de inmediato. ¡Que tengas un excelente viaje!`;
+                                  window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, "_blank");
+                                }}
+                              >
+                                🔔 Recordar
+                              </button>
+
+                              <button
+                                type="button"
+                                className="btn-action-edit"
+                                style={{ background: "#ede9fe", color: "#6d28d9", borderColor: "#ddd6fe" }}
+                                title="Extender Días de Renta"
+                                onClick={() => {
+                                  setContratoExtender(c);
+                                  setDiasExtra(1);
+                                }}
+                              >
+                                ➕ Extender
+                              </button>
+
+                              <button
+                                type="button"
+                                className="btn-action-edit"
+                                style={{ background: "var(--success-soft)", borderColor: "#bbf7d0", color: "var(--success)" }}
+                                onClick={() => finalizarRenta(c)}
+                              >
+                                🏁 Finalizar
+                              </button>
+                            </>
                           )}
+
                           <button
                             type="button"
                             className="btn-action-delete"
@@ -1194,6 +1265,125 @@ export default function ContratosPage() {
                   🖨️ Imprimir / Guardar PDF
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Extensión de Días de Contrato */}
+      {contratoExtender && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.7)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "16px",
+              maxWidth: "500px",
+              width: "100%",
+              padding: "28px",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.3)",
+              color: "var(--text)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "14px", marginBottom: "18px" }}>
+              <div>
+                <h3 style={{ margin: "0 0 2px 0", fontSize: "17px" }}>
+                  ➕ Extensión de Contrato #CT-{String(contratoExtender.id).padStart(5, "0")}
+                </h3>
+                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                  {contratoExtender.cliente?.nombre} {contratoExtender.cliente?.apellido} — {contratoExtender.vehiculo?.marca} {contratoExtender.vehiculo?.modelo}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ padding: "4px 8px" }}
+                onClick={() => setContratoExtender(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ marginBottom: "18px" }}>
+              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+                Fecha de Retorno Actual: <b>{new Date(contratoExtender.fechaFin).toLocaleDateString("es-DO")}</b>
+              </div>
+
+              <label style={{ fontSize: "13px", fontWeight: "bold", display: "block", marginBottom: "8px" }}>
+                ¿Cuántos días adicionales deseas agregar?
+              </label>
+
+              {/* Botones Rápidos de Días */}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
+                {[1, 2, 3, 5, 7].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setDiasExtra(num)}
+                    style={{
+                      flex: 1,
+                      padding: "8px",
+                      borderRadius: "8px",
+                      border: diasExtra === num ? "2px solid var(--primary)" : "1px solid var(--border)",
+                      backgroundColor: diasExtra === num ? "var(--primary-soft)" : "var(--background)",
+                      color: diasExtra === num ? "var(--primary)" : "var(--text)",
+                      fontWeight: diasExtra === num ? 800 : 500,
+                      cursor: "pointer",
+                      fontSize: "12px",
+                    }}
+                  >
+                    +{num} {num === 1 ? "Día" : "Días"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Recálculo de Nueva Fecha y Monto */}
+              <div style={{ background: "var(--background)", padding: "14px", borderRadius: "10px", border: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "6px" }}>
+                  <span>Nueva Fecha de Retorno:</span>
+                  <strong style={{ color: "var(--primary)" }}>
+                    {new Date(new Date(contratoExtender.fechaFin).getTime() + diasExtra * 86400000).toLocaleDateString("es-DO")}
+                  </strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                  <span>Costo Adicional ({diasExtra} días x ${Number(contratoExtender.tarifaDiaria)}):</span>
+                  <strong style={{ color: "#15803d" }}>
+                    +${(diasExtra * Number(contratoExtender.tarifaDiaria)).toFixed(2)} USD
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setContratoExtender(null)}
+                disabled={guardandoExtension}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={handleGuardarExtension}
+                disabled={guardandoExtension}
+              >
+                {guardandoExtension ? "Extendiendo..." : "✓ Confirmar Extensión"}
+              </button>
             </div>
           </div>
         </div>
