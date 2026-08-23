@@ -77,6 +77,9 @@ model RentCar {
   direccion String?
   ciudad                  String   @default("Santo Domingo")
   logoUrl                 String?  // URL o ruta al logo de la empresa
+  eslogan                 String?  // Eslogan o frase comercial de la empresa
+  colorPrimario           String?  @default("#0284c7") // Color de marca para el portal de reservas
+  whatsapp                String?  // Número de WhatsApp para reservas directas
   moneda                  String   @default("USD") // USD, DOP, EUR
   terminosContrato        String?  // Cláusulas estándar del contrato
   limiteKilometrajeDiario Int?     @default(200)

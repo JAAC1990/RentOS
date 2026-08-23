@@ -134,6 +134,9 @@ router.put("/:id", async (req, res) => {
       direccion,
       ciudad,
       logoUrl,
+      eslogan,
+      colorPrimario,
+      whatsapp,
       moneda,
       terminosContrato,
       limiteKilometrajeDiario,
@@ -151,6 +154,9 @@ router.put("/:id", async (req, res) => {
     if (direccion !== undefined) dataToUpdate.direccion = direccion ? direccion.trim() : null;
     if (ciudad !== undefined) dataToUpdate.ciudad = ciudad ? ciudad.trim() : "Santo Domingo";
     if (logoUrl !== undefined) dataToUpdate.logoUrl = logoUrl ? logoUrl.trim() : null;
+    if (eslogan !== undefined) dataToUpdate.eslogan = eslogan ? String(eslogan).trim() : null;
+    if (colorPrimario !== undefined) dataToUpdate.colorPrimario = colorPrimario ? String(colorPrimario).trim() : "#0284c7";
+    if (whatsapp !== undefined) dataToUpdate.whatsapp = whatsapp ? String(whatsapp).trim() : null;
     if (moneda !== undefined) dataToUpdate.moneda = String(moneda).trim();
     if (terminosContrato !== undefined) dataToUpdate.terminosContrato = terminosContrato ? String(terminosContrato).trim() : null;
     if (limiteKilometrajeDiario !== undefined) dataToUpdate.limiteKilometrajeDiario = Number(limiteKilometrajeDiario);

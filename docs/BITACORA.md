@@ -397,6 +397,22 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Proceso de entrega y firma de contratos 100% digital y monitor centralizado de alertas en la cabecera.
 
+### [2026-08-22] - Personalización Multi-Tenant de Marca: Logotipo, Eslogan, Color Corporativo & WhatsApp
+- **Problema/Necesidad:** Permitir que cada empresa cliente (Rent a Car) personalice su perfil institucional con su propio logotipo, eslogan publicitario, paleta de colores corporativa (`colorPrimario`), WhatsApp de soporte y términos legales, reflejándose automáticamente en su catálogo web de reservas públicas (`/reservar?rentcar=ID`) y contratos.
+- **Decisión técnica:**
+  - Ampliación del modelo `RentCar` en Prisma con `eslogan`, `colorPrimario` y `whatsapp`.
+  - `rentcars.routes.ts`: Actualización de `PUT /api/rentcars/:id` con persistencia de campos de marca.
+  - `ConfiguracionPage.tsx`: Nueva sección **"🎨 Identidad Visual & Logotipo"** con selector de colores (Color Picker + presets), campo de URL de logo con previsualización en vivo en tarjeta interactiva y soporte multi-tenant vinculado al usuario activo.
+  - `ReservasPublicasPage.tsx`: Integración dinámica de los estilos de marca, logotipo y WhatsApp del Rent Car en el catálogo online.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/rentcars.routes.ts`, `frontend/src/pages/Configuracion/ConfiguracionPage.tsx`, `frontend/src/pages/Publico/ReservasPublicasPage.tsx`.
+- **Pruebas realizadas:**
+  - Sincronización Prisma (`prisma db push`).
+  - Actualización de marca corporativa (color `#0284c7`, eslogan y WhatsApp) vía API y panel.
+  - Verificación del renderizado del logo y gradiente de color personalizado en el catálogo público.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** RentOS se consolida como una plataforma White-Label SaaS donde cada cliente proyecta su propia identidad de marca.
+
+
 
 
 

@@ -23,6 +23,10 @@ type RentCarInfo = {
   email: string | null;
   ciudad: string;
   direccion: string | null;
+  logoUrl?: string | null;
+  eslogan?: string | null;
+  colorPrimario?: string | null;
+  whatsapp?: string | null;
   moneda: string;
   terminosContrato: string | null;
 };
@@ -59,6 +63,7 @@ export default function ReservasPublicasPage() {
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
 
+  // Estado del proceso
   const [enviando, setEnviando] = useState(false);
   const [reservaConfirmada, setReservaConfirmada] = useState<{
     contratoId: number;
@@ -67,48 +72,43 @@ export default function ReservasPublicasPage() {
     total: string;
     dias: number;
   } | null>(null);
-
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const cargarFlotaPublica = async () => {
-      try {
-        setCargando(true);
-        setError("");
+  const colorMarca = rentCarInfo?.colorPrimario || "var(--primary)";
 
-        const [resVehiculos, resRentCar] = await Promise.all([
-          fetch(API_URLS.vehiculos),
-          fetch(`${API_URLS.rentcars}/${tenantId}`),
-        ]);
+  const cargarCatalogo = async () => {
+    try {
+      setCargando(true);
+      setError("");
 
-        if (resVehiculos.ok) {
-          const data: Vehiculo[] = await resVehiculos.json();
-          // Filtrar por el RentCar específico (Multi-Tenant) y estado DISPONIBLE
-          const vehiculosTenant = data.filter(
-            (v) => (v.rentCarId === Number(tenantId) || Number(tenantId) === 1) && v.estado === "DISPONIBLE"
-          );
-          setVehiculos(vehiculosTenant);
-        }
+      const [resVehiculos, resRentCar] = await Promise.all([
+        fetch(API_URLS.vehiculos),
+        fetch(`${API_URLS.rentcars}/${tenantId}`),
+      ]);
 
-        if (resRentCar.ok) {
-          const dataRentCar: RentCarInfo = await resRentCar.json();
-          setRentCarInfo(dataRentCar);
-        } else {
-          // Fallback a RentCar #1 si el ID no existe
-          const resFallback = await fetch(`${API_URLS.rentcars}/1`);
-          if (resFallback.ok) {
-            setRentCarInfo(await resFallback.json());
-          }
-        }
-      } catch (err) {
-        console.error(err);
-        setError("No fue posible cargar el catálogo de vehículos en este momento.");
-      } finally {
-        setCargando(false);
+      if (resRentCar.ok) {
+        const datosRentCar: RentCarInfo = await resRentCar.json();
+        setRentCarInfo(datosRentCar);
       }
-    };
 
-    cargarFlotaPublica();
+      if (resVehiculos.ok) {
+        const datosVehiculos: Vehiculo[] = await resVehiculos.json();
+        // Filtrar vehículos disponibles de este Rent Car
+        const disponibles = datosVehiculos.filter(
+          (v) => v.rentCarId === Number(tenantId) && (v.estado === "DISPONIBLE" || v.estado === "RESERVADO")
+        );
+        setVehiculos(disponibles.length > 0 ? disponibles : datosVehiculos.filter((v) => v.estado === "DISPONIBLE"));
+      }
+    } catch (err) {
+      console.error(err);
+      setError("No fue posible cargar el catálogo de vehículos.");
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarCatalogo();
   }, [tenantId]);
 
   // Cálculo de días
@@ -266,29 +266,38 @@ export default function ReservasPublicasPage() {
           boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              background: "var(--primary)",
-              color: "white",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "900",
-              fontSize: "18px",
-            }}
-          >
-            R
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {rentCarInfo?.logoUrl ? (
+            <img
+              src={rentCarInfo.logoUrl}
+              alt="Logo"
+              style={{ maxHeight: "40px", maxWidth: "120px", objectFit: "contain" }}
+              onError={(e) => (e.currentTarget.style.display = "none")}
+            />
+          ) : (
+            <div
+              style={{
+                width: "38px",
+                height: "38px",
+                background: colorMarca,
+                color: "white",
+                borderRadius: "10px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: "900",
+                fontSize: "18px",
+              }}
+            >
+              {rentCarInfo ? rentCarInfo.nombre.charAt(0).toUpperCase() : "R"}
+            </div>
+          )}
           <div>
             <strong style={{ fontSize: "16px", display: "block" }}>
               {rentCarInfo?.nombre || "RentOS Principal"}
             </strong>
             <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-              Catálogo Oficial de Alquiler • {rentCarInfo?.ciudad || "Santo Domingo"}
+              {rentCarInfo?.eslogan || `Catálogo Oficial de Alquiler • ${rentCarInfo?.ciudad || "Santo Domingo"}`}
             </span>
           </div>
         </div>
@@ -298,7 +307,7 @@ export default function ReservasPublicasPage() {
             📞 Asistencia 24/7: <b>{rentCarInfo?.telefono || "(809) 555-0199"}</b>
           </span>
           <a
-            href={`https://wa.me/${rentCarInfo?.telefono?.replace(/[^0-9]/g, "") || "18095550199"}`}
+            href={`https://wa.me/${(rentCarInfo?.whatsapp || rentCarInfo?.telefono || "18095550199").replace(/[^0-9]/g, "")}`}
             target="_blank"
             rel="noreferrer"
             style={{
@@ -322,7 +331,7 @@ export default function ReservasPublicasPage() {
       {/* Hero Banner */}
       <div
         style={{
-          background: "linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)",
+          background: `linear-gradient(135deg, ${colorMarca} 0%, #0f172a 100%)`,
           color: "#ffffff",
           padding: "48px 24px",
           textAlign: "center",
@@ -331,8 +340,8 @@ export default function ReservasPublicasPage() {
         <h1 style={{ fontSize: "32px", margin: "0 0 10px 0", fontWeight: 800 }}>
           {rentCarInfo ? rentCarInfo.nombre : "Encuentra tu Vehículo Ideal"}
         </h1>
-        <p style={{ fontSize: "16px", color: "#94a3b8", maxWidth: "600px", margin: "0 auto 28px auto" }}>
-          Flota moderna en {rentCarInfo?.ciudad || "República Dominicana"}, tarifas transparentes, seguro incluido y confirmación instantánea.
+        <p style={{ fontSize: "16px", color: "#e2e8f0", maxWidth: "600px", margin: "0 auto 28px auto" }}>
+          {rentCarInfo?.eslogan || `Flota moderna en ${rentCarInfo?.ciudad || "República Dominicana"}, tarifas transparentes, seguro incluido y confirmación instantánea.`}
         </p>
 
         {/* Buscador de Fechas */}

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
+import PhoneInput from "../../components/PhoneInput";
 
 type RentCar = {
   id: number;
@@ -10,6 +12,9 @@ type RentCar = {
   direccion: string | null;
   ciudad: string;
   logoUrl: string | null;
+  eslogan?: string | null;
+  colorPrimario?: string | null;
+  whatsapp?: string | null;
   moneda: string;
   terminosContrato: string | null;
   limiteKilometrajeDiario: number | null;
@@ -19,19 +24,36 @@ type RentCar = {
   activo: boolean;
 };
 
+const COLORES_PRESET = [
+  { nombre: "Azul RentOS", hex: "#0284c7" },
+  { nombre: "Azul Marino", hex: "#1e3a8a" },
+  { nombre: "Verde Esmeralda", hex: "#16a34a" },
+  { nombre: "Naranja Deportivo", hex: "#ea580c" },
+  { nombre: "Rojo Pasión", hex: "#dc2626" },
+  { nombre: "Púrpura Luxury", hex: "#7c3aed" },
+  { nombre: "Grafito Oscuro", hex: "#334155" },
+];
+
 export default function ConfiguracionPage() {
+  const { tenantActivoId, usuario } = useAuth();
   const [rentCar, setRentCar] = useState<RentCar | null>(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [creandoBackup, setCreandoBackup] = useState(false);
 
+  // Campos de Identidad & Marca
   const [nombre, setNombre] = useState("");
+  const [eslogan, setEslogan] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [colorPrimario, setColorPrimario] = useState("#0284c7");
   const [rnc, setRnc] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [email, setEmail] = useState("");
   const [ciudad, setCiudad] = useState("Santo Domingo");
   const [direccion, setDireccion] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [email, setEmail] = useState("");
+
+  // Parámetros de Alquiler
   const [moneda, setMoneda] = useState("USD");
   const [depositoEstandar, setDepositoEstandar] = useState("200.00");
   const [limiteKm, setLimiteKm] = useState("200");
@@ -50,19 +72,23 @@ export default function ConfiguracionPage() {
       setCargando(true);
       setError("");
 
-      const res = await fetch(`${API_RENTCARS}/1`);
+      const targetId = tenantActivoId || 1;
+      const res = await fetch(`${API_RENTCARS}/${targetId}`);
       if (!res.ok) throw new Error("No fue posible cargar los datos de la empresa.");
 
       const data: RentCar = await res.json();
       setRentCar(data);
 
       setNombre(data.nombre || "");
+      setEslogan(data.eslogan || "");
+      setLogoUrl(data.logoUrl || "");
+      setColorPrimario(data.colorPrimario || "#0284c7");
       setRnc(data.rnc || "");
-      setTelefono(data.telefono || "");
-      setEmail(data.email || "");
       setCiudad(data.ciudad || "Santo Domingo");
       setDireccion(data.direccion || "");
-      setLogoUrl(data.logoUrl || "");
+      setTelefono(data.telefono || "");
+      setWhatsapp(data.whatsapp || data.telefono || "");
+      setEmail(data.email || "");
       setMoneda(data.moneda || "USD");
       setDepositoEstandar(String(data.depositoEstandar || "200.00"));
       setLimiteKm(String(data.limiteKilometrajeDiario || "200"));
@@ -82,7 +108,7 @@ export default function ConfiguracionPage() {
 
   useEffect(() => {
     cargarConfiguracion();
-  }, []);
+  }, [tenantActivoId]);
 
   const guardarCambios = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,14 +123,18 @@ export default function ConfiguracionPage() {
       setError("");
       setMensaje("");
 
+      const targetId = tenantActivoId || 1;
       const datos = {
         nombre: nombre.trim(),
+        eslogan: eslogan.trim() || undefined,
+        logoUrl: logoUrl.trim() || undefined,
+        colorPrimario: colorPrimario.trim() || "#0284c7",
         rnc: rnc.trim() || undefined,
-        telefono: telefono.trim() || undefined,
-        email: email.trim() || undefined,
         ciudad: ciudad.trim(),
         direccion: direccion.trim() || undefined,
-        logoUrl: logoUrl.trim() || undefined,
+        telefono: telefono.trim() || undefined,
+        whatsapp: whatsapp.trim() || undefined,
+        email: email.trim() || undefined,
         moneda,
         depositoEstandar: Number(depositoEstandar),
         limiteKilometrajeDiario: Number(limiteKm),
@@ -113,7 +143,7 @@ export default function ConfiguracionPage() {
         telegramChatId: telegramChatId.trim() || undefined,
       };
 
-      const res = await fetch(`${API_RENTCARS}/1`, {
+      const res = await fetch(`${API_RENTCARS}/${targetId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(datos),
@@ -121,7 +151,7 @@ export default function ConfiguracionPage() {
 
       if (!res.ok) throw new Error("No fue posible guardar los cambios de configuración.");
 
-      setMensaje("✅ Configuración y marca de la empresa actualizadas con éxito.");
+      setMensaje("✅ Configuración, marca y logotipo de la empresa actualizados con éxito.");
       await cargarConfiguracion();
     } catch (err) {
       console.error(err);
@@ -158,25 +188,27 @@ export default function ConfiguracionPage() {
       {/* Encabezado Principal */}
       <div className="page-heading">
         <div>
-          <h1>Configuración de Empresa y Marca</h1>
+          <h1>Personalización de Perfil, Marca & Configuración</h1>
           <p>
-            Personaliza los datos de tu Rent Car, políticas de alquiler, moneda y respaldos.
+            Personaliza el logotipo de tu Rent a Car, color de marca, datos comerciales y políticas de alquiler.
             {rentCar && (
               <span style={{ display: "inline-block", marginLeft: "10px" }} className="badge badge-disponible">
-                Tenant #{rentCar.id} • Activo
+                Empresa: {rentCar.nombre} (ID #{rentCar.id})
               </span>
             )}
           </p>
         </div>
 
-        <button
-          className="secondary-button"
-          onClick={ejecutarBackup}
-          disabled={creandoBackup}
-          style={{ display: "flex", alignItems: "center", gap: "6px" }}
-        >
-          {creandoBackup ? "⏳ Respaldando..." : "💾 Generar Backup + Alerta Telegram"}
-        </button>
+        {usuario?.rol === "SUPERADMIN" && (
+          <button
+            className="secondary-button"
+            onClick={ejecutarBackup}
+            disabled={creandoBackup}
+            style={{ display: "flex", alignItems: "center", gap: "6px" }}
+          >
+            {creandoBackup ? "⏳ Respaldando..." : "💾 Generar Backup + Telegram"}
+          </button>
+        )}
       </div>
 
       {/* Alertas */}
@@ -189,9 +221,9 @@ export default function ConfiguracionPage() {
           style={{
             backgroundColor: "var(--surface)",
             border: "1px solid var(--border)",
-            borderRadius: "12px",
-            padding: "18px 24px",
-            marginBottom: "20px",
+            borderRadius: "14px",
+            padding: "20px 24px",
+            marginBottom: "24px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -200,13 +232,13 @@ export default function ConfiguracionPage() {
         >
           <div>
             <strong style={{ fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }}>
-              🌐 Tu Enlace de Reservas Online para Clientes
+              🌐 Tu Catálogo Público de Reservas Online
             </strong>
             <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>
-              Comparte este link en tu Instagram, WhatsApp Business o Google Maps para recibir reservas online directamente en tu panel.
+              Tus clientes verán tu logo, eslogan y color de marca en este enlace:
             </span>
             <div style={{ marginTop: "8px" }}>
-              <code style={{ fontSize: "13px", padding: "6px 10px", background: "var(--primary-soft)", color: "var(--primary)", borderRadius: "6px", fontWeight: 600 }}>
+              <code style={{ fontSize: "13px", padding: "6px 10px", background: "var(--primary-soft)", color: "var(--primary)", borderRadius: "6px", fontWeight: 700 }}>
                 {`${window.location.origin}/reservar?rentcar=${rentCar.id}`}
               </code>
             </div>
@@ -218,7 +250,7 @@ export default function ConfiguracionPage() {
               className="secondary-button"
               onClick={() => {
                 navigator.clipboard.writeText(`${window.location.origin}/reservar?rentcar=${rentCar.id}`);
-                setMensaje("📋 ¡Enlace de reservas copiado al portapapeles!");
+                setMensaje("📋 ¡Enlace copiado al portapapeles!");
               }}
             >
               📋 Copiar Enlace
@@ -228,9 +260,16 @@ export default function ConfiguracionPage() {
               target="_blank"
               rel="noreferrer"
               className="primary-button"
-              style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", padding: "10px 16px" }}
+              style={{
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "10px 16px",
+                backgroundColor: colorPrimario || "var(--primary)",
+              }}
             >
-              👁️ Probar Catálogo ↗
+              👁️ Ver Portal con mi Marca ↗
             </a>
           </div>
         </div>
@@ -240,18 +279,169 @@ export default function ConfiguracionPage() {
         <div className="content-panel">
           <div className="empty-state">
             <div className="empty-state-icon">⏳</div>
-            <strong>Cargando configuración del Rent Car...</strong>
+            <strong>Cargando personalización del Rent Car...</strong>
           </div>
         </div>
       ) : (
         <form onSubmit={guardarCambios}>
-          {/* Sección 1: Datos de la Empresa */}
-          <div className="content-panel" style={{ marginBottom: "20px" }}>
+          {/* SECCIÓN 1: PERSONALIZACIÓN VISUAL DE MARCA */}
+          <div className="content-panel" style={{ marginBottom: "24px" }}>
             <div className="panel-header">
-              <h2>🏢 Identidad de Empresa & Facturación</h2>
+              <h2>🎨 Identidad Visual & Logotipo</h2>
             </div>
 
-            <div className="form-grid">
+            <div style={{ padding: "20px 24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px", alignItems: "flex-start" }}>
+                <div>
+                  <div className="form-field" style={{ marginBottom: "14px" }}>
+                    <label htmlFor="logoUrlInput">URL del Logotipo de la Empresa</label>
+                    <input
+                      id="logoUrlInput"
+                      type="url"
+                      placeholder="https://ejemplo.com/logo.png"
+                      value={logoUrl}
+                      onChange={(e) => setLogoUrl(e.target.value)}
+                    />
+                    <small style={{ color: "var(--text-secondary)", fontSize: "11px", marginTop: "4px", display: "block" }}>
+                      Pega el enlace de la imagen o logo transparente (PNG/SVG/JPG).
+                    </small>
+                  </div>
+
+                  <div className="form-field" style={{ marginBottom: "14px" }}>
+                    <label htmlFor="esloganInput">Eslogan Comercial / Frase de la Empresa</label>
+                    <input
+                      id="esloganInput"
+                      type="text"
+                      placeholder="Ej. Los mejores autos para tus vacaciones en Punta Cana"
+                      value={eslogan}
+                      onChange={(e) => setEslogan(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label htmlFor="colorPickerInput">Color Primario de tu Marca</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+                      <input
+                        id="colorPickerInput"
+                        type="color"
+                        value={colorPrimario}
+                        onChange={(e) => setColorPrimario(e.target.value)}
+                        style={{ width: "42px", height: "38px", border: "none", borderRadius: "6px", cursor: "pointer", padding: 0 }}
+                      />
+                      <input
+                        type="text"
+                        value={colorPrimario}
+                        onChange={(e) => setColorPrimario(e.target.value)}
+                        style={{ width: "100px", padding: "8px", borderRadius: "6px", border: "1px solid var(--border)", fontSize: "13px", fontWeight: 700 }}
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", gap: "6px", marginTop: "8px", flexWrap: "wrap" }}>
+                      {COLORES_PRESET.map((c) => (
+                        <button
+                          key={c.hex}
+                          type="button"
+                          onClick={() => setColorPrimario(c.hex)}
+                          style={{
+                            width: "24px",
+                            height: "24px",
+                            borderRadius: "50%",
+                            backgroundColor: c.hex,
+                            border: colorPrimario === c.hex ? "2px solid #000" : "1px solid rgba(0,0,0,0.1)",
+                            cursor: "pointer",
+                          }}
+                          title={c.nombre}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vista Previa de la Marca */}
+                <div
+                  style={{
+                    background: "var(--background)",
+                    border: "2px dashed var(--border)",
+                    borderRadius: "14px",
+                    padding: "20px",
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", marginBottom: "12px" }}>
+                    Vista Previa de Marca en Catálogo y Contratos
+                  </div>
+
+                  <div
+                    style={{
+                      backgroundColor: "var(--surface)",
+                      borderRadius: "12px",
+                      padding: "20px",
+                      border: "1px solid var(--border)",
+                      boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    {logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt="Logo Preview"
+                        style={{ maxHeight: "60px", maxWidth: "180px", objectFit: "contain", marginBottom: "8px" }}
+                        onError={(e) => (e.currentTarget.style.display = "none")}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          backgroundColor: colorPrimario,
+                          color: "white",
+                          borderRadius: "10px",
+                          margin: "0 auto 8px auto",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 900,
+                          fontSize: "22px",
+                        }}
+                      >
+                        {nombre ? nombre.charAt(0).toUpperCase() : "R"}
+                      </div>
+                    )}
+
+                    <h3 style={{ margin: "0 0 2px 0", fontSize: "16px", fontWeight: 800 }}>
+                      {nombre || "Nombre de tu Rent a Car"}
+                    </h3>
+                    <p style={{ margin: "0 0 12px 0", fontSize: "12px", color: "var(--text-secondary)" }}>
+                      {eslogan || "Tu eslogan aparecerá aquí"}
+                    </p>
+
+                    <button
+                      type="button"
+                      style={{
+                        backgroundColor: colorPrimario,
+                        color: "white",
+                        border: "none",
+                        padding: "8px 18px",
+                        borderRadius: "8px",
+                        fontWeight: 700,
+                        fontSize: "12px",
+                        cursor: "default",
+                      }}
+                    >
+                      🚗 Botón de Ejemplo
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECCIÓN 2: INFORMACIÓN FISCAL Y DE CONTACTO */}
+          <div className="content-panel" style={{ marginBottom: "24px" }}>
+            <div className="panel-header">
+              <h2>🏢 Datos Comerciales, Fiscales & Contacto</h2>
+            </div>
+
+            <div className="form-grid" style={{ padding: "20px 24px" }}>
               <div className="form-field">
                 <label htmlFor="nombreEmpresa">Nombre Comercial del Rent Car *</label>
                 <input
@@ -276,7 +466,7 @@ export default function ConfiguracionPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="ciudadEmpresa">Ciudad / Región</label>
+                <label htmlFor="ciudadEmpresa">Ciudad / Región *</label>
                 <input
                   id="ciudadEmpresa"
                   type="text"
@@ -288,13 +478,20 @@ export default function ConfiguracionPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="telefonoEmpresa">Teléfono / WhatsApp de Contacto</label>
-                <input
+                <label htmlFor="telefonoEmpresa">Teléfono de Oficina</label>
+                <PhoneInput
                   id="telefonoEmpresa"
-                  type="text"
-                  placeholder="Ej. (809) 555-0100"
                   value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
+                  onChange={(val) => setTelefono(val)}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="whatsappEmpresa">WhatsApp Directo para Reservas</label>
+                <PhoneInput
+                  id="whatsappEmpresa"
+                  value={whatsapp}
+                  onChange={(val) => setWhatsapp(val)}
                 />
               </div>
 
@@ -309,7 +506,7 @@ export default function ConfiguracionPage() {
                 />
               </div>
 
-              <div className="form-field">
+              <div className="form-field" style={{ gridColumn: "span 3" }}>
                 <label htmlFor="direccionEmpresa">Dirección de la Sucursal Principal</label>
                 <input
                   id="direccionEmpresa"
@@ -322,13 +519,13 @@ export default function ConfiguracionPage() {
             </div>
           </div>
 
-          {/* Sección 2: Políticas de Renta y Tarifas */}
-          <div className="content-panel" style={{ marginBottom: "20px" }}>
+          {/* SECCIÓN 3: POLÍTICAS DE RENTA, MONEDA Y CONTRATO */}
+          <div className="content-panel" style={{ marginBottom: "24px" }}>
             <div className="panel-header">
-              <h2>📋 Parámetros de Alquiler & Contratos</h2>
+              <h2>📋 Parámetros de Alquiler & Cláusulas del Contrato</h2>
             </div>
 
-            <div className="form-grid">
+            <div className="form-grid" style={{ padding: "20px 24px" }}>
               <div className="form-field">
                 <label htmlFor="monedaSelect">Moneda Principal de Cobro *</label>
                 <select
@@ -343,7 +540,7 @@ export default function ConfiguracionPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="depositoEstandar">Depósito de Garantía Estándar ($)</label>
+                <label htmlFor="depositoEstandar">Depósito de Garantía Estándar ({moneda})</label>
                 <input
                   id="depositoEstandar"
                   type="number"
@@ -366,7 +563,7 @@ export default function ConfiguracionPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="cargoKmExtra">Cargo por Kilómetro Adicional ($/km)</label>
+                <label htmlFor="cargoKmExtra">Cargo por Kilómetro Extra ({moneda}/km)</label>
                 <input
                   id="cargoKmExtra"
                   type="number"
@@ -378,7 +575,7 @@ export default function ConfiguracionPage() {
               </div>
 
               <div className="form-field" style={{ gridColumn: "span 3" }}>
-                <label htmlFor="terminosContrato">Términos y Condiciones al Pie del Contrato</label>
+                <label htmlFor="terminosContrato">Términos y Cláusulas al Pie del Contrato Oficial</label>
                 <textarea
                   id="terminosContrato"
                   rows={4}
@@ -399,13 +596,13 @@ export default function ConfiguracionPage() {
             </div>
           </div>
 
-          {/* Panel de Alertas & Telegram */}
-          <div className="content-panel" style={{ marginTop: "20px" }}>
+          {/* SECCIÓN 4: CANAL DE ALERTAS PRIVADO TELEGRAM */}
+          <div className="content-panel" style={{ marginBottom: "24px" }}>
             <div className="panel-header">
               <h2>🔔 Notificaciones & Canal de Alertas (Telegram)</h2>
             </div>
-            <div className="form-grid" style={{ padding: "0 24px 20px" }}>
-              <div className="form-field" style={{ gridColumn: "span 2" }}>
+            <div className="form-grid" style={{ padding: "20px 24px" }}>
+              <div className="form-field" style={{ gridColumn: "span 3" }}>
                 <label htmlFor="telegramChatId">Telegram Chat ID para Alertas de esta Empresa</label>
                 <input
                   id="telegramChatId"
@@ -421,8 +618,8 @@ export default function ConfiguracionPage() {
             </div>
           </div>
 
-          {/* Botones de Acción */}
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+          {/* Botones de Guardar */}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
             <button
               type="button"
               className="secondary-button"
@@ -435,9 +632,9 @@ export default function ConfiguracionPage() {
               type="submit"
               className="primary-button"
               disabled={guardando}
-              style={{ minWidth: "160px" }}
+              style={{ minWidth: "180px", backgroundColor: colorPrimario || "var(--primary)" }}
             >
-              {guardando ? "Guardando..." : "Guardar Configuración"}
+              {guardando ? "Guardando..." : "💾 Guardar Personalización"}
             </button>
           </div>
         </form>
