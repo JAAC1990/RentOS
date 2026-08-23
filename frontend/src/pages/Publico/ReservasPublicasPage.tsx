@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import PhoneInput from "../../components/PhoneInput";
 import { API_URLS } from "../../services/api";
 
 type Vehiculo = {
@@ -668,12 +669,10 @@ export default function ReservasPublicasPage() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" }}>
                 <div className="form-field">
                   <label htmlFor="resTelefono">WhatsApp / Teléfono *</label>
-                  <input
+                  <PhoneInput
                     id="resTelefono"
-                    type="tel"
-                    placeholder="809-555-0123"
                     value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
+                    onChange={(val) => setTelefono(val)}
                     required
                   />
                 </div>

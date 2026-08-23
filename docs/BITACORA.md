@@ -359,6 +359,21 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Experiencia de usuario fluida sin cierres inesperados de sesión.
 
+### [2026-08-22] - Teléfonos por Código de Área & Panel de Solicitudes de Rent Cars para SuperAdmin
+- **Problema/Necesidad:** Permitir el ingreso estandarizado de números telefónicos por código de área y país (🇩🇴 Rep. Dominicana +1, 🇺🇸 USA +1, 🇨🇦 Canadá +1, 🇪🇸 España +34, 🇲🇽 México +52, 🇨🇴 Colombia +57, etc.), y habilitar un centro de control exclusivo (`/solicitudes`) para que el SuperAdmin revise y autorice las solicitudes de nuevos Rent a Cars.
+- **Decisión técnica:**
+  - `PhoneInput.tsx`: Componente modular de entrada telefónica con banderas, códigos de país y autoseparación para garantizar compatibilidad con enlaces globales de WhatsApp.
+  - `SolicitudesPage.tsx`: Vista dedicada `/solicitudes` con buscador, filtro por estado (Pendiente, Aprobada, Rechazada), métricas y acciones de autorización en 1 clic.
+  - `Sidebar.tsx`: Enlace dinámico **`👑 Solicitudes de Rent Cars`** visible para el rol SuperAdmin.
+  - Actualización de `ClientesPage.tsx`, `RegistroRentCarPage.tsx` y `ReservasPublicasPage.tsx` con el nuevo `PhoneInput`.
+- **Archivos afectados:** `frontend/src/components/PhoneInput.tsx`, `frontend/src/pages/SuperAdmin/SolicitudesPage.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/App.tsx`, `frontend/src/pages/Clientes/ClientesPage.tsx`, `frontend/src/pages/Auth/RegistroRentCarPage.tsx`, `frontend/src/pages/Publico/ReservasPublicasPage.tsx`.
+- **Pruebas realizadas:**
+  - Creación de clientes con prefijos internacionales y verificación de formato.
+  - Navegación al panel `/solicitudes` con el usuario SuperAdmin.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Captura telefónica internacional optimizada y gestión centralizada de onboarding para el SuperAdministrador.
+
+
 
 
 

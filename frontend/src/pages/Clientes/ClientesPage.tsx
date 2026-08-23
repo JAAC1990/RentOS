@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import PhoneInput from "../../components/PhoneInput";
 import { API_URLS } from "../../services/api";
 
 type Cliente = {
@@ -452,14 +453,10 @@ export default function ClientesPage() {
 
               <div className="form-field">
                 <label htmlFor="telefono">Teléfono / WhatsApp *</label>
-                <input
+                <PhoneInput
                   id="telefono"
-                  type="tel"
-                  placeholder="Ej. 809-555-0101"
                   value={formulario.telefono}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, telefono: e.target.value }))
-                  }
+                  onChange={(val) => setFormulario((prev) => ({ ...prev, telefono: val }))}
                   required
                 />
               </div>

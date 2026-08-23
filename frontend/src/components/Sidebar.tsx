@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const menuItems = [
   {
@@ -59,6 +60,8 @@ const menuItems = [
 ];
 
 function Sidebar() {
+  const { usuario } = useAuth();
+
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
@@ -73,6 +76,22 @@ function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
+        {usuario?.rol === "SUPERADMIN" && (
+          <>
+            <div className="nav-section-title" style={{ color: "#a855f7" }}>SUPERADMIN</div>
+            <NavLink
+              to="/solicitudes"
+              className={({ isActive }) =>
+                `nav-item ${isActive ? "active" : ""}`
+              }
+              style={{ color: "#c084fc" }}
+            >
+              <span className="nav-icon">👑</span>
+              <span>Solicitudes de Rent Cars</span>
+            </NavLink>
+          </>
+        )}
+
         <div className="nav-section-title">GESTIÓN</div>
 
         {menuItems.map((item) => (

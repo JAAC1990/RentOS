@@ -13,6 +13,7 @@ import UsuariosPage from "./pages/Usuarios/UsuariosPage";
 import ConfiguracionPage from "./pages/Configuracion/ConfiguracionPage";
 import RedAliadaPage from "./pages/RedAliada/RedAliadaPage";
 import ReservasPublicasPage from "./pages/Publico/ReservasPublicasPage";
+import SolicitudesPage from "./pages/SuperAdmin/SolicitudesPage";
 import LoginPage from "./pages/Auth/LoginPage";
 import RegistroRentCarPage from "./pages/Auth/RegistroRentCarPage";
 import "./App.css";
@@ -37,6 +38,7 @@ function AppRoutes() {
       {/* Rutas Administrativas Protegidas */}
       <Route element={<RutaProtegida />}>
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/solicitudes" element={<SolicitudesPage />} />
         <Route path="/vehiculos" element={<VehiculosPage />} />
         <Route path="/clientes" element={<ClientesPage />} />
         <Route path="/contratos" element={<ContratosPage />} />

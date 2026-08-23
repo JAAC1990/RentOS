@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import PhoneInput from "../../components/PhoneInput";
 import { API_URLS } from "../../services/api";
 
 export default function RegistroRentCarPage() {
@@ -203,12 +204,10 @@ export default function RegistroRentCarPage() {
 
                 <div className="form-field">
                   <label htmlFor="regTel">Teléfono / WhatsApp *</label>
-                  <input
+                  <PhoneInput
                     id="regTel"
-                    type="tel"
-                    placeholder="809-555-0199"
                     value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
+                    onChange={(val) => setTelefono(val)}
                     required
                   />
                 </div>
