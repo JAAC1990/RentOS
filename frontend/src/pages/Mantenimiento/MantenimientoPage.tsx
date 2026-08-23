@@ -5,6 +5,7 @@ type Vehiculo = {
   id: number;
   marca: string;
   modelo: string;
+  anio: number;
   placa: string;
   kilometraje: number;
   estado: string;
@@ -12,75 +13,88 @@ type Vehiculo = {
 
 type Mantenimiento = {
   id: number;
+  rentCarId: number;
   vehiculoId: number;
   tipoServicio: string;
   descripcion: string | null;
   costo: string | number;
   kilometrajeServicio: number;
   proximoKilometraje: number | null;
+  proximaFechaServicio: string | null;
   fechaServicio: string;
   taller: string | null;
   estado: "PROGRAMADO" | "EN_PROCESO" | "COMPLETADO" | "CANCELADO";
   vehiculo?: Vehiculo;
 };
 
-type FormularioMantenimiento = {
-  vehiculoId: string;
-  tipoServicio: string;
-  descripcion: string;
-  costo: string;
-  kilometrajeServicio: string;
-  proximoKilometraje: string;
-  fechaServicio: string;
-  taller: string;
-  estado: "PROGRAMADO" | "EN_PROCESO" | "COMPLETADO" | "CANCELADO";
+type AlertaMantenimiento = {
+  vehiculoId: number;
+  marca: string;
+  modelo: string;
+  placa: string;
+  kilometrajeActual: number;
+  proximoKm: number;
+  kmRestantes: number;
+  proximaFecha: string;
+  diasRestantes: number;
+  estadoAlerta: "VENCIDO" | "PROXIMO" | "AL_DIA";
+  ultimoServicio: string;
+};
+
+type ResumenAlertas = {
+  total: number;
+  vencidos: number;
+  proximos: number;
+  alDia: number;
 };
 
 const hoy = new Date().toISOString().split("T")[0];
 
-const formularioInicial: FormularioMantenimiento = {
-  vehiculoId: "",
-  tipoServicio: "Cambio de Aceite y Filtro",
-  descripcion: "",
-  costo: "65.00",
-  kilometrajeServicio: "",
-  proximoKilometraje: "",
-  fechaServicio: hoy,
-  taller: "Taller Central",
-  estado: "COMPLETADO",
-};
-
 export default function MantenimientoPage() {
   const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
+  const [alertas, setAlertas] = useState<AlertaMantenimiento[]>([]);
+  const [resumenAlertas, setResumenAlertas] = useState<ResumenAlertas | null>(null);
 
-  const [formulario, setFormulario] = useState<FormularioMantenimiento>(formularioInicial);
+  const [vehiculoId, setVehiculoId] = useState("");
+  const [tipoServicio, setTipoServicio] = useState("Cambio de Aceite y Filtro");
+  const [costo, setCosto] = useState("65.00");
+  const [kilometrajeServicio, setKilometrajeServicio] = useState("");
+  const [proximoKilometraje, setProximoKilometraje] = useState("");
+  const [proximaFechaServicio, setProximaFechaServicio] = useState(
+    new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+  );
+  const [fechaServicio, setFechaServicio] = useState(hoy);
+  const [taller, setTaller] = useState("Taller Central RentOS");
+  const [estado, setEstado] = useState<Mantenimiento["estado"]>("COMPLETADO");
+  const [descripcion, setDescripcion] = useState("");
+
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
-  const [editandoId, setEditandoId] = useState<number | null>(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [mostrarModalAlertas, setMostrarModalAlertas] = useState(false);
+  const [notificandoTelegram, setNotificandoTelegram] = useState(false);
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
-
   const [error, setError] = useState("");
-  const [errorFormulario, setErrorFormulario] = useState("");
   const [mensaje, setMensaje] = useState("");
 
-  const API_MANTENIMIENTOS = API_URLS.mantenimientos;
+  const API_URL = API_URLS.mantenimientos;
 
   const cargarDatos = async () => {
     try {
       setCargando(true);
       setError("");
 
-      const [resMantenimientos, resVehiculos] = await Promise.all([
-        fetch(API_MANTENIMIENTOS),
+      const [resMantenimientos, resVehiculos, resAlertas] = await Promise.all([
+        fetch(API_URL),
         fetch(API_URLS.vehiculos),
+        fetch(`${API_URL}/alertas`),
       ]);
 
       if (!resMantenimientos.ok || !resVehiculos.ok) {
-        throw new Error("No fue posible cargar la información de mantenimientos.");
+        throw new Error("No fue posible obtener los registros de mantenimiento.");
       }
 
       const [datosMantenimientos, datosVehiculos] = await Promise.all([
@@ -90,9 +104,15 @@ export default function MantenimientoPage() {
 
       setMantenimientos(datosMantenimientos);
       setVehiculos(datosVehiculos);
+
+      if (resAlertas.ok) {
+        const datosAlertas = await resAlertas.json();
+        setAlertas(datosAlertas.alertas || []);
+        setResumenAlertas(datosAlertas.resumen || null);
+      }
     } catch (err) {
       console.error(err);
-      setError("No fue posible conectar con el servidor para cargar los mantenimientos.");
+      setError("Error al cargar la información de taller y mantenimiento.");
     } finally {
       setCargando(false);
     }
@@ -102,155 +122,99 @@ export default function MantenimientoPage() {
     cargarDatos();
   }, []);
 
-  // Estadísticas calculadas en tiempo real
-  const stats = useMemo(() => {
-    const total = mantenimientos.length;
-    const enProceso = mantenimientos.filter((m) => m.estado === "EN_PROCESO").length;
-    const completados = mantenimientos.filter((m) => m.estado === "COMPLETADO").length;
-    const programados = mantenimientos.filter((m) => m.estado === "PROGRAMADO").length;
+  // Al seleccionar vehículo, sugerir odómetro actual y próximo (+5000 km)
+  const handleSeleccionarVehiculo = (vId: string) => {
+    setVehiculoId(vId);
+    const v = vehiculos.find((x) => x.id === Number(vId));
+    if (v) {
+      setKilometrajeServicio(String(v.kilometraje));
+      setProximoKilometraje(String(v.kilometraje + 5000));
+    }
+  };
 
-    const gastoTotal = mantenimientos
-      .filter((m) => m.estado === "COMPLETADO")
-      .reduce((sum, m) => sum + Number(m.costo), 0);
-
-    return {
-      total,
-      enProceso,
-      completados,
-      programados,
-      gastoTotal: gastoTotal.toFixed(2),
-    };
-  }, [mantenimientos]);
-
-  // Filtrado y búsqueda
   const mantenimientosFiltrados = useMemo(() => {
     return mantenimientos.filter((m) => {
-      const cumpleEstado =
+      const cumpleFiltroEstado =
         filtroEstado === "TODOS" || m.estado === filtroEstado;
 
-      const texto = `${m.id} ${m.tipoServicio} ${m.taller || ""} ${m.vehiculo?.marca || ""} ${m.vehiculo?.modelo || ""} ${m.vehiculo?.placa || ""}`.toLowerCase();
+      const texto = `${m.tipoServicio} ${m.taller || ""} ${m.vehiculo?.marca || ""} ${m.vehiculo?.modelo || ""} ${m.vehiculo?.placa || ""}`.toLowerCase();
       const cumpleBusqueda = texto.includes(busqueda.toLowerCase());
 
-      return cumpleEstado && cumpleBusqueda;
+      return cumpleFiltroEstado && cumpleBusqueda;
     });
   }, [mantenimientos, busqueda, filtroEstado]);
 
-  const handleSeleccionarVehiculo = (vehiculoIdStr: string) => {
-    const v = vehiculos.find((item) => item.id === Number(vehiculoIdStr));
-    const kmActual = v ? v.kilometraje : 0;
+  const registrarMantenimiento = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    setFormulario((actual) => ({
-      ...actual,
-      vehiculoId: vehiculoIdStr,
-      kilometrajeServicio: String(kmActual),
-      proximoKilometraje: String(kmActual + 5000),
-    }));
-  };
-
-  const validarFormulario = () => {
-    setErrorFormulario("");
-
-    if (!formulario.vehiculoId) {
-      setErrorFormulario("Debe seleccionar un vehículo.");
-      return false;
+    if (!vehiculoId || !tipoServicio) {
+      setError("Debes seleccionar un vehículo y tipo de servicio.");
+      return;
     }
-    if (!formulario.tipoServicio.trim()) {
-      setErrorFormulario("El tipo de servicio es obligatorio.");
-      return false;
-    }
-    if (!formulario.kilometrajeServicio || Number(formulario.kilometrajeServicio) < 0) {
-      setErrorFormulario("El kilometraje del servicio no es válido.");
-      return false;
-    }
-
-    return true;
-  };
-
-  const limpiarFormulario = () => {
-    setFormulario(formularioInicial);
-    setEditandoId(null);
-    setErrorFormulario("");
-    setMostrarFormulario(false);
-  };
-
-  const guardarMantenimiento = async () => {
-    if (!validarFormulario()) return;
 
     try {
       setGuardando(true);
-      setErrorFormulario("");
+      setError("");
       setMensaje("");
 
       const datos = {
-        vehiculoId: Number(formulario.vehiculoId),
-        tipoServicio: formulario.tipoServicio.trim(),
-        descripcion: formulario.descripcion.trim() || undefined,
-        costo: Number(formulario.costo) || 0,
-        kilometrajeServicio: Number(formulario.kilometrajeServicio),
-        proximoKilometraje: formulario.proximoKilometraje ? Number(formulario.proximoKilometraje) : undefined,
-        fechaServicio: new Date(formulario.fechaServicio).toISOString(),
-        taller: formulario.taller.trim() || undefined,
-        estado: formulario.estado,
+        vehiculoId: Number(vehiculoId),
+        tipoServicio: tipoServicio.trim(),
+        descripcion: descripcion.trim() || undefined,
+        costo: Number(costo),
+        kilometrajeServicio: Number(kilometrajeServicio),
+        proximoKilometraje: Number(proximoKilometraje),
+        proximaFechaServicio,
+        fechaServicio,
+        taller: taller.trim() || undefined,
+        estado,
       };
 
-      const url = editandoId === null ? API_MANTENIMIENTOS : `${API_MANTENIMIENTOS}/${editandoId}`;
-      const metodo = editandoId === null ? "POST" : "PUT";
-
-      const respuesta = await fetch(url, {
-        method: metodo,
+      const res = await fetch(API_URL, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(datos),
       });
 
-      const resultado = await respuesta.json().catch(() => null);
-
-      if (!respuesta.ok) {
-        throw new Error(
-          resultado?.error || resultado?.message || "No fue posible registrar el mantenimiento."
-        );
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || "Error al registrar servicio.");
       }
 
-      setMensaje(
-        editandoId === null
-          ? "✅ Servicio de mantenimiento registrado con éxito."
-          : "✅ Mantenimiento actualizado correctamente."
-      );
-
-      limpiarFormulario();
+      setMensaje("✅ Servicio de mantenimiento registrado con éxito.");
+      setVehiculoId("");
+      setDescripcion("");
+      setMostrarFormulario(false);
       await cargarDatos();
     } catch (err) {
       console.error(err);
-      setErrorFormulario(
-        err instanceof Error ? err.message : "Error al guardar el mantenimiento."
-      );
+      setError(err instanceof Error ? err.message : "Error al procesar registro.");
     } finally {
       setGuardando(false);
     }
   };
 
-  const eliminarMantenimiento = async (id: number) => {
-    const confirmar = window.confirm(
-      "¿Está seguro de que desea eliminar este registro de mantenimiento?"
-    );
-    if (!confirmar) return;
-
+  const enviarAlertaTelegram = async () => {
     try {
+      setNotificandoTelegram(true);
       setError("");
       setMensaje("");
 
-      const respuesta = await fetch(`${API_MANTENIMIENTOS}/${id}`, {
-        method: "DELETE",
+      const res = await fetch(`${API_URL}/notificar-telegram`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rentCarId: 1 }),
       });
 
-      if (!respuesta.ok) {
-        throw new Error("No fue posible eliminar el registro.");
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al enviar alerta a Telegram.");
 
-      setMensaje("🗑️ Registro de mantenimiento eliminado.");
-      await cargarDatos();
+      setMensaje("📲 " + data.mensaje);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Error al eliminar.");
+      setError(err instanceof Error ? err.message : "Error al notificar Telegram.");
+    } finally {
+      setNotificandoTelegram(false);
     }
   };
 
@@ -259,59 +223,38 @@ export default function MantenimientoPage() {
       {/* Encabezado Principal */}
       <div className="page-heading">
         <div>
-          <h1>Mantenimiento y Taller de Flota</h1>
-          <p>Control de servicios preventivos, cambios de aceite, reparaciones y gastos de taller.</p>
+          <h1>Mantenimiento Preventivo & Taller</h1>
+          <p>
+            Control de cambios de aceite, frenos, repuestos y alertas por kilometraje o fecha de expiración.
+          </p>
         </div>
 
-        <button
-          className="primary-button"
-          onClick={() => {
-            if (mostrarFormulario && editandoId === null) {
-              setMostrarFormulario(false);
-            } else {
-              limpiarFormulario();
-              setMostrarFormulario(true);
-            }
-          }}
-        >
-          {mostrarFormulario && editandoId === null ? "Cerrar Formulario" : "+ Registrar Servicio"}
-        </button>
-      </div>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            className="secondary-button"
+            style={{
+              borderColor: resumenAlertas && (resumenAlertas.vencidos > 0 || resumenAlertas.proximos > 0) ? "#fde68a" : "var(--border)",
+              color: resumenAlertas && resumenAlertas.vencidos > 0 ? "var(--danger)" : "inherit",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+            onClick={() => setMostrarModalAlertas(true)}
+          >
+            🚨 Alertas de Cambio de Aceite
+            {resumenAlertas && resumenAlertas.vencidos > 0 && (
+              <span className="badge badge-inactivo" style={{ marginLeft: "4px" }}>
+                {resumenAlertas.vencidos} Vencido
+              </span>
+            )}
+          </button>
 
-      {/* Tarjetas de Estadísticas */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon maintenance">🛠️</div>
-          <div className="stat-info">
-            <span className="stat-label">En Taller / Proceso</span>
-            <strong className="stat-value" style={{ color: "var(--warning)" }}>
-              {stats.enProceso}
-            </strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon available">✅</div>
-          <div className="stat-info">
-            <span className="stat-label">Servicios Completados</span>
-            <strong className="stat-value">{stats.completados}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">💰</div>
-          <div className="stat-info">
-            <span className="stat-label">Inversión en Mantenimiento</span>
-            <strong className="stat-value">${stats.gastoTotal}</strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon rented">📅</div>
-          <div className="stat-info">
-            <span className="stat-label">Programados</span>
-            <strong className="stat-value">{stats.programados}</strong>
-          </div>
+          <button
+            className="primary-button"
+            onClick={() => setMostrarFormulario(!mostrarFormulario)}
+          >
+            {mostrarFormulario ? "Cerrar Formulario" : "+ Registrar Mantenimiento"}
+          </button>
         </div>
       </div>
 
@@ -321,271 +264,251 @@ export default function MantenimientoPage() {
 
       {/* Formulario de Mantenimiento */}
       {mostrarFormulario && (
-        <section className="content-panel" id="formulario-mantenimiento">
+        <section className="content-panel" style={{ marginBottom: "24px" }}>
           <div className="panel-header">
-            <h2>{editandoId === null ? "Registrar Servicio Mecánico" : "Modificar Registro de Taller"}</h2>
-            <button className="secondary-button" onClick={limpiarFormulario}>
+            <h2>Registrar Nuevo Servicio Técnico</h2>
+            <button className="secondary-button" onClick={() => setMostrarFormulario(false)}>
               Cancelar
             </button>
           </div>
 
-          {errorFormulario && (
-            <div className="alert-box error" style={{ margin: "20px 24px 0" }}>
-              {errorFormulario}
-            </div>
-          )}
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              guardarMantenimiento();
-            }}
-          >
+          <form onSubmit={registrarMantenimiento} style={{ padding: "20px" }}>
             <div className="form-grid">
               <div className="form-field">
-                <label htmlFor="vehiculoId">Vehículo a Intervenir *</label>
+                <label htmlFor="mantVehiculo">Vehículo *</label>
                 <select
-                  id="vehiculoId"
-                  value={formulario.vehiculoId}
+                  id="mantVehiculo"
+                  value={vehiculoId}
                   onChange={(e) => handleSeleccionarVehiculo(e.target.value)}
                   required
                 >
                   <option value="">-- Seleccionar Vehículo --</option>
                   {vehiculos.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.marca} {v.modelo} • {v.placa} ({v.kilometraje} km) - [{v.estado}]
+                      {v.marca} {v.modelo} ({v.placa}) — Odómetro: {v.kilometraje} km
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="form-field">
-                <label htmlFor="tipoServicio">Tipo de Servicio *</label>
+                <label htmlFor="mantTipo">Tipo de Servicio *</label>
                 <select
-                  id="tipoServicio"
-                  value={formulario.tipoServicio}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, tipoServicio: e.target.value }))
-                  }
+                  id="mantTipo"
+                  value={tipoServicio}
+                  onChange={(e) => setTipoServicio(e.target.value)}
                   required
                 >
                   <option value="Cambio de Aceite y Filtro">🛢️ Cambio de Aceite y Filtro</option>
-                  <option value="Frenos y Pastillas">🛑 Frenos y Pastillas</option>
-                  <option value="Alineación y Balanceo">⚖️ Alineación y Balanceo</option>
-                  <option value="Neumáticos / Gomas">🛞 Neumáticos / Gomas</option>
-                  <option value="Batería y Sistema Eléctrico">🔋 Batería y Eléctrico</option>
-                  <option value="Inspección General">🔍 Inspección General</option>
-                  <option value="Reparación Mecánica">🔧 Reparación Mecánica</option>
+                  <option value="Frenos y Pastillas">🛑 Pastillas y Líquido de Frenos</option>
+                  <option value="Neumáticos y Alineación">🛞 Neumáticos, Balanceo y Alineación</option>
+                  <option value="Suspensión y Amortiguadores">🔩 Suspensión y Amortiguadores</option>
+                  <option value="Batería y Sistema Eléctrico">⚡ Batería y Sistema Eléctrico</option>
+                  <option value="Inspección General">🔍 Inspección General Preventiva</option>
                 </select>
               </div>
 
               <div className="form-field">
-                <label htmlFor="estadoMantenimiento">Estado del Servicio *</label>
-                <select
-                  id="estadoMantenimiento"
-                  value={formulario.estado}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({
-                      ...prev,
-                      estado: e.target.value as FormularioMantenimiento["estado"],
-                    }))
-                  }
-                  required
-                >
-                  <option value="COMPLETADO">Completado (Vehículo listo y disponible)</option>
-                  <option value="EN_PROCESO">En Proceso (Vehículo bloqueado en taller)</option>
-                  <option value="PROGRAMADO">Programado (Cita futura)</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="kilometrajeServicio">Kilometraje del Servicio (km) *</label>
+                <label htmlFor="mantCosto">Costo Total ($ USD) *</label>
                 <input
-                  id="kilometrajeServicio"
+                  id="mantCosto"
                   type="number"
-                  min="0"
-                  value={formulario.kilometrajeServicio}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, kilometrajeServicio: e.target.value }))
-                  }
-                  required
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="proximoKilometraje">Próximo Servicio Sugerido (km)</label>
-                <input
-                  id="proximoKilometraje"
-                  type="number"
-                  placeholder="Ej. +5000 km"
-                  value={formulario.proximoKilometraje}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, proximoKilometraje: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="costo">Costo Total del Servicio (USD / DOP) *</label>
-                <input
-                  id="costo"
-                  type="number"
-                  min="0"
                   step="0.01"
-                  placeholder="0.00"
-                  value={formulario.costo}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, costo: e.target.value }))
-                  }
+                  min="0"
+                  value={costo}
+                  onChange={(e) => setCosto(e.target.value)}
                   required
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="taller">Taller / Mecánico Responsable</label>
+                <label htmlFor="mantFecha">Fecha de Realización *</label>
                 <input
-                  id="taller"
-                  type="text"
-                  placeholder="Ej. Santo Domingo Motors o Taller Interno"
-                  value={formulario.taller}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, taller: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="fechaServicio">Fecha del Servicio *</label>
-                <input
-                  id="fechaServicio"
+                  id="mantFecha"
                   type="date"
-                  value={formulario.fechaServicio}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, fechaServicio: e.target.value }))
-                  }
+                  value={fechaServicio}
+                  onChange={(e) => setFechaServicio(e.target.value)}
                   required
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="descripcion">Detalle de Trabajos / Repuestos</label>
+                <label htmlFor="mantKm">Odómetro al Realizar Servicio (km) *</label>
                 <input
-                  id="descripcion"
-                  type="text"
-                  placeholder="Ej. Aceite sintético 5W-30 + filtro OEM"
-                  value={formulario.descripcion}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, descripcion: e.target.value }))
-                  }
+                  id="mantKm"
+                  type="number"
+                  value={kilometrajeServicio}
+                  onChange={(e) => setKilometrajeServicio(e.target.value)}
+                  required
                 />
               </div>
 
-              <div className="form-actions">
-                <button type="submit" className="primary-button" disabled={guardando}>
-                  {guardando ? "Guardando Registro..." : "Guardar Servicio"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={limpiarFormulario}
-                  disabled={guardando}
-                >
-                  Cancelar
-                </button>
+              {/* SECCIÓN PRÓXIMO SERVICIO (ALERTAS) */}
+              <div className="form-field">
+                <label htmlFor="mantProximoKm">Próximo Servicio en Odómetro (km) *</label>
+                <input
+                  id="mantProximoKm"
+                  type="number"
+                  placeholder="Ej. +5,000 km"
+                  value={proximoKilometraje}
+                  onChange={(e) => setProximoKilometraje(e.target.value)}
+                  required
+                />
               </div>
+
+              <div className="form-field">
+                <label htmlFor="mantProximaFecha">Fecha Límite Próximo Servicio *</label>
+                <input
+                  id="mantProximaFecha"
+                  type="date"
+                  value={proximaFechaServicio}
+                  onChange={(e) => setProximaFechaServicio(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="mantTaller">Taller Mecánico</label>
+                <input
+                  id="mantTaller"
+                  type="text"
+                  placeholder="Ej. Taller Mecánico Santo Domingo"
+                  value={taller}
+                  onChange={(e) => setTaller(e.target.value)}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="mantEstado">Estado del Mantenimiento *</label>
+                <select
+                  id="mantEstado"
+                  value={estado}
+                  onChange={(e) => setEstado(e.target.value as Mantenimiento["estado"])}
+                  required
+                >
+                  <option value="COMPLETADO">✓ Completado (Listo para rentar)</option>
+                  <option value="EN_PROCESO">⏳ En Proceso (Pasa auto a TALLER)</option>
+                  <option value="PROGRAMADO">📅 Cita Programada</option>
+                </select>
+              </div>
+
+              <div className="form-field" style={{ gridColumn: "span 2" }}>
+                <label htmlFor="mantDesc">Detalles / Repuestos Utilizados</label>
+                <textarea
+                  id="mantDesc"
+                  rows={2}
+                  placeholder="Ej. Aceite sintético 5W-30 Full, filtro de aire cambiado y rotación de llantas."
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    fontFamily: "inherit",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setMostrarFormulario(false)}
+                disabled={guardando}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="primary-button" disabled={guardando}>
+                {guardando ? "Guardando..." : "Registrar Servicio"}
+              </button>
             </div>
           </form>
         </section>
       )}
 
-      {/* Barra de Filtros y Búsqueda */}
-      <div className="filter-bar">
-        <div className="search-input-wrapper">
-          <span className="search-icon">🔍</span>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Buscar por vehículo, tipo de servicio o taller..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-          />
-        </div>
-
-        <div className="filter-group">
-          <label htmlFor="filtro-estado-mant" style={{ fontSize: "12px", fontWeight: 600 }}>
-            Estado:
-          </label>
-          <select
-            id="filtro-estado-mant"
-            className="filter-select"
-            value={filtroEstado}
-            onChange={(e) => setFiltroEstado(e.target.value)}
-          >
-            <option value="TODOS">Todos los servicios</option>
-            <option value="COMPLETADO">Completados</option>
-            <option value="EN_PROCESO">En Taller / Proceso</option>
-            <option value="PROGRAMADO">Programados</option>
-          </select>
-
-          {(busqueda || filtroEstado !== "TODOS") && (
-            <button
-              className="secondary-button"
-              style={{ padding: "8px 12px", fontSize: "12px" }}
-              onClick={() => {
-                setBusqueda("");
-                setFiltroEstado("TODOS");
-              }}
-            >
-              Limpiar filtros
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Tabla de Historial */}
+      {/* Historial de Mantenimientos */}
       <div className="content-panel">
         <div className="panel-header">
           <h2>
-            Historial de Mantenimiento de Flota{" "}
+            Historial de Mantenimientos & Taller{" "}
             <span style={{ color: "var(--text-secondary)", fontWeight: 500, fontSize: "13px" }}>
-              ({mantenimientosFiltrados.length} de {mantenimientos.length} servicios)
+              ({mantenimientosFiltrados.length} registros)
             </span>
           </h2>
+
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              style={{
+                padding: "6px 10px",
+                borderRadius: "6px",
+                border: "1px solid var(--border)",
+                fontSize: "12px",
+                background: "var(--surface)",
+                color: "var(--text)",
+              }}
+            >
+              <option value="TODOS">Todos los estados</option>
+              <option value="COMPLETADO">Completados</option>
+              <option value="EN_PROCESO">En Taller</option>
+              <option value="PROGRAMADO">Programados</option>
+            </select>
+
+            <div style={{ width: "220px" }}>
+              <input
+                type="text"
+                placeholder="Buscar por auto, placa o taller..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "6px 10px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border)",
+                  fontSize: "12px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {cargando ? (
           <div className="empty-state">
             <div className="empty-state-icon">⏳</div>
-            <strong>Cargando historial de mantenimiento...</strong>
+            <strong>Cargando mantenimientos...</strong>
           </div>
         ) : mantenimientosFiltrados.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">🛠️</div>
-            <strong>No hay servicios registrados</strong>
-            <span>
-              {mantenimientos.length === 0
-                ? "Registra los cambios de aceite y reparaciones para llevar el control de costos y salud de tu flota."
-                : "No hay registros que coincidan con la búsqueda o filtro."}
-            </span>
+            <strong>No hay mantenimientos registrados</strong>
           </div>
         ) : (
           <div className="table-container">
             <table className="data-table">
               <thead>
                 <tr>
+                  <th>Fecha</th>
                   <th>Vehículo</th>
                   <th>Tipo de Servicio</th>
-                  <th>Kilometraje</th>
-                  <th>Próximo Servicio</th>
                   <th>Taller</th>
+                  <th>Odómetro Servicio</th>
+                  <th>Próximo Servicio</th>
                   <th>Costo</th>
                   <th>Estado</th>
-                  <th style={{ textAlign: "right" }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {mantenimientosFiltrados.map((m) => (
                   <tr key={m.id}>
+                    <td>
+                      <strong>{new Date(m.fechaServicio).toLocaleDateString("es-DO")}</strong>
+                    </td>
                     <td>
                       <strong>{m.vehiculo?.marca} {m.vehiculo?.modelo}</strong>
                       <div><code>{m.vehiculo?.placa}</code></div>
@@ -593,25 +516,23 @@ export default function MantenimientoPage() {
                     <td>
                       <strong>{m.tipoServicio}</strong>
                       {m.descripcion && (
-                        <div style={{ color: "var(--text-secondary)", fontSize: "11px" }}>
+                        <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
                           {m.descripcion}
                         </div>
                       )}
                     </td>
+                    <td>{m.taller || "Taller Interno"}</td>
+                    <td>{m.kilometrajeServicio?.toLocaleString()} km</td>
                     <td>
-                      <div>{Number(m.kilometrajeServicio).toLocaleString()} km</div>
-                      <small style={{ color: "var(--text-secondary)", fontSize: "10px" }}>
-                        {new Date(m.fechaServicio).toLocaleDateString("es-DO")}
-                      </small>
+                      <strong style={{ color: "var(--primary)" }}>
+                        {m.proximoKilometraje ? `${m.proximoKilometraje.toLocaleString()} km` : "-"}
+                      </strong>
+                      {m.proximaFechaServicio && (
+                        <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                          Antes de: {new Date(m.proximaFechaServicio).toLocaleDateString("es-DO")}
+                        </div>
+                      )}
                     </td>
-                    <td>
-                      {m.proximoKilometraje ? (
-                        <span style={{ fontWeight: 600, color: "var(--primary)" }}>
-                          {Number(m.proximoKilometraje).toLocaleString()} km
-                        </span>
-                      ) : "-"}
-                    </td>
-                    <td>{m.taller || <span style={{ color: "var(--text-light)" }}>-</span>}</td>
                     <td>
                       <strong>${Number(m.costo).toFixed(2)}</strong>
                     </td>
@@ -622,22 +543,11 @@ export default function MantenimientoPage() {
                             ? "badge-disponible"
                             : m.estado === "EN_PROCESO"
                             ? "badge-mantenimiento"
-                            : "badge-alquilado"
+                            : "badge-inactivo"
                         }`}
                       >
                         {m.estado}
                       </span>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      <div className="actions-cell" style={{ justifyContent: "flex-end" }}>
-                        <button
-                          type="button"
-                          className="btn-action-delete"
-                          onClick={() => eliminarMantenimiento(m.id)}
-                        >
-                          🗑️
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}
@@ -646,6 +556,155 @@ export default function MantenimientoPage() {
           </div>
         )}
       </div>
+
+      {/* Modal Alertas Preventivas de Mantenimiento */}
+      {mostrarModalAlertas && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.7)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "14px",
+              maxWidth: "750px",
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: "28px",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)",
+              color: "var(--text)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div>
+                <h2 style={{ margin: "0 0 2px 0", fontSize: "18px" }}>
+                  🚨 Monitor Preventivo de Cambio de Aceite & Taller
+                </h2>
+                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                  Predicción de servicio por odómetro acumulado y fecha límite de mantenimiento.
+                </span>
+              </div>
+              <button
+                className="secondary-button"
+                style={{ padding: "4px 8px" }}
+                onClick={() => setMostrarModalAlertas(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Resumen Semáforo */}
+            {resumenAlertas && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
+                <div style={{ padding: "12px", background: "var(--danger-soft)", borderRadius: "8px", border: "1px solid #fecaca" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "var(--danger)" }}>🔴 SOBREGIRADOS</span>
+                  <div style={{ fontSize: "22px", fontWeight: "bold", color: "var(--danger)", marginTop: "2px" }}>
+                    {resumenAlertas.vencidos} autos
+                  </div>
+                </div>
+
+                <div style={{ padding: "12px", background: "var(--warning-soft)", borderRadius: "8px", border: "1px solid #fde68a" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "var(--warning)" }}>🟡 PRÓXIMOS (&lt;800 km)</span>
+                  <div style={{ fontSize: "22px", fontWeight: "bold", color: "var(--warning)", marginTop: "2px" }}>
+                    {resumenAlertas.proximos} autos
+                  </div>
+                </div>
+
+                <div style={{ padding: "12px", background: "var(--success-soft)", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "var(--success)" }}>🟢 AL DÍA</span>
+                  <div style={{ fontSize: "22px", fontWeight: "bold", color: "var(--success)", marginTop: "2px" }}>
+                    {resumenAlertas.alDia} autos
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tabla de Alertas */}
+            <div className="table-container" style={{ marginBottom: "20px" }}>
+              <table className="data-table" style={{ fontSize: "12px" }}>
+                <thead>
+                  <tr>
+                    <th>Vehículo</th>
+                    <th>Odómetro Actual</th>
+                    <th>Próximo Servicio</th>
+                    <th>Faltante</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {alertas.map((a) => (
+                    <tr key={a.vehiculoId}>
+                      <td>
+                        <strong>{a.marca} {a.modelo}</strong> (<code>{a.placa}</code>)
+                      </td>
+                      <td>{a.kilometrajeActual?.toLocaleString()} km</td>
+                      <td>{a.proximoKm?.toLocaleString()} km</td>
+                      <td>
+                        {a.kmRestantes <= 0 ? (
+                          <strong style={{ color: "var(--danger)" }}>
+                            Pasado por {Math.abs(a.kmRestantes)} km
+                          </strong>
+                        ) : (
+                          <span>{a.kmRestantes} km restantes</span>
+                        )}
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            a.estadoAlerta === "AL_DIA"
+                              ? "badge-disponible"
+                              : a.estadoAlerta === "PROXIMO"
+                              ? "badge-mantenimiento"
+                              : "badge-inactivo"
+                          }`}
+                        >
+                          {a.estadoAlerta === "AL_DIA"
+                            ? "🟢 Al día"
+                            : a.estadoAlerta === "PROXIMO"
+                            ? "🟡 Próximo"
+                            : "🔴 Vencido"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ borderColor: "#38bdf8", color: "#0284c7" }}
+                onClick={enviarAlertaTelegram}
+                disabled={notificandoTelegram}
+              >
+                {notificandoTelegram ? "⏳ Enviando..." : "📲 Enviar Alertas de Taller a Telegram"}
+              </button>
+
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => setMostrarModalAlertas(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

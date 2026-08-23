@@ -156,6 +156,7 @@ router.put("/:id", async (req, res) => {
     if (limiteKilometrajeDiario !== undefined) dataToUpdate.limiteKilometrajeDiario = Number(limiteKilometrajeDiario);
     if (cargoKmExtra !== undefined) dataToUpdate.cargoKmExtra = Number(cargoKmExtra);
     if (depositoEstandar !== undefined) dataToUpdate.depositoEstandar = Number(depositoEstandar);
+    if (req.body.telegramChatId !== undefined) dataToUpdate.telegramChatId = req.body.telegramChatId ? String(req.body.telegramChatId).trim() : null;
     if (activo !== undefined) dataToUpdate.activo = Boolean(activo);
 
     const rentcar = await prisma.rentCar.update({

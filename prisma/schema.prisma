@@ -82,6 +82,7 @@ model RentCar {
   limiteKilometrajeDiario Int?     @default(200)
   cargoKmExtra            Decimal? @default(0.25) @db.Decimal(10, 2)
   depositoEstandar        Decimal? @default(200.00) @db.Decimal(10, 2)
+  telegramChatId          String?  // Chat ID de Telegram para recibir alertas de la empresa
   activo                  Boolean  @default(true)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
@@ -179,9 +180,11 @@ model Vehiculo {
   seguroPoliza          String?        // Póliza de seguro (ej. "Seguros Universal #UN-9922")
   seguroVencimiento     DateTime?      // Fecha de expiración de póliza
   marbeteVencimiento    DateTime?      // Vencimiento del impuesto de circulación
-  inspeccionVencimiento DateTime?      // Vencimiento de revista / inspección técnica
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  inspeccionVencimiento     DateTime?      // Vencimiento de revista / inspección técnica
+  proximoMantenimientoKm    Int?           // Kilometraje para próximo cambio de aceite / mantenimiento
+  proximoMantenimientoFecha DateTime?      // Fecha estimada para próximo servicio
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
 
   rentCar        RentCar         @relation(fields: [rentCarId], references: [id])
   contratos      Contrato[]
@@ -213,19 +216,20 @@ model UbicacionGPS {
 }
 
 model Mantenimiento {
-  id                  Int                 @id @default(autoincrement())
-  rentCarId           Int                 @default(1)
-  vehiculoId          Int
-  tipoServicio        String              // Ej. "Cambio de Aceite y Filtro", "Frenos", "Neumáticos"
-  descripcion         String?
-  costo               Decimal             @default(0.00) @db.Decimal(10, 2)
-  kilometrajeServicio Int
-  proximoKilometraje  Int?                // Kilometraje sugerido para siguiente mantenimiento
-  fechaServicio       DateTime            @default(now())
-  taller              String?             // Taller o taller mecánico
-  estado              EstadoMantenimiento @default(COMPLETADO)
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  id                   Int                 @id @default(autoincrement())
+  rentCarId            Int                 @default(1)
+  vehiculoId           Int
+  tipoServicio         String              // Ej. "Cambio de Aceite y Filtro", "Frenos", "Neumáticos"
+  descripcion          String?
+  costo                Decimal             @default(0.00) @db.Decimal(10, 2)
+  kilometrajeServicio  Int
+  proximoKilometraje   Int?                // Kilometraje sugerido para siguiente mantenimiento
+  proximaFechaServicio DateTime?           // Fecha estimada para siguiente servicio
+  fechaServicio        DateTime            @default(now())
+  taller               String?             // Taller o taller mecánico
+  estado               EstadoMantenimiento @default(COMPLETADO)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
   rentCar  RentCar  @relation(fields: [rentCarId], references: [id])
   vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])

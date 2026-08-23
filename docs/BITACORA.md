@@ -289,6 +289,23 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** RentOS cuenta con auditoría y protección legal preventiva de flota.
 
+### [2026-08-22] - Alertas de Mantenimiento Preventivo por Odómetro/Fecha & Canal Telegram Multi-Empresa
+- **Problema/Necesidad:** Calcular automáticamente cuándo un vehículo necesita cambio de aceite, frenos o servicio técnico según su odómetro acumulado (+5,000 km) o fecha límite (+90 días), y permitir que cada cliente/Rent Car configure su propio canal de Telegram para recibir sus alertas privadas.
+- **Decisión técnica:**
+  - Ampliación de `Mantenimiento` y `Vehiculo` en Prisma con `proximoMantenimientoKm`, `proximoMantenimientoFecha` y `proximaFechaServicio`.
+  - Ampliación de `RentCar` con `telegramChatId` para aislar el envío de alertas por empresa.
+  - `mantenimiento.routes.ts`: Endpoints `GET /api/mantenimientos/alertas` y `POST /api/mantenimientos/notificar-telegram` con cálculo dinámico de kilometraje restante y sobregiro.
+  - `MantenimientoPage.tsx`: Modal **"🚨 Monitor Preventivo de Cambio de Aceite & Taller"** con semáforo inteligente (🔴 Sobregirados, 🟡 Próximos &lt;800 km, 🟢 Al día) y botón de notificación a Telegram.
+  - `ConfiguracionPage.tsx`: Panel **"🔔 Notificaciones & Canal de Alertas (Telegram)"** con campo `telegramChatId` configurable por empresa.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/mantenimiento.routes.ts`, `backend/src/routes/rentcars.routes.ts`, `frontend/src/pages/Mantenimiento/MantenimientoPage.tsx`, `frontend/src/pages/Configuracion/ConfiguracionPage.tsx`.
+- **Pruebas realizadas:**
+  - Sincronización Prisma (`prisma db push`).
+  - Consulta de alertas de mantenimiento y cálculo automático de odómetro (HTTP 200 OK).
+  - Configuración y persistencia de Telegram Chat ID por empresa.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** RentOS cuenta con sistema predictivo de mantenimiento preventivo y alertas aisladas por tenant.
+
+
 
 
 

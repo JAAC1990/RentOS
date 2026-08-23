@@ -15,6 +15,7 @@ type RentCar = {
   limiteKilometrajeDiario: number | null;
   cargoKmExtra: string | number | null;
   depositoEstandar: string | number | null;
+  telegramChatId?: string | null;
   activo: boolean;
 };
 
@@ -36,6 +37,7 @@ export default function ConfiguracionPage() {
   const [limiteKm, setLimiteKm] = useState("200");
   const [cargoKmExtra, setCargoKmExtra] = useState("0.25");
   const [terminosContrato, setTerminosContrato] = useState("");
+  const [telegramChatId, setTelegramChatId] = useState("");
 
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
@@ -69,6 +71,7 @@ export default function ConfiguracionPage() {
         data.terminosContrato ||
           "El cliente se compromete a devolver el vehículo en las mismas condiciones mecánicas y de combustible en que fue recibido. Cualquier infracción de tránsito durante el período de renta es responsabilidad exclusiva del conductor."
       );
+      setTelegramChatId(data.telegramChatId || "");
     } catch (err) {
       console.error(err);
       setError("No fue posible conectar con el servidor para obtener la configuración.");
@@ -107,6 +110,7 @@ export default function ConfiguracionPage() {
         limiteKilometrajeDiario: Number(limiteKm),
         cargoKmExtra: Number(cargoKmExtra),
         terminosContrato: terminosContrato.trim() || undefined,
+        telegramChatId: telegramChatId.trim() || undefined,
       };
 
       const res = await fetch(`${API_RENTCARS}/1`, {
@@ -391,6 +395,28 @@ export default function ConfiguracionPage() {
                   value={terminosContrato}
                   onChange={(e) => setTerminosContrato(e.target.value)}
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Panel de Alertas & Telegram */}
+          <div className="content-panel" style={{ marginTop: "20px" }}>
+            <div className="panel-header">
+              <h2>🔔 Notificaciones & Canal de Alertas (Telegram)</h2>
+            </div>
+            <div className="form-grid" style={{ padding: "0 24px 20px" }}>
+              <div className="form-field" style={{ gridColumn: "span 2" }}>
+                <label htmlFor="telegramChatId">Telegram Chat ID para Alertas de esta Empresa</label>
+                <input
+                  id="telegramChatId"
+                  type="text"
+                  placeholder="Ej. 1234567890 (ID numérico de tu chat privado o grupo de Telegram)"
+                  value={telegramChatId}
+                  onChange={(e) => setTelegramChatId(e.target.value)}
+                />
+                <small style={{ color: "var(--text-secondary)", fontSize: "11px", marginTop: "4px", display: "block" }}>
+                  Las auditorías de seguros vencidos, marbetes y cambios de aceite de esta empresa se enviarán directamente a este chat de Telegram.
+                </small>
               </div>
             </div>
           </div>
