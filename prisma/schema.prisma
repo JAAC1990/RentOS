@@ -61,6 +61,13 @@ enum RolUsuario {
   EMPLEADO
 }
 
+enum EstadoMantenimiento {
+  PROGRAMADO
+  EN_PROCESO
+  COMPLETADO
+  CANCELADO
+}
+
 model RentCar {
   id        Int      @id @default(autoincrement())
   nombre    String   // Nombre comercial (ej. "RentCar Santo Domingo")
@@ -74,10 +81,11 @@ model RentCar {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  usuarios  Usuario[]
-  vehiculos Vehiculo[]
-  clientes  Cliente[]
-  contratos Contrato[]
+  usuarios       Usuario[]
+  vehiculos      Vehiculo[]
+  clientes       Cliente[]
+  contratos      Contrato[]
+  mantenimientos Mantenimiento[]
 }
 
 model Usuario {
@@ -166,10 +174,33 @@ model Vehiculo {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  rentCar   RentCar    @relation(fields: [rentCarId], references: [id])
-  contratos Contrato[]
+  rentCar        RentCar         @relation(fields: [rentCarId], references: [id])
+  contratos      Contrato[]
+  mantenimientos Mantenimiento[]
 
   @@index([rentCarId])
+}
+
+model Mantenimiento {
+  id                  Int                 @id @default(autoincrement())
+  rentCarId           Int                 @default(1)
+  vehiculoId          Int
+  tipoServicio        String              // Ej. "Cambio de Aceite y Filtro", "Frenos", "Neumáticos"
+  descripcion         String?
+  costo               Decimal             @default(0.00) @db.Decimal(10, 2)
+  kilometrajeServicio Int
+  proximoKilometraje  Int?                // Kilometraje sugerido para siguiente mantenimiento
+  fechaServicio       DateTime            @default(now())
+  taller              String?             // Taller o taller mecánico
+  estado              EstadoMantenimiento @default(COMPLETADO)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  rentCar  RentCar  @relation(fields: [rentCarId], references: [id])
+  vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
+
+  @@index([rentCarId])
+  @@index([vehiculoId])
 }
 
 model Contrato {

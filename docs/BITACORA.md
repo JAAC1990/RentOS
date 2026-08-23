@@ -155,6 +155,21 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Ejecución de `POST /api/backups` generando exitosamente el archivo SQL y despachando la notificación inmediata con peso y nombre de archivo.
 - **Resultado:** Sistema de backups y alertas en Telegram 100% activo y probado.
 
+### [2026-08-22] - Módulo de Mantenimiento, Taller y Salud de Flota
+- **Problema/Necesidad:** Implementar el módulo de Mantenimiento Preventivo y Correctivo (Paso 8 del Roadmap) para llevar el control de cambios de aceite, repuestos, reparaciones mecánicas y costos de taller.
+- **Decisión técnica:**
+  - Modelo `Mantenimiento` en PostgreSQL/Prisma con estados (`PROGRAMADO`, `EN_PROCESO`, `COMPLETADO`, `CANCELADO`), control de odómetro y sugerencia de próximo servicio (+5,000 km).
+  - Automatización de estados: Si un servicio entra `EN_PROCESO`, el vehículo se bloquea automáticamente a `MANTENIMIENTO`. Al finalizarlo (`COMPLETADO`), vuelve a `DISPONIBLE`.
+  - Creación de `MantenimientoPage.tsx` con métricas de inversión total, filtros, buscador y registro rápido.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/mantenimiento.routes.ts`, `backend/src/index.ts`, `frontend/src/pages/Mantenimiento/MantenimientoPage.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/App.tsx`, `frontend/src/services/api.ts`.
+- **Pruebas realizadas:**
+  - Sincronización de Prisma (`prisma db push`).
+  - Creación de registro de mantenimiento vía `POST /api/mantenimientos` (HTTP 201 Created).
+  - Consulta de lista de servicios `GET /api/mantenimientos` (HTTP 200 OK).
+  - Compilación TypeScript frontend y backend limpia (0 errores).
+- **Resultado:** Módulo de Mantenimiento 100% operativo y conectado en `http://localhost:5173/mantenimiento`.
+
+
 
 
 

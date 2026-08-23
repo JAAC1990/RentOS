@@ -31,6 +31,11 @@ const menuItems = [
     label: "Pagos",
     icon: "💳",
   },
+  {
+    path: "/mantenimiento",
+    label: "Mantenimiento",
+    icon: "🛠️",
+  },
 ];
 
 function Sidebar() {

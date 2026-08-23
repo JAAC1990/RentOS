@@ -6,6 +6,7 @@ import ClientesPage from "./pages/Clientes/ClientesPage";
 import ContratosPage from "./pages/Contratos/ContratosPage";
 import EntregasPage from "./pages/Entregas/EntregasPage";
 import PagosPage from "./pages/Pagos/PagosPage";
+import MantenimientoPage from "./pages/Mantenimiento/MantenimientoPage";
 import "./App.css";
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/contratos" element={<ContratosPage />} />
           <Route path="/entregas" element={<EntregasPage />} />
           <Route path="/pagos" element={<PagosPage />} />
+          <Route path="/mantenimiento" element={<MantenimientoPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

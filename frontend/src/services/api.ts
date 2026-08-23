@@ -11,6 +11,7 @@ export const API_URLS = {
   contratos: `${API_BASE_URL}/contratos`,
   entregas: `${API_BASE_URL}/entregas`,
   pagos: `${API_BASE_URL}/pagos`,
+  mantenimientos: `${API_BASE_URL}/mantenimientos`,
   backup: `${API_BASE_URL}/backup`,
 };
 
