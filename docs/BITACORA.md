@@ -118,5 +118,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación de TypeScript en frontend y backend con 0 errores.
 - **Resultado:** Módulo de Clientes 100% operativo y conectado en `http://localhost:5173/clientes`.
 
+### [2026-08-22] - Módulo de Contratos, Reservas y Ciclo de Vida del Vehículo
+- **Problema/Necesidad:** Implementar el módulo de Contratos y Reservas (Paso 6 del Roadmap) para conectar clientes con vehículos, calcular tarifas/depósitos y automatizar la disponibilidad de la flota.
+- **Decisión técnica:**
+  - `ContratosPage.tsx` con selector dinámico de clientes aptos y vehículos disponibles.
+  - Cálculo automático de días de alquiler y monto total estimado en tiempo real.
+  - Automatización en base de datos: al activar un contrato, el vehículo cambia a `ALQUILADO`. Al finalizar o cancelar, el vehículo se libera a `DISPONIBLE` y se actualiza su kilometraje final.
+- **Archivos afectados:** `backend/src/routes/contratos.routes.ts`, `frontend/src/pages/Contratos/ContratosPage.tsx`.
+- **Pruebas realizadas:**
+  - Validación de fechas, cálculo de totales y disponibilidad de flota.
+  - Verificación de respuestas en endpoint `GET /api/contratos` (HTTP 200 OK).
+  - Compilación TypeScript frontend/backend limpia (0 errores).
+- **Resultado:** Módulo de Contratos 100% funcional y operativo en `http://localhost:5173/contratos`.
+
+
 
 

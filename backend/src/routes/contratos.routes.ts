@@ -4,25 +4,52 @@ import prisma from "../lib/prisma.js";
 
 const router = Router();
 
+// ======================================================
 // GET /api/contratos
-router.get("/", async (_req, res) => {
+// Obtener todos los contratos (filtrados por rentCarId)
+// ======================================================
+router.get("/", async (req, res) => {
   try {
+    const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
+
     const contratos = await prisma.contrato.findMany({
+      where: {
+        rentCarId,
+      },
       orderBy: {
         createdAt: "desc",
       },
       include: {
-        cliente: true,
-        vehiculo: true,
-        entrega: true,
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            telefono: true,
+            email: true,
+          },
+        },
+        vehiculo: {
+          select: {
+            id: true,
+            marca: true,
+            modelo: true,
+            anio: true,
+            placa: true,
+            color: true,
+            tarifaDiaria: true,
+            kilometraje: true,
+            estado: true,
+          },
+        },
         pagos: true,
+        entrega: true,
       },
     });
 
     res.json(contratos);
   } catch (error) {
     console.error("Error al obtener contratos:", error);
-
     res.status(500).json({
       error: "No fue posible obtener los contratos.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -30,39 +57,40 @@ router.get("/", async (_req, res) => {
   }
 });
 
+// ======================================================
 // GET /api/contratos/:id
+// Obtener un contrato específico
+// ======================================================
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
 
     if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        error: "El ID del contrato no es valido.",
-      });
+      return res.status(400).json({ error: "El ID del contrato no es válido." });
     }
 
     const contrato = await prisma.contrato.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
       include: {
         cliente: true,
         vehiculo: true,
-        entrega: true,
+        entrega: {
+          include: {
+            evidencias: true,
+            defectos: true,
+          },
+        },
         pagos: true,
       },
     });
 
     if (!contrato) {
-      return res.status(404).json({
-        error: "Contrato no encontrado.",
-      });
+      return res.status(404).json({ error: "Contrato no encontrado." });
     }
 
     res.json(contrato);
   } catch (error) {
     console.error("Error al obtener contrato:", error);
-
     res.status(500).json({
       error: "No fue posible obtener el contrato.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -70,10 +98,14 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// ======================================================
 // POST /api/contratos
+// Crear y formalizar un nuevo contrato de alquiler
+// ======================================================
 router.post("/", async (req, res) => {
   try {
     const {
+      rentCarId,
       clienteId,
       vehiculoId,
       fechaInicio,
@@ -81,6 +113,7 @@ router.post("/", async (req, res) => {
       tarifaDiaria,
       deposito,
       kilometrajeInicial,
+      estado,
       observaciones,
     } = req.body;
 
@@ -90,125 +123,75 @@ router.post("/", async (req, res) => {
       !fechaInicio ||
       !fechaFin ||
       tarifaDiaria === undefined ||
-      deposito === undefined ||
-      kilometrajeInicial === undefined
+      deposito === undefined
     ) {
       return res.status(400).json({
-        error:
-          "Cliente, vehiculo, fecha de inicio, fecha de fin, tarifa diaria, deposito y kilometraje inicial son obligatorios.",
+        error: "Cliente, vehículo, fecha de inicio, fecha de fin, tarifa diaria y depósito son obligatorios.",
       });
     }
 
-    const clienteIdNumero = Number(clienteId);
-    const vehiculoIdNumero = Number(vehiculoId);
-    const tarifaNumero = Number(tarifaDiaria);
-    const depositoNumero = Number(deposito);
-    const kilometrajeNumero = Number(kilometrajeInicial);
-
-    if (!Number.isInteger(clienteIdNumero)) {
-      return res.status(400).json({
-        error: "El clienteId no es valido.",
-      });
-    }
-
-    if (!Number.isInteger(vehiculoIdNumero)) {
-      return res.status(400).json({
-        error: "El vehiculoId no es valido.",
-      });
-    }
-
-    if (!Number.isFinite(tarifaNumero) || tarifaNumero < 0) {
-      return res.status(400).json({
-        error: "La tarifa diaria no es valida.",
-      });
-    }
-
-    if (!Number.isFinite(depositoNumero) || depositoNumero < 0) {
-      return res.status(400).json({
-        error: "El deposito no es valido.",
-      });
-    }
-
-    if (!Number.isInteger(kilometrajeNumero) || kilometrajeNumero < 0) {
-      return res.status(400).json({
-        error: "El kilometraje inicial no es valido.",
-      });
-    }
+    const clienteIdNum = Number(clienteId);
+    const vehiculoIdNum = Number(vehiculoId);
+    const tarifaNum = Number(tarifaDiaria);
+    const depositoNum = Number(deposito);
 
     const inicio = new Date(fechaInicio);
     const fin = new Date(fechaFin);
 
-    if (Number.isNaN(inicio.getTime())) {
-      return res.status(400).json({
-        error: "La fecha de inicio no es valida.",
-      });
-    }
-
-    if (Number.isNaN(fin.getTime())) {
-      return res.status(400).json({
-        error: "La fecha de fin no es valida.",
-      });
+    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) {
+      return res.status(400).json({ error: "Las fechas especificadas no son válidas." });
     }
 
     if (fin <= inicio) {
-      return res.status(400).json({
-        error: "La fecha de fin debe ser posterior a la fecha de inicio.",
-      });
+      return res.status(400).json({ error: "La fecha de fin debe ser posterior a la fecha de inicio." });
     }
 
-    const cliente = await prisma.cliente.findUnique({
-      where: {
-        id: clienteIdNumero,
-      },
-    });
-
+    const cliente = await prisma.cliente.findUnique({ where: { id: clienteIdNum } });
     if (!cliente) {
-      return res.status(404).json({
-        error: "Cliente no encontrado.",
+      return res.status(404).json({ error: "El cliente seleccionado no existe." });
+    }
+
+    if (cliente.estado === "BLOQUEADO") {
+      return res.status(400).json({
+        error: "El cliente se encuentra BLOQUEADO. No se pueden generar contratos a clientes bloqueados.",
       });
     }
 
-    const vehiculo = await prisma.vehiculo.findUnique({
-      where: {
-        id: vehiculoIdNumero,
-      },
-    });
-
+    const vehiculo = await prisma.vehiculo.findUnique({ where: { id: vehiculoIdNum } });
     if (!vehiculo) {
-      return res.status(404).json({
-        error: "Vehiculo no encontrado.",
+      return res.status(404).json({ error: "El vehículo seleccionado no existe." });
+    }
+
+    const estadoContratoFinal: EstadoContrato =
+      estado && estado in EstadoContrato
+        ? (estado as EstadoContrato)
+        : EstadoContrato.ACTIVO;
+
+    // Si el contrato se inicia ACTIVO, el vehículo debe estar DISPONIBLE
+    if (estadoContratoFinal === EstadoContrato.ACTIVO && vehiculo.estado !== EstadoVehiculo.DISPONIBLE) {
+      return res.status(400).json({
+        error: `El vehículo (${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}) no está disponible (Estado actual: ${vehiculo.estado}).`,
       });
     }
 
-    if (vehiculo.estado !== EstadoVehiculo.DISPONIBLE) {
-      return res.status(400).json({
-        error: "El vehiculo no esta disponible para alquiler.",
-        estadoActual: vehiculo.estado,
-      });
-    }
-
-    if (kilometrajeNumero < vehiculo.kilometraje) {
-      return res.status(400).json({
-        error:
-          "El kilometraje inicial no puede ser menor que el kilometraje actual del vehiculo.",
-        kilometrajeActual: vehiculo.kilometraje,
-      });
-    }
+    const kmInicial =
+      kilometrajeInicial !== undefined
+        ? Number(kilometrajeInicial)
+        : vehiculo.kilometraje;
 
     const contrato = await prisma.$transaction(async (tx) => {
-      const nuevoContrato = await tx.contrato.create({
+      const nuevo = await tx.contrato.create({
         data: {
-          clienteId: clienteIdNumero,
-          vehiculoId: vehiculoIdNumero,
+          rentCarId: rentCarId ? Number(rentCarId) : 1,
+          clienteId: clienteIdNum,
+          vehiculoId: vehiculoIdNum,
           fechaInicio: inicio,
           fechaFin: fin,
-          tarifaDiaria: tarifaNumero,
-          deposito: depositoNumero,
-          kilometrajeInicial: kilometrajeNumero,
-          estado: EstadoContrato.BORRADOR,
-          observaciones: observaciones
-            ? String(observaciones).trim()
-            : undefined,
+          tarifaDiaria: tarifaNum,
+          deposito: depositoNum,
+          kilometrajeInicial: kmInicial,
+          estado: estadoContratoFinal,
+          observaciones: observaciones ? String(observaciones).trim() : null,
         },
         include: {
           cliente: true,
@@ -216,50 +199,46 @@ router.post("/", async (req, res) => {
         },
       });
 
-      await tx.vehiculo.update({
-        where: {
-          id: vehiculoIdNumero,
-        },
-        data: {
-          estado: EstadoVehiculo.ALQUILADO,
-        },
-      });
+      // Si el contrato es ACTIVO, actualizar vehículo a ALQUILADO
+      if (estadoContratoFinal === EstadoContrato.ACTIVO) {
+        await tx.vehiculo.update({
+          where: { id: vehiculoIdNum },
+          data: { estado: EstadoVehiculo.ALQUILADO },
+        });
+      }
 
-      return nuevoContrato;
+      return nuevo;
     });
 
     res.status(201).json(contrato);
   } catch (error) {
     console.error("Error al crear contrato:", error);
-
     res.status(500).json({
-      error: "No fue posible crear el contrato.",
+      error: "No fue posible registrar el contrato.",
       detalle: error instanceof Error ? error.message : String(error),
     });
   }
 });
 
+// ======================================================
 // PUT /api/contratos/:id
+// Actualizar contrato o finalizar renta
+// ======================================================
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
 
     if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        error: "El ID del contrato no es valido.",
-      });
+      return res.status(400).json({ error: "El ID del contrato no es válido." });
     }
 
     const existente = await prisma.contrato.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
+      include: { vehiculo: true },
     });
 
     if (!existente) {
-      return res.status(404).json({
-        error: "Contrato no encontrado.",
-      });
+      return res.status(404).json({ error: "Contrato no encontrado." });
     }
 
     const {
@@ -272,138 +251,57 @@ router.put("/:id", async (req, res) => {
       observaciones,
     } = req.body;
 
-    const data: {
-      fechaInicio?: Date;
-      fechaFin?: Date;
-      tarifaDiaria?: number;
-      deposito?: number;
-      kilometrajeFinal?: number | null;
-      estado?: EstadoContrato;
-      observaciones?: string | null;
-    } = {};
+    const nuevoEstado = estado ? (estado as EstadoContrato) : existente.estado;
 
-    let nuevaFechaInicio = existente.fechaInicio;
-    let nuevaFechaFin = existente.fechaFin;
+    const contratoActualizado = await prisma.$transaction(async (tx) => {
+      const dataToUpdate: Record<string, unknown> = {};
 
-    if (fechaInicio !== undefined) {
-      const fecha = new Date(fechaInicio);
+      if (fechaInicio) dataToUpdate.fechaInicio = new Date(fechaInicio);
+      if (fechaFin) dataToUpdate.fechaFin = new Date(fechaFin);
+      if (tarifaDiaria !== undefined) dataToUpdate.tarifaDiaria = Number(tarifaDiaria);
+      if (deposito !== undefined) dataToUpdate.deposito = Number(deposito);
+      if (kilometrajeFinal !== undefined) dataToUpdate.kilometrajeFinal = Number(kilometrajeFinal);
+      if (estado) dataToUpdate.estado = nuevoEstado;
+      if (observaciones !== undefined) dataToUpdate.observaciones = observaciones ? String(observaciones).trim() : null;
 
-      if (Number.isNaN(fecha.getTime())) {
-        return res.status(400).json({
-          error: "La fecha de inicio no es valida.",
-        });
-      }
-
-      nuevaFechaInicio = fecha;
-      data.fechaInicio = fecha;
-    }
-
-    if (fechaFin !== undefined) {
-      const fecha = new Date(fechaFin);
-
-      if (Number.isNaN(fecha.getTime())) {
-        return res.status(400).json({
-          error: "La fecha de fin no es valida.",
-        });
-      }
-
-      nuevaFechaFin = fecha;
-      data.fechaFin = fecha;
-    }
-
-    if (nuevaFechaFin <= nuevaFechaInicio) {
-      return res.status(400).json({
-        error: "La fecha de fin debe ser posterior a la fecha de inicio.",
+      const contrato = await tx.contrato.update({
+        where: { id },
+        data: dataToUpdate,
+        include: {
+          cliente: true,
+          vehiculo: true,
+          pagos: true,
+        },
       });
-    }
 
-    if (tarifaDiaria !== undefined) {
-      const valor = Number(tarifaDiaria);
+      // Reglas de negocio para el vehículo según el estado del contrato:
+      if (nuevoEstado === EstadoContrato.FINALIZADO || nuevoEstado === EstadoContrato.CANCELADO) {
+        // Liberar el vehículo a DISPONIBLE y actualizar kilometraje si se proveyó
+        const kmActualizado =
+          kilometrajeFinal && Number(kilometrajeFinal) > existente.vehiculo.kilometraje
+            ? Number(kilometrajeFinal)
+            : existente.vehiculo.kilometraje;
 
-      if (!Number.isFinite(valor) || valor < 0) {
-        return res.status(400).json({
-          error: "La tarifa diaria no es valida.",
+        await tx.vehiculo.update({
+          where: { id: existente.vehiculoId },
+          data: {
+            estado: EstadoVehiculo.DISPONIBLE,
+            kilometraje: kmActualizado,
+          },
+        });
+      } else if (nuevoEstado === EstadoContrato.ACTIVO) {
+        await tx.vehiculo.update({
+          where: { id: existente.vehiculoId },
+          data: { estado: EstadoVehiculo.ALQUILADO },
         });
       }
 
-      data.tarifaDiaria = valor;
-    }
-
-    if (deposito !== undefined) {
-      const valor = Number(deposito);
-
-      if (!Number.isFinite(valor) || valor < 0) {
-        return res.status(400).json({
-          error: "El deposito no es valido.",
-        });
-      }
-
-      data.deposito = valor;
-    }
-
-    if (kilometrajeFinal !== undefined) {
-      if (kilometrajeFinal === null) {
-        data.kilometrajeFinal = null;
-      } else {
-        const valor = Number(kilometrajeFinal);
-
-        if (!Number.isInteger(valor) || valor < 0) {
-          return res.status(400).json({
-            error: "El kilometraje final no es valido.",
-          });
-        }
-
-        if (valor < existente.kilometrajeInicial) {
-          return res.status(400).json({
-            error:
-              "El kilometraje final no puede ser menor que el kilometraje inicial.",
-          });
-        }
-
-        data.kilometrajeFinal = valor;
-      }
-    }
-
-    if (estado !== undefined) {
-      const estadoTexto = String(estado).toUpperCase();
-
-      if (
-        !Object.values(EstadoContrato).includes(
-          estadoTexto as EstadoContrato,
-        )
-      ) {
-        return res.status(400).json({
-          error: "El estado del contrato no es valido.",
-          estadosPermitidos: Object.values(EstadoContrato),
-        });
-      }
-
-      data.estado = estadoTexto as EstadoContrato;
-    }
-
-    if (observaciones !== undefined) {
-      data.observaciones = observaciones
-        ? String(observaciones).trim()
-        : null;
-    }
-
-    const contrato = await prisma.contrato.update({
-      where: {
-        id,
-      },
-      data,
-      include: {
-        cliente: true,
-        vehiculo: true,
-        entrega: true,
-        pagos: true,
-      },
+      return contrato;
     });
 
-    res.json(contrato);
+    res.json(contratoActualizado);
   } catch (error) {
     console.error("Error al actualizar contrato:", error);
-
     res.status(500).json({
       error: "No fue posible actualizar el contrato.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -411,68 +309,36 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// PATCH /api/contratos/:id/estado
-router.patch("/:id/estado", async (req, res) => {
+// ======================================================
+// DELETE /api/contratos/:id
+// Cancelar o eliminar contrato
+// ======================================================
+router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { estado } = req.body;
 
-    if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        error: "El ID del contrato no es valido.",
-      });
-    }
-
-    if (!estado) {
-      return res.status(400).json({
-        error: "El estado es obligatorio.",
-      });
-    }
-
-    const estadoTexto = String(estado).toUpperCase();
-
-    if (
-      !Object.values(EstadoContrato).includes(
-        estadoTexto as EstadoContrato,
-      )
-    ) {
-      return res.status(400).json({
-        error: "El estado del contrato no es valido.",
-        estadosPermitidos: Object.values(EstadoContrato),
-      });
-    }
-
-    const existente = await prisma.contrato.findUnique({
-      where: {
-        id,
-      },
-    });
-
+    const existente = await prisma.contrato.findUnique({ where: { id } });
     if (!existente) {
-      return res.status(404).json({
-        error: "Contrato no encontrado.",
-      });
+      return res.status(404).json({ error: "Contrato no encontrado." });
     }
 
-    const contrato = await prisma.contrato.update({
-      where: {
-        id,
-      },
-      data: {
-        estado: estadoTexto as EstadoContrato,
-      },
-      include: {
-        cliente: true,
-        vehiculo: true,
-      },
+    await prisma.$transaction(async (tx) => {
+      // Liberar vehículo
+      await tx.vehiculo.update({
+        where: { id: existente.vehiculoId },
+        data: { estado: EstadoVehiculo.DISPONIBLE },
+      });
+
+      await tx.pago.deleteMany({ where: { contratoId: id } });
+      await tx.entrega.deleteMany({ where: { contratoId: id } });
+      await tx.contrato.delete({ where: { id } });
     });
 
-    res.json(contrato);
+    res.json({ mensaje: "Contrato eliminado correctamente y vehículo liberado a DISPONIBLE." });
   } catch (error) {
-    console.error("Error al cambiar estado del contrato:", error);
-
+    console.error("Error al eliminar contrato:", error);
     res.status(500).json({
-      error: "No fue posible cambiar el estado del contrato.",
+      error: "No fue posible eliminar el contrato.",
       detalle: error instanceof Error ? error.message : String(error),
     });
   }
