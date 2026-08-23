@@ -106,6 +106,7 @@ router.post("/", async (req, res) => {
       nivelCombustible,
       tieneDefectos,
       descripcionDefectos,
+      defectosDetalle, // Array de puntos de daño interactivos [{ descripcion, ubicacion, tipoDano, severidad, coordX, coordY }]
       observaciones,
     } = req.body;
 
@@ -151,17 +152,34 @@ router.post("/", async (req, res) => {
           usuarioId: targetUserId,
           kilometraje: kmNum,
           nivelCombustible: nivelCombustible ? String(nivelCombustible).trim() : "100%",
-          tieneDefectos: Boolean(tieneDefectos),
+          tieneDefectos: Boolean(tieneDefectos || (Array.isArray(defectosDetalle) && defectosDetalle.length > 0)),
           observaciones: observaciones ? String(observaciones).trim() : null,
         },
       });
 
-      // Si tiene defectos, registrar en la tabla de defectos
-      if (tieneDefectos && descripcionDefectos) {
+      // Registrar puntos de daño del mapa interactivo
+      if (Array.isArray(defectosDetalle) && defectosDetalle.length > 0) {
+        for (const def of defectosDetalle) {
+          await tx.defectoVehiculo.create({
+            data: {
+              entregaId: nuevaEntrega.id,
+              descripcion: def.descripcion || "Daño registrado en inspección",
+              ubicacion: def.ubicacion || "Carrocería",
+              tipoDano: def.tipoDano || "RAYON",
+              severidad: def.severidad || "LEVE",
+              coordX: def.coordX !== undefined ? Number(def.coordX) : null,
+              coordY: def.coordY !== undefined ? Number(def.coordY) : null,
+            },
+          });
+        }
+      } else if (tieneDefectos && descripcionDefectos) {
+        // Fallback para descripción simple
         await tx.defectoVehiculo.create({
           data: {
             entregaId: nuevaEntrega.id,
             descripcion: String(descripcionDefectos).trim(),
+            ubicacion: "Carrocería General",
+            tipoDano: "RAYON",
             severidad: "LEVE",
           },
         });

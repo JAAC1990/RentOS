@@ -262,6 +262,20 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** RentOS ahora cuenta con canal directo de captación de clientes y automatización de mensajería.
 
+### [2026-08-22] - Diagrama Visual Interactivo de Inspección de Daños 360° (Car Damage Map)
+- **Problema/Necesidad:** Proporcionar un método gráfico preciso para registrar rayones, abolladuras, roturas de cristales o daños en llantas al momento de recibir o entregar un auto, evitando disputas con los clientes.
+- **Decisión técnica:**
+  - Ampliación del modelo `DefectoVehiculo` en Prisma con campos `coordX`, `coordY`, `tipoDano` y `severidad`.
+  - `EntregasPage.tsx`: Silueta interactiva del automóvil con colocación de pines numéricos en tiempo real al hacer clic en cualquier zona de la carrocería (Frente, Laterales, Techo, Trasera), clasificación por severidad y visualizador de ficha técnica.
+  - `entregas.routes.ts`: Transacción atómica que guarda los defectos del mapa, finaliza el contrato y actualiza el odómetro liberando el vehículo a `DISPONIBLE`.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/entregas.routes.ts`, `frontend/src/pages/Entregas/EntregasPage.tsx`.
+- **Pruebas realizadas:**
+  - Sincronización Prisma (`prisma db push`).
+  - Prueba del canvas interactivo de inspección con colocación y eliminación de pines de daño.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Módulo de Entregas e Inspección 100% enriquecido con mapa interactivo de carrocería.
+
+
 
 
 

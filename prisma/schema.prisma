@@ -279,8 +279,11 @@ model DefectoVehiculo {
   id          Int      @id @default(autoincrement())
   entregaId   Int
   descripcion String
-  ubicacion   String?
-  severidad   String?
+  ubicacion   String?  // Ej. "Frente", "Puerta Izq", "Paragolpes Trasero", etc.
+  tipoDano    String?  // RAYON, ABOLLADURA, GOLPE, ROTURA_VIDRIO, LLANTA
+  severidad   String?  // LEVE, MEDIO, GRAVE
+  coordX      Float?   // Porcentaje horizontal (0 a 100)
+  coordY      Float?   // Porcentaje vertical (0 a 100)
   createdAt   DateTime @default(now())
 
   entrega    Entrega     @relation(fields: [entregaId], references: [id])
