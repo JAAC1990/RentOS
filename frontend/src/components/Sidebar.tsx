@@ -87,6 +87,18 @@ function Sidebar() {
             <span>{item.label}</span>
           </NavLink>
         ))}
+
+        <div className="nav-section-title" style={{ marginTop: "16px" }}>PORTAL CLIENTES</div>
+        <a
+          href="/reservar"
+          target="_blank"
+          rel="noreferrer"
+          className="nav-item"
+          style={{ color: "#38bdf8" }}
+        >
+          <span className="nav-icon">🌐</span>
+          <span>Catálogo Web Online ↗</span>
+        </a>
       </nav>
 
       <div className="sidebar-footer">

@@ -250,6 +250,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Módulo de Red de Aliados 100% operativo y conectado en `http://localhost:5173/red`.
 
+### [2026-08-22] - Portal Público de Reservas Online para Clientes & Automatización WhatsApp
+- **Problema/Necesidad:** Permitir que los clientes y turistas reserven vehículos online desde un catálogo web con cálculo automático de tarifas y extras, e integrar envíos de contratos y comprobantes de pago por WhatsApp en 1 clic.
+- **Decisión técnica:**
+  - `ReservasPublicasPage.tsx`: Catálogo público accesible en `/reservar` con cotizador de fechas, selector de coberturas y extras (Seguro Cero Deducible, Silla para bebé, Conductor Adicional), registro de cliente y generación de reserva.
+  - `ContratosPage.tsx` & `PagosPage.tsx`: Botones **`💬 WhatsApp`** integrados para enviar los resúmenes de contratos y recibos oficiales directamente al chat de WhatsApp del cliente.
+- **Archivos afectados:** `frontend/src/pages/Publico/ReservasPublicasPage.tsx`, `frontend/src/pages/Contratos/ContratosPage.tsx`, `frontend/src/pages/Pagos/PagosPage.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/App.tsx`.
+- **Pruebas realizadas:**
+  - Emisión de reserva de prueba desde el catálogo web en vivo.
+  - Verificación de enlaces formateados de WhatsApp (`https://wa.me/`).
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** RentOS ahora cuenta con canal directo de captación de clientes y automatización de mensajería.
+
+
 
 
 

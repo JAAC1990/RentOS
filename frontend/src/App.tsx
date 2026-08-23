@@ -11,6 +11,7 @@ import GpsPage from "./pages/Gps/GpsPage";
 import UsuariosPage from "./pages/Usuarios/UsuariosPage";
 import ConfiguracionPage from "./pages/Configuracion/ConfiguracionPage";
 import RedAliadaPage from "./pages/RedAliada/RedAliadaPage";
+import ReservasPublicasPage from "./pages/Publico/ReservasPublicasPage";
 import "./App.css";
 
 function App() {
@@ -18,6 +19,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {/* Catálogo Público de Reservas para Clientes */}
+        <Route path="/reservar" element={<ReservasPublicasPage />} />
 
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />

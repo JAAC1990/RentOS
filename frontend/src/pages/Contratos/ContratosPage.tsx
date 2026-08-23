@@ -819,6 +819,21 @@ export default function ContratosPage() {
                           >
                             🖨️ Contrato
                           </button>
+                          <button
+                            type="button"
+                            className="btn-action-edit"
+                            style={{ background: "#dcfce7", color: "#15803d", borderColor: "#bbf7d0" }}
+                            title="Enviar Contrato por WhatsApp al Cliente"
+                            onClick={() => {
+                              const tel = c.cliente?.telefono ? c.cliente.telefono.replace(/[^0-9]/g, "") : "";
+                              const diasAlquiler = Math.max(1, Math.ceil((new Date(c.fechaFin).getTime() - new Date(c.fechaInicio).getTime()) / (1000 * 60 * 60 * 24)));
+                              const totalAlquiler = (diasAlquiler * Number(c.tarifaDiaria)).toFixed(2);
+                              const texto = `Hola *${c.cliente?.nombre}*, te compartimos el resumen de tu contrato de alquiler con *${rentCarInfo?.nombre || "RentOS"}*:\n\n📄 *Contrato:* #CT-${String(c.id).padStart(5, "0")}\n🚗 *Vehículo:* ${c.vehiculo?.marca} ${c.vehiculo?.modelo} (${c.vehiculo?.placa})\n📅 *Período:* ${new Date(c.fechaInicio).toLocaleDateString("es-DO")} al ${new Date(c.fechaFin).toLocaleDateString("es-DO")} (${diasAlquiler} días)\n💰 *Total:* $${totalAlquiler} USD\n🛡️ *Depósito:* $${Number(c.deposito).toFixed(2)}\n\n¡Gracias por preferirnos!`;
+                              window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, "_blank");
+                            }}
+                          >
+                            💬 WhatsApp
+                          </button>
                           {c.estado === "ACTIVO" && (
                             <button
                               type="button"

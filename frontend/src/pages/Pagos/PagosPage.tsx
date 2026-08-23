@@ -667,6 +667,19 @@ export default function PagosPage() {
                         >
                           🖨️ Recibo
                         </button>
+                        <button
+                          type="button"
+                          className="btn-action-edit"
+                          style={{ background: "#dcfce7", color: "#15803d", borderColor: "#bbf7d0" }}
+                          title="Enviar Recibo por WhatsApp al Cliente"
+                          onClick={() => {
+                            const tel = p.contrato?.cliente?.telefono ? p.contrato.cliente.telefono.replace(/[^0-9]/g, "") : "";
+                            const texto = `Hola *${p.contrato?.cliente?.nombre || "Cliente"}*, te confirmamos la recepción de tu pago:\n\n🧾 *Recibo:* #${String(p.id).padStart(6, "0")}\n💰 *Monto:* $${Number(p.monto).toFixed(2)} USD\n💳 *Método:* ${p.tipo}\n🚗 *Vehículo:* ${p.contrato?.vehiculo?.marca || ""} ${p.contrato?.vehiculo?.modelo || ""} (${p.contrato?.vehiculo?.placa || ""})\n📅 *Fecha:* ${new Date(p.fecha).toLocaleDateString("es-DO")}\n\n¡Comprobante procesado con éxito por *${rentCarInfo?.nombre || "RentOS"}*!`;
+                            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, "_blank");
+                          }}
+                        >
+                          💬 WhatsApp
+                        </button>
                         {p.estado !== "ANULADO" && (
                           <button
                             type="button"
