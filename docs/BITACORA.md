@@ -97,4 +97,14 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
 ### [2026-08-22] - Inicialización y Vinculación
 - **Acción:** Creación de bitácora oficial del proyecto en `docs/BITACORA.md`.
 - **Git:** Vinculación exitosa con repositorio remoto de GitHub (`JAAC1990/RentOS`).
-- **Próximos pasos:** Corrección de codificación UTF-8 en frontend y sincronización del modelo de datos de vehículos con Prisma.
+
+### [2026-08-22] - Arquitectura SaaS Multi-Tenant (Rent Car)
+- **Problema/Necesidad:** Habilitar a RentOS como plataforma SaaS donde múltiples empresas de alquiler de vehículos puedan gestionar su flota de forma completamente aislada e independiente.
+- **Decisión técnica:** Creación del modelo `RentCar` en Prisma/PostgreSQL, vinculando `Vehiculo`, `Cliente`, `Contrato` y `Usuario` mediante claves foráneas y relaciones indexadas.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/rentcars.routes.ts`, `backend/src/index.ts`, `frontend/src/services/api.ts`.
+- **Pruebas realizadas:**
+  - Creación del Rent Car principal ID 1 sin pérdida de los 8 vehículos iniciales.
+  - Creación de empresa de prueba `AutoRent Bávaro` (ID 2) y vehículo de prueba (Hyundai Santa Fe).
+  - Consulta de aislamiento comprobando que la flota del Rent Car 1 (8 vehículos) y Rent Car 2 (1 vehículo) operan con total independencia.
+- **Resultado:** Base de datos sincronizada (`prisma db push`), frontend y backend compilando al 100% con cero errores de TypeScript.
+

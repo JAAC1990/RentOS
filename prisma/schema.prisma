@@ -55,24 +55,55 @@ enum EstadoPago {
   ANULADO
 }
 
-model Usuario {
+enum RolUsuario {
+  SUPERADMIN
+  ADMIN_RENTCAR
+  EMPLEADO
+}
+
+model RentCar {
   id        Int      @id @default(autoincrement())
-  nombre    String
-  email     String   @unique
-  password  String
+  nombre    String   // Nombre comercial (ej. "RentCar Santo Domingo")
+  rnc       String?  @unique // RNC o identificación fiscal
+  telefono  String?
+  email     String?
+  direccion String?
+  ciudad    String   @default("Santo Domingo")
+  logoUrl   String?  // URL o ruta al logo de la empresa
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  usuarios  Usuario[]
+  vehiculos Vehiculo[]
+  clientes  Cliente[]
+  contratos Contrato[]
+}
+
+model Usuario {
+  id        Int        @id @default(autoincrement())
+  rentCarId Int?       // Opcional para SuperAdmin global, obligatorio para administradores de Rent Car
+  nombre    String
+  email     String     @unique
+  password  String
+  rol       RolUsuario @default(ADMIN_RENTCAR)
+  activo    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  rentCar             RentCar?           @relation(fields: [rentCarId], references: [id])
   clientesRegistrados UsuarioCliente[]
   consultasCredito    ConsultaCredito[]
   documentos          DocumentoCliente[]
   entregas            Entrega[]
   pagos               Pago[]
+
+  @@index([rentCarId])
 }
 
 model Cliente {
   id              Int           @id @default(autoincrement())
+  rentCarId       Int           @default(1)
   nombre          String
   apellido        String
   telefono        String
@@ -83,10 +114,13 @@ model Cliente {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  rentCar          RentCar            @relation(fields: [rentCarId], references: [id])
   usuarios         UsuarioCliente[]
   documentos       DocumentoCliente[]
   contratos        Contrato[]
   consultasCredito ConsultaCredito[]
+
+  @@index([rentCarId])
 }
 
 model UsuarioCliente {
@@ -111,7 +145,7 @@ model DocumentoCliente {
   updatedAt        DateTime      @updatedAt
   cargadoPorId     Int
 
-  cliente   Cliente @relation(fields: [clienteId], references: [id])
+  cliente    Cliente @relation(fields: [clienteId], references: [id])
   cargadoPor Usuario @relation(fields: [cargadoPorId], references: [id])
 
   @@index([clienteId])
@@ -119,6 +153,7 @@ model DocumentoCliente {
 
 model Vehiculo {
   id           Int            @id @default(autoincrement())
+  rentCarId    Int            @default(1)
   marca        String
   modelo       String
   anio         Int
@@ -131,29 +166,35 @@ model Vehiculo {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
+  rentCar   RentCar    @relation(fields: [rentCarId], references: [id])
   contratos Contrato[]
+
+  @@index([rentCarId])
 }
 
 model Contrato {
-  id                 Int             @id @default(autoincrement())
+  id                 Int            @id @default(autoincrement())
+  rentCarId          Int            @default(1)
   clienteId          Int
   vehiculoId         Int
   fechaInicio        DateTime
   fechaFin           DateTime
-  tarifaDiaria       Decimal         @db.Decimal(10, 2)
-  deposito            Decimal         @db.Decimal(10, 2)
+  tarifaDiaria       Decimal        @db.Decimal(10, 2)
+  deposito           Decimal        @db.Decimal(10, 2)
   kilometrajeInicial Int
   kilometrajeFinal   Int?
   estado             EstadoContrato @default(BORRADOR)
   observaciones      String?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
+  rentCar  RentCar  @relation(fields: [rentCarId], references: [id])
   cliente  Cliente  @relation(fields: [clienteId], references: [id])
   vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
   entrega  Entrega?
   pagos    Pago[]
 
+  @@index([rentCarId])
   @@index([clienteId])
   @@index([vehiculoId])
 }
@@ -168,10 +209,10 @@ model Entrega {
   tieneDefectos    Boolean  @default(false)
   observaciones    String?
 
-  contrato   Contrato    @relation(fields: [contratoId], references: [id])
-  usuario    Usuario     @relation(fields: [usuarioId], references: [id])
+  contrato   Contrato          @relation(fields: [contratoId], references: [id])
+  usuario    Usuario           @relation(fields: [usuarioId], references: [id])
   evidencias Evidencia[]
-  defectos    DefectoVehiculo[]
+  defectos   DefectoVehiculo[]
 
   @@index([usuarioId])
 }
@@ -201,7 +242,7 @@ model Evidencia {
   descripcion   String?
   createdAt     DateTime      @default(now())
 
-  entrega Entrega         @relation(fields: [entregaId], references: [id])
+  entrega Entrega          @relation(fields: [entregaId], references: [id])
   defecto DefectoVehiculo? @relation(fields: [defectoId], references: [id])
 
   @@index([entregaId])
@@ -225,10 +266,10 @@ model ConsultaCredito {
 }
 
 model Pago {
-  id         Int         @id @default(autoincrement())
+  id         Int        @id @default(autoincrement())
   contratoId Int
-  monto      Decimal     @db.Decimal(10, 2)
-  fecha      DateTime    @default(now())
+  monto      Decimal    @db.Decimal(10, 2)
+  fecha      DateTime   @default(now())
   tipo       TipoPago
   referencia String?
   estado     EstadoPago @default(PAGADO)
@@ -240,4 +281,3 @@ model Pago {
   @@index([contratoId])
   @@index([usuarioId])
 }
-
