@@ -45,6 +45,7 @@ export default function ConfiguracionPage() {
   const [nombre, setNombre] = useState("");
   const [eslogan, setEslogan] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [tipoEntradaLogo, setTipoEntradaLogo] = useState<"archivo" | "url">("archivo");
   const [colorPrimario, setColorPrimario] = useState("#0284c7");
   const [rnc, setRnc] = useState("");
   const [ciudad, setCiudad] = useState("Santo Domingo");
@@ -52,6 +53,30 @@ export default function ConfiguracionPage() {
   const [telefono, setTelefono] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [email, setEmail] = useState("");
+
+  const handleSubirArchivoLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Por favor selecciona un archivo de imagen válido (PNG, JPG, SVG, WEBP).");
+      return;
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+      setError("La imagen no debe superar los 4 MB para optimizar la velocidad de carga.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setLogoUrl(event.target.result as string);
+        setMensaje("🖼️ Logotipo cargado desde tu dispositivo. Recuerda pulsar 'Guardar Personalización'.");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Parámetros de Alquiler
   const [moneda, setMoneda] = useState("USD");
@@ -293,18 +318,111 @@ export default function ConfiguracionPage() {
             <div style={{ padding: "20px 24px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px", alignItems: "flex-start" }}>
                 <div>
-                  <div className="form-field" style={{ marginBottom: "14px" }}>
-                    <label htmlFor="logoUrlInput">URL del Logotipo de la Empresa</label>
-                    <input
-                      id="logoUrlInput"
-                      type="url"
-                      placeholder="https://ejemplo.com/logo.png"
-                      value={logoUrl}
-                      onChange={(e) => setLogoUrl(e.target.value)}
-                    />
-                    <small style={{ color: "var(--text-secondary)", fontSize: "11px", marginTop: "4px", display: "block" }}>
-                      Pega el enlace de la imagen o logo transparente (PNG/SVG/JPG).
-                    </small>
+                  <div className="form-field" style={{ marginBottom: "16px" }}>
+                    <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>Logotipo de la Empresa</span>
+                      <span style={{ fontSize: "11px", fontWeight: "normal", color: "var(--text-secondary)" }}>
+                        PNG transparente, JPG o SVG
+                      </span>
+                    </label>
+
+                    {/* Toggle entre Archivo Local y URL */}
+                    <div style={{ display: "flex", gap: "8px", margin: "6px 0 10px 0" }}>
+                      <button
+                        type="button"
+                        onClick={() => setTipoEntradaLogo("archivo")}
+                        style={{
+                          flex: 1,
+                          padding: "6px 10px",
+                          borderRadius: "6px",
+                          border: tipoEntradaLogo === "archivo" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                          backgroundColor: tipoEntradaLogo === "archivo" ? "var(--primary-soft)" : "var(--surface)",
+                          color: tipoEntradaLogo === "archivo" ? "var(--primary)" : "var(--text)",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        📁 Buscar en mi Dispositivo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTipoEntradaLogo("url")}
+                        style={{
+                          flex: 1,
+                          padding: "6px 10px",
+                          borderRadius: "6px",
+                          border: tipoEntradaLogo === "url" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                          backgroundColor: tipoEntradaLogo === "url" ? "var(--primary-soft)" : "var(--surface)",
+                          color: tipoEntradaLogo === "url" ? "var(--primary)" : "var(--text)",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        🔗 Usar Enlace / URL Web
+                      </button>
+                    </div>
+
+                    {tipoEntradaLogo === "archivo" ? (
+                      <div
+                        style={{
+                          border: "2px dashed var(--border)",
+                          borderRadius: "10px",
+                          padding: "16px",
+                          textAlign: "center",
+                          backgroundColor: "var(--surface)",
+                          cursor: "pointer",
+                          transition: "border-color 0.2s",
+                        }}
+                        onClick={() => document.getElementById("file-input-logo")?.click()}
+                      >
+                        <input
+                          id="file-input-logo"
+                          type="file"
+                          accept="image/png, image/jpeg, image/svg+xml, image/webp"
+                          style={{ display: "none" }}
+                          onChange={handleSubirArchivoLogo}
+                        />
+                        <div style={{ fontSize: "24px", marginBottom: "4px" }}>📤</div>
+                        <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--primary)" }}>
+                          Haz clic para elegir el logo desde tu PC o Móvil
+                        </div>
+                        <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "2px" }}>
+                          Formatos: PNG, JPG, SVG o WEBP (máx. 4 MB)
+                        </div>
+                      </div>
+                    ) : (
+                      <input
+                        id="logoUrlInput"
+                        type="url"
+                        placeholder="https://ejemplo.com/logo.png"
+                        value={logoUrl}
+                        onChange={(e) => setLogoUrl(e.target.value)}
+                      />
+                    )}
+
+                    {logoUrl && (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
+                        <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: 600 }}>
+                          ✓ Logotipo cargado en memoria
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setLogoUrl("")}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "var(--danger)",
+                            fontSize: "11px",
+                            cursor: "pointer",
+                            padding: 0,
+                          }}
+                        >
+                          🗑️ Quitar Logotipo
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="form-field" style={{ marginBottom: "14px" }}>

@@ -424,6 +424,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Flujo de navegación protegido contra salidas imprevistas y control claro de personalización para cada empresa.
 
+### [2026-08-22] - Soporte Dual de Carga de Logotipo: Archivo Local del Dispositivo o Enlace Web (URL)
+- **Problema/Necesidad:** Facilitar a los usuarios la configuración de su logotipo empresarial permitiéndoles buscar y cargar una imagen directamente desde su teléfono, tablet o computadora (PNG, JPG, SVG, WEBP) o ingresar una URL web existente.
+- **Decisión técnica:**
+  - `ConfiguracionPage.tsx`: Integración de pestaña dual `[📁 Buscar en mi Dispositivo]` y `[🔗 Usar Enlace / URL Web]`.
+  - Carga local mediante `FileReader` (conversión a DataURL Base64 de alta resolución con límite de 4 MB) con previsualización en vivo instantánea y botón de eliminación `🗑️ Quitar Logotipo`.
+- **Archivos afectados:** `frontend/src/pages/Configuracion/ConfiguracionPage.tsx`.
+- **Pruebas realizadas:**
+  - Carga de imagen local en el navegador con vista previa interactiva.
+  - Alternancia entre modo archivo y modo URL.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Proceso de personalización de marca sin barreras de hospedaje externo de imágenes.
+
+
 
 
 
