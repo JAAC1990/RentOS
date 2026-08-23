@@ -862,107 +862,108 @@ export default function ContratosPage() {
         )}
       </div>
 
-      {/* Modal de Impresión de Contrato Oficial */}
+      {/* Modal de Impresión de Contrato Oficial con Firma Digital */}
       {contratoImprimir && (
         <div
+          id="modal-contrato-oficial"
           style={{
             position: "fixed",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backgroundColor: "rgba(15, 23, 42, 0.7)",
             zIndex: 9999,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "20px",
+            padding: "16px",
           }}
         >
           <div
             style={{
               backgroundColor: "#ffffff",
-              borderRadius: "12px",
-              maxWidth: "750px",
+              borderRadius: "14px",
+              maxWidth: "800px",
               width: "100%",
-              maxHeight: "90vh",
+              maxHeight: "92vh",
               overflowY: "auto",
               padding: "36px",
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.3)",
               color: "#1e293b",
-              fontFamily: "system-ui, sans-serif",
+              fontFamily: "Inter, system-ui, sans-serif",
             }}
           >
             {/* Cabecera del Documento */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #e2e8f0", paddingBottom: "16px", marginBottom: "20px" }}>
               <div>
-                <h2 style={{ margin: "0 0 4px 0", fontSize: "22px", color: "var(--primary)" }}>
+                <h2 style={{ margin: "0 0 4px 0", fontSize: "22px", color: "var(--primary)", fontWeight: 800 }}>
                   {rentCarInfo?.nombre || "RentOS Principal - Santo Domingo"}
                 </h2>
                 <div style={{ fontSize: "12px", color: "#64748b" }}>
                   RNC: {rentCarInfo?.rnc || "1-31-00000-1"} • Tel: {rentCarInfo?.telefono || "(809) 555-0199"}
                 </div>
                 <div style={{ fontSize: "12px", color: "#64748b" }}>
-                  {rentCarInfo?.direccion || "Av. 27 de Febrero, Santo Domingo, D.N."}
+                  {rentCarInfo?.direccion || "Av. 27 de Febrero, Santo Domingo, D.N."} • {rentCarInfo?.ciudad || "Santo Domingo"}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "14px", fontWeight: "bold", color: "#334155" }}>
+                <div style={{ fontSize: "13px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                   CONTRATO DE ARRENDAMIENTO
                 </div>
-                <div style={{ fontSize: "18px", fontWeight: "900", color: "var(--primary)" }}>
+                <div style={{ fontSize: "20px", fontWeight: "900", color: "var(--primary)" }}>
                   No. CT-{String(contratoImprimir.id).padStart(5, "0")}
                 </div>
                 <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
-                  Fecha: {new Date(contratoImprimir.createdAt).toLocaleDateString("es-DO")}
+                  Fecha Emisión: {new Date(contratoImprimir.createdAt).toLocaleDateString("es-DO")}
                 </div>
               </div>
             </div>
 
             {/* Datos de las Partes */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-              <div style={{ background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+              <div style={{ background: "#f8fafc", padding: "14px 16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                 <div style={{ fontSize: "11px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>
-                  Datos del Arrendatario (Cliente)
+                  👤 Datos del Arrendatario (Cliente)
                 </div>
-                <div style={{ fontSize: "14px", fontWeight: "bold" }}>
+                <div style={{ fontSize: "15px", fontWeight: "bold" }}>
                   {contratoImprimir.cliente?.nombre} {contratoImprimir.cliente?.apellido}
                 </div>
-                <div style={{ fontSize: "12px", color: "#475569", marginTop: "2px" }}>
-                  Tel: {contratoImprimir.cliente?.telefono}
+                <div style={{ fontSize: "12px", color: "#475569", marginTop: "3px" }}>
+                  Tel: <b>{contratoImprimir.cliente?.telefono}</b>
                 </div>
                 <div style={{ fontSize: "12px", color: "#475569" }}>
                   Email: {contratoImprimir.cliente?.email || "No registrado"}
                 </div>
               </div>
 
-              <div style={{ background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+              <div style={{ background: "#f8fafc", padding: "14px 16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                 <div style={{ fontSize: "11px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>
-                  Vehículo Arrendado
+                  🚗 Vehículo Asignado
                 </div>
-                <div style={{ fontSize: "14px", fontWeight: "bold" }}>
+                <div style={{ fontSize: "15px", fontWeight: "bold" }}>
                   {contratoImprimir.vehiculo?.marca} {contratoImprimir.vehiculo?.modelo} ({contratoImprimir.vehiculo?.anio})
                 </div>
-                <div style={{ fontSize: "12px", color: "#475569", marginTop: "2px" }}>
+                <div style={{ fontSize: "12px", color: "#475569", marginTop: "3px" }}>
                   Placa: <b>{contratoImprimir.vehiculo?.placa}</b> • Color: {contratoImprimir.vehiculo?.color || "N/D"}
                 </div>
                 <div style={{ fontSize: "12px", color: "#475569" }}>
-                  Km Salida: {contratoImprimir.kilometrajeInicial?.toLocaleString()} km
+                  Km Inicial: <b>{contratoImprimir.kilometrajeInicial?.toLocaleString()} km</b> • Combustible: <b>⛽ FULL (Lleno)</b>
                 </div>
               </div>
             </div>
 
             {/* Condiciones del Alquiler */}
-            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "14px 16px", borderRadius: "8px", marginBottom: "20px" }}>
+            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "14px 18px", borderRadius: "10px", marginBottom: "20px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
                 <div>
-                  <div style={{ fontSize: "11px", color: "#64748b" }}>Fecha de Entrega:</div>
+                  <div style={{ fontSize: "11px", color: "#64748b" }}>Fecha de Salida:</div>
                   <div style={{ fontSize: "13px", fontWeight: "bold" }}>
                     {new Date(contratoImprimir.fechaInicio).toLocaleDateString("es-DO")}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: "11px", color: "#64748b" }}>Fecha de Devolución:</div>
+                  <div style={{ fontSize: "11px", color: "#64748b" }}>Fecha de Retorno:</div>
                   <div style={{ fontSize: "13px", fontWeight: "bold" }}>
                     {new Date(contratoImprimir.fechaFin).toLocaleDateString("es-DO")}
                   </div>
@@ -970,43 +971,114 @@ export default function ContratosPage() {
                 <div>
                   <div style={{ fontSize: "11px", color: "#64748b" }}>Tarifa Diaria:</div>
                   <div style={{ fontSize: "13px", fontWeight: "bold" }}>
-                    ${Number(contratoImprimir.tarifaDiaria).toFixed(2)} / día
+                    ${Number(contratoImprimir.tarifaDiaria).toFixed(2)} USD / día
                   </div>
                 </div>
               </div>
-              <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #bfdbfe", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ marginTop: "12px", paddingTop: "10px", borderTop: "1px solid #bfdbfe", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: "13px", color: "#1e3a8a" }}>
-                  Depósito de Garantía: <b>${Number(contratoImprimir.deposito).toFixed(2)}</b>
+                  Depósito de Garantía: <b>${Number(contratoImprimir.deposito).toFixed(2)} USD</b>
                 </span>
-                <span style={{ fontSize: "15px", fontWeight: "bold", color: "#1e3a8a" }}>
-                  Monto Estimado: ${(
+                <span style={{ fontSize: "16px", fontWeight: "900", color: "#1e3a8a" }}>
+                  Total Estimado: ${(
                     Math.max(1, Math.ceil((new Date(contratoImprimir.fechaFin).getTime() - new Date(contratoImprimir.fechaInicio).getTime()) / (1000 * 60 * 60 * 24))) * Number(contratoImprimir.tarifaDiaria)
-                  ).toFixed(2)}
+                  ).toFixed(2)} USD
                 </span>
               </div>
             </div>
 
-            {/* Términos y Cláusulas */}
-            <div style={{ fontSize: "11px", color: "#64748b", lineHeight: "1.4", marginBottom: "24px" }}>
+            {/* Cláusulas Legales */}
+            <div style={{ fontSize: "11px", color: "#64748b", lineHeight: "1.4", marginBottom: "20px" }}>
               <div style={{ fontWeight: "bold", marginBottom: "4px" }}>CLÁUSULAS DEL CONTRATO:</div>
               {rentCarInfo?.terminosContrato ||
-                "1. El arrendatario recibe el vehículo en óptimas condiciones de funcionamiento y se compromete a devolverlo en la fecha y hora pactadas. 2. Cualquier infracción de tránsito, peajes o daños durante el uso son exclusiva responsabilidad del arrendatario. 3. El depósito de garantía será reembolsado una vez verificada la unidad."}
+                "1. El arrendatario recibe el vehículo en óptimas condiciones mecánicas y de carrocería, comprometiéndose a retornarlo en la fecha y con igual nivel de combustible. 2. Cualquier infracción de tránsito, multas o daños a terceros durante el uso son exclusiva responsabilidad del arrendatario. 3. El depósito de garantía será reembolsado una vez verificado el inventario."}
             </div>
 
-            {/* Firmas */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", marginTop: "30px", marginBottom: "20px" }}>
-              <div style={{ borderTop: "1px solid #94a3b8", textAlign: "center", paddingTop: "8px" }}>
-                <div style={{ fontSize: "12px", fontWeight: "bold" }}>Firma del Arrendatario</div>
-                <div style={{ fontSize: "11px", color: "#64748b" }}>{contratoImprimir.cliente?.nombre} {contratoImprimir.cliente?.apellido}</div>
+            {/* Firmas: Canvas Táctil para Firma Digital */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginTop: "24px", marginBottom: "20px" }}>
+              <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", textAlign: "center" }}>
+                <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "6px" }}>
+                  ✍️ Firma Digital del Arrendatario
+                </div>
+                <div style={{ width: "100%", height: "90px", background: "#ffffff", border: "1px dashed #94a3b8", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                  <canvas
+                    id="canvas-firma-cliente"
+                    width={320}
+                    height={90}
+                    style={{ width: "100%", height: "100%", cursor: "crosshair" }}
+                    onMouseDown={(e) => {
+                      const canvas = e.currentTarget;
+                      const ctx = canvas.getContext("2d");
+                      if (!ctx) return;
+                      const rect = canvas.getBoundingClientRect();
+                      ctx.beginPath();
+                      ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+                      const handleMove = (ev: MouseEvent) => {
+                        ctx.lineTo(ev.clientX - rect.left, ev.clientY - rect.top);
+                        ctx.stroke();
+                      };
+                      const handleUp = () => {
+                        window.removeEventListener("mousemove", handleMove);
+                        window.removeEventListener("mouseup", handleUp);
+                      };
+                      window.addEventListener("mousemove", handleMove);
+                      window.addEventListener("mouseup", handleUp);
+                    }}
+                    onTouchStart={(e) => {
+                      const canvas = e.currentTarget;
+                      const ctx = canvas.getContext("2d");
+                      if (!ctx) return;
+                      const rect = canvas.getBoundingClientRect();
+                      const touch = e.touches[0];
+                      ctx.beginPath();
+                      ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                    }}
+                    onTouchMove={(e) => {
+                      const canvas = e.currentTarget;
+                      const ctx = canvas.getContext("2d");
+                      if (!ctx) return;
+                      const rect = canvas.getBoundingClientRect();
+                      const touch = e.touches[0];
+                      ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                      ctx.stroke();
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+                  <span style={{ fontSize: "10px", color: "#64748b" }}>
+                    {contratoImprimir.cliente?.nombre} {contratoImprimir.cliente?.apellido}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const canvas = document.getElementById("canvas-firma-cliente") as HTMLCanvasElement;
+                      if (canvas) {
+                        const ctx = canvas.getContext("2d");
+                        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+                      }
+                    }}
+                    style={{ background: "none", border: "none", color: "var(--danger)", fontSize: "10px", cursor: "pointer", padding: 0 }}
+                  >
+                    🧹 Limpiar
+                  </button>
+                </div>
               </div>
-              <div style={{ borderTop: "1px solid #94a3b8", textAlign: "center", paddingTop: "8px" }}>
-                <div style={{ fontSize: "12px", fontWeight: "bold" }}>Firma y Sello del Rent Car</div>
-                <div style={{ fontSize: "11px", color: "#64748b" }}>{rentCarInfo?.nombre || "RentOS"}</div>
+
+              <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "6px" }}>
+                  🏢 Firma & Sello Autorizado
+                </div>
+                <div style={{ height: "90px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--primary)", fontWeight: 800, fontSize: "14px", border: "1px solid #e2e8f0", borderRadius: "6px", background: "#ffffff" }}>
+                  ✓ APROBADO POR {rentCarInfo?.nombre || "RentOS"}
+                </div>
+                <div style={{ fontSize: "10px", color: "#64748b", marginTop: "4px" }}>
+                  Agente Oficial de Despacho
+                </div>
               </div>
             </div>
 
-            {/* Botones de Acción del Modal */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
+            {/* Botones de Acción */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px", borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
               <button
                 type="button"
                 className="secondary-button"
@@ -1014,13 +1086,30 @@ export default function ContratosPage() {
               >
                 Cerrar
               </button>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={() => window.print()}
-              >
-                🖨️ Imprimir / Guardar PDF
-              </button>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                {contratoImprimir.cliente?.telefono && (
+                  <a
+                    href={`https://wa.me/${contratoImprimir.cliente.telefono.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                      `Hola ${contratoImprimir.cliente.nombre}, adjuntamos los detalles de tu Contrato de Arrendamiento No. CT-${String(contratoImprimir.id).padStart(5, "0")} con ${rentCarInfo?.nombre || "RentOS"}. Vehículo: ${contratoImprimir.vehiculo?.marca} ${contratoImprimir.vehiculo?.modelo} (Placa ${contratoImprimir.vehiculo?.placa}). ¡Gracias por preferirnos!`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="primary-button"
+                    style={{ backgroundColor: "#22c55e", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}
+                  >
+                    💬 Enviar a WhatsApp
+                  </a>
+                )}
+
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => window.print()}
+                >
+                  🖨️ Imprimir / Guardar PDF
+                </button>
+              </div>
             </div>
           </div>
         </div>

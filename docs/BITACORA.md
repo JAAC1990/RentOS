@@ -385,6 +385,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Control y limpieza total del parque multi-tenant de empresas para el SuperAdministrador.
 
+### [2026-08-22] - Contrato Oficial con Firma Digital Táctil & Campana de Notificaciones Inteligentes
+- **Problema/Necesidad:** Proveer un documento de contrato de alquiler legal con membrete, nivel de combustible y panel de firma digital en pantalla táctil/mouse para el arrendatario, además de un centro de alertas en tiempo real en la cabecera (Header).
+- **Decisión técnica:**
+  - `ContratosPage.tsx`: Modal formal de contrato de arrendamiento con membrete oficial, cláusulas, desglose de tarifas, nivel de combustible y lienzo Canvas interactivo para **Firma Digital Táctil** con botón de borrado/limpieza, impresión y botón de envío a WhatsApp con 1 clic.
+  - `Header.tsx`: Campana de notificaciones inteligente `🔔` con contador numérico en vivo y menú desplegable que unifica alertas de taller/aceite urgente, vencimiento de seguros/marbetes y solicitudes pendientes de aprobación del SuperAdmin.
+- **Archivos afectados:** `frontend/src/pages/Contratos/ContratosPage.tsx`, `frontend/src/components/Header.tsx`.
+- **Pruebas realizadas:**
+  - Trazado de firma digital táctil/mouse en el Canvas y verificación de limpieza.
+  - Carga y visualización de alertas en el dropdown de la campana.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Proceso de entrega y firma de contratos 100% digital y monitor centralizado de alertas en la cabecera.
+
+
 
 
 

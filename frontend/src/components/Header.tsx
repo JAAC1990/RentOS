@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { API_URLS } from "../services/api";
 
@@ -8,10 +9,24 @@ type RentCar = {
   ciudad: string;
 };
 
+type AlertaNotificacion = {
+  id: string;
+  tipo: "mantenimiento" | "seguro" | "solicitud";
+  titulo: string;
+  detalle: string;
+  link: string;
+  urgencia: "alta" | "media";
+};
+
 function Header() {
   const { usuario, logout, tenantActivoId, cambiarTenantSuperadmin } = useAuth();
   const [rentCar, setRentCar] = useState<RentCar | null>(null);
   const [listaRentCars, setListaRentCars] = useState<RentCar[]>([]);
+
+  // Notificaciones
+  const [notificaciones, setNotificaciones] = useState<AlertaNotificacion[]>([]);
+  const [mostrarNotificaciones, setMostrarNotificaciones] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("rentos_theme");
@@ -38,6 +53,101 @@ function Header() {
       })
       .catch(() => null);
   }, [tenantActivoId]);
+
+  // Cargar alertas en segundo plano para la campana de notificaciones
+  useEffect(() => {
+    const cargarAlertas = async () => {
+      const lista: AlertaNotificacion[] = [];
+
+      try {
+        // 1. Alertas de Mantenimiento
+        const resMant = await fetch(`${API_URLS.mantenimientos}/alertas`);
+        if (resMant.ok) {
+          const dataMant = await resMant.json();
+          if (dataMant.sobregirados?.length > 0) {
+            dataMant.sobregirados.slice(0, 3).forEach((v: { id: number; marca: string; modelo: string; placa: string; kmExceso: number }) => {
+              lista.push({
+                id: `mant-sob-${v.id}`,
+                tipo: "mantenimiento",
+                titulo: `🚨 Taller Urgente: ${v.marca} ${v.modelo} (${v.placa})`,
+                detalle: `Sobregirado por +${v.kmExceso} km del cambio de aceite.`,
+                link: "/mantenimiento",
+                urgencia: "alta",
+              });
+            });
+          }
+          if (dataMant.proximos?.length > 0) {
+            dataMant.proximos.slice(0, 2).forEach((v: { id: number; marca: string; modelo: string; placa: string; kmRestantes: number }) => {
+              lista.push({
+                id: `mant-prox-${v.id}`,
+                tipo: "mantenimiento",
+                titulo: `🛠️ Próximo Servicio: ${v.marca} ${v.modelo}`,
+                detalle: `Quedan ${v.kmRestantes} km para mantenimiento preventivo.`,
+                link: "/mantenimiento",
+                urgencia: "media",
+              });
+            });
+          }
+        }
+
+        // 2. Alertas de Vencimiento de Seguros / Marbetes
+        const resVenc = await fetch(`${API_URLS.vehiculos}/vencimientos`);
+        if (resVenc.ok) {
+          const dataVenc = await resVenc.json();
+          if (dataVenc.vencidos?.length > 0) {
+            dataVenc.vencidos.slice(0, 2).forEach((v: { id: number; marca: string; modelo: string; seguroVencimiento: string }) => {
+              lista.push({
+                id: `seg-venc-${v.id}`,
+                tipo: "seguro",
+                titulo: `🛡️ Seguro Vencido: ${v.marca} ${v.modelo}`,
+                detalle: `Póliza vencida el ${new Date(v.seguroVencimiento).toLocaleDateString("es-DO")}.`,
+                link: "/vehiculos",
+                urgencia: "alta",
+              });
+            });
+          }
+        }
+
+        // 3. Alertas de Solicitudes de Rent Cars (Para SuperAdmin)
+        if (usuario?.rol === "SUPERADMIN") {
+          const resSol = await fetch(API_URLS.solicitudes || "http://localhost:3000/api/solicitudes");
+          if (resSol.ok) {
+            const dataSol = await resSol.json();
+            const pendientes = dataSol.filter((s: { estadoRegistro: string; activo: boolean }) => s.estadoRegistro === "PENDIENTE" || !s.activo);
+            if (pendientes.length > 0) {
+              lista.unshift({
+                id: "sol-pendientes",
+                tipo: "solicitud",
+                titulo: `👑 ${pendientes.length} Nuevas Solicitudes de Rent Cars`,
+                detalle: "Hay empresas esperando tu aprobación para entrar al sistema.",
+                link: "/solicitudes",
+                urgencia: "alta",
+              });
+            }
+          }
+        }
+
+        setNotificaciones(lista);
+      } catch (err) {
+        console.warn("Error cargando notificaciones:", err);
+      }
+    };
+
+    cargarAlertas();
+    const interval = setInterval(cargarAlertas, 60000); // Refresco cada 60s
+    return () => clearInterval(interval);
+  }, [usuario]);
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setMostrarNotificaciones(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header className="topbar">
@@ -83,6 +193,115 @@ function Header() {
             </select>
           </div>
         )}
+
+        {/* Campana de Notificaciones Inteligentes */}
+        <div ref={notifRef} style={{ position: "relative" }}>
+          <button
+            type="button"
+            onClick={() => setMostrarNotificaciones(!mostrarNotificaciones)}
+            title="Centro de Alertas & Notificaciones"
+            style={{
+              position: "relative",
+              background: "none",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              padding: "6px 10px",
+              fontSize: "15px",
+              cursor: "pointer",
+              color: "var(--text)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            🔔
+            {notificaciones.length > 0 && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: "-4px",
+                  right: "-4px",
+                  backgroundColor: "#ef4444",
+                  color: "white",
+                  fontSize: "10px",
+                  fontWeight: 900,
+                  borderRadius: "10px",
+                  padding: "1px 5px",
+                  lineHeight: "1",
+                }}
+              >
+                {notificaciones.length}
+              </span>
+            )}
+          </button>
+
+          {/* Menú Desplegable de Notificaciones */}
+          {mostrarNotificaciones && (
+            <div
+              style={{
+                position: "absolute",
+                right: 0,
+                top: "38px",
+                width: "320px",
+                backgroundColor: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)",
+                zIndex: 9999,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderBottom: "1px solid var(--border)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  background: "var(--primary-soft)",
+                }}
+              >
+                <strong style={{ fontSize: "13px" }}>🔔 Notificaciones del Sistema</strong>
+                <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                  {notificaciones.length} activas
+                </span>
+              </div>
+
+              <div style={{ maxHeight: "320px", overflowY: "auto" }}>
+                {notificaciones.length === 0 ? (
+                  <div style={{ padding: "20px", textAlign: "center", fontSize: "13px", color: "var(--text-secondary)" }}>
+                    ✨ Todo está al día. No hay alertas pendientes.
+                  </div>
+                ) : (
+                  notificaciones.map((n) => (
+                    <Link
+                      key={n.id}
+                      to={n.link}
+                      onClick={() => setMostrarNotificaciones(false)}
+                      style={{
+                        display: "block",
+                        padding: "10px 14px",
+                        borderBottom: "1px solid var(--border)",
+                        textDecoration: "none",
+                        color: "var(--text)",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--primary-soft)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      <div style={{ fontSize: "12px", fontWeight: 700, marginBottom: "2px" }}>
+                        {n.titulo}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "var(--text-secondary)", lineHeight: "1.4" }}>
+                        {n.detalle}
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Toggle Modo Oscuro / Claro */}
         <button
