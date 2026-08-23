@@ -179,6 +179,59 @@ export default function ConfiguracionPage() {
       {mensaje && <div className="alert-box success">{mensaje}</div>}
       {error && <div className="alert-box error">{error}</div>}
 
+      {/* Banner de Enlace Público de Reservas */}
+      {rentCar && (
+        <div
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "12px",
+            padding: "18px 24px",
+            marginBottom: "20px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            boxShadow: "var(--shadow)",
+          }}
+        >
+          <div>
+            <strong style={{ fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }}>
+              🌐 Tu Enlace de Reservas Online para Clientes
+            </strong>
+            <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>
+              Comparte este link en tu Instagram, WhatsApp Business o Google Maps para recibir reservas online directamente en tu panel.
+            </span>
+            <div style={{ marginTop: "8px" }}>
+              <code style={{ fontSize: "13px", padding: "6px 10px", background: "var(--primary-soft)", color: "var(--primary)", borderRadius: "6px", fontWeight: 600 }}>
+                {`${window.location.origin}/reservar?rentcar=${rentCar.id}`}
+              </code>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/reservar?rentcar=${rentCar.id}`);
+                setMensaje("📋 ¡Enlace de reservas copiado al portapapeles!");
+              }}
+            >
+              📋 Copiar Enlace
+            </button>
+            <a
+              href={`/reservar?rentcar=${rentCar.id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="primary-button"
+              style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", padding: "10px 16px" }}
+            >
+              👁️ Probar Catálogo ↗
+            </a>
+          </div>
+        </div>
+      )}
+
       {cargando ? (
         <div className="content-panel">
           <div className="empty-state">

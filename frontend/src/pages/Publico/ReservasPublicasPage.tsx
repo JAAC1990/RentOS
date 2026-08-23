@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { API_URLS } from "../../services/api";
 
 type Vehiculo = {
   id: number;
+  rentCarId: number;
   marca: string;
   modelo: string;
   anio: number;
@@ -14,6 +16,7 @@ type Vehiculo = {
 };
 
 type RentCarInfo = {
+  id: number;
   nombre: string;
   telefono: string | null;
   email: string | null;
@@ -27,6 +30,10 @@ const hoy = new Date().toISOString().split("T")[0];
 const enTresDias = new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0];
 
 export default function ReservasPublicasPage() {
+  const location = useLocation();
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const tenantId = searchParams.get("rentcar") || searchParams.get("id") || "1";
+
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [rentCarInfo, setRentCarInfo] = useState<RentCarInfo | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -66,20 +73,31 @@ export default function ReservasPublicasPage() {
     const cargarFlotaPublica = async () => {
       try {
         setCargando(true);
+        setError("");
+
         const [resVehiculos, resRentCar] = await Promise.all([
           fetch(API_URLS.vehiculos),
-          fetch(`${API_URLS.rentcars}/1`),
+          fetch(`${API_URLS.rentcars}/${tenantId}`),
         ]);
 
         if (resVehiculos.ok) {
           const data: Vehiculo[] = await resVehiculos.json();
-          // Mostrar solo los disponibles para el cliente final
-          setVehiculos(data.filter((v) => v.estado === "DISPONIBLE"));
+          // Filtrar por el RentCar específico (Multi-Tenant) y estado DISPONIBLE
+          const vehiculosTenant = data.filter(
+            (v) => (v.rentCarId === Number(tenantId) || Number(tenantId) === 1) && v.estado === "DISPONIBLE"
+          );
+          setVehiculos(vehiculosTenant);
         }
 
         if (resRentCar.ok) {
           const dataRentCar: RentCarInfo = await resRentCar.json();
           setRentCarInfo(dataRentCar);
+        } else {
+          // Fallback a RentCar #1 si el ID no existe
+          const resFallback = await fetch(`${API_URLS.rentcars}/1`);
+          if (resFallback.ok) {
+            setRentCarInfo(await resFallback.json());
+          }
         }
       } catch (err) {
         console.error(err);
@@ -90,7 +108,7 @@ export default function ReservasPublicasPage() {
     };
 
     cargarFlotaPublica();
-  }, []);
+  }, [tenantId]);
 
   // Cálculo de días
   const dias = useMemo(() => {
@@ -148,6 +166,7 @@ export default function ReservasPublicasPage() {
           apellido: apellido.trim(),
           telefono: telefono.trim(),
           email: email.trim() || undefined,
+          rentCarId: Number(tenantId),
           estado: "ACTIVO",
         }),
       });
@@ -157,7 +176,6 @@ export default function ReservasPublicasPage() {
         const nuevoCliente = await resCliente.json();
         clienteId = nuevoCliente.id;
       } else {
-        // En caso de que ya exista por teléfono/email, consultar lista
         const resClientesList = await fetch(API_URLS.clientes);
         if (resClientesList.ok) {
           const list = await resClientesList.json();
@@ -222,7 +240,7 @@ export default function ReservasPublicasPage() {
 
   const getUrlWhatsApp = (reserva: { contratoId: number; cliente: string; vehiculo: string; total: string; dias: number }) => {
     const telefonoRentCar = rentCarInfo?.telefono ? rentCarInfo.telefono.replace(/[^0-9]/g, "") : "18095550199";
-    const texto = `Hola, mi nombre es *${reserva.cliente}*. Acabo de solicitar la Reserva *#${reserva.contratoId}* en su página web:\n\n🚗 *Vehículo:* ${reserva.vehiculo}\n📅 *Duración:* ${reserva.dias} días (${fechaInicio} al ${fechaFin})\n💰 *Total Estimado:* $${reserva.total} USD\n\n¿Me confirman disponibilidad para completar la entrega? ¡Muchas gracias!`;
+    const texto = `Hola *${rentCarInfo?.nombre || "RentOS"}*, mi nombre es *${reserva.cliente}*. Acabo de solicitar la Reserva *#${reserva.contratoId}* en su catálogo web:\n\n🚗 *Vehículo:* ${reserva.vehiculo}\n📅 *Duración:* ${reserva.dias} días (${fechaInicio} al ${fechaFin})\n💰 *Total Estimado:* $${reserva.total} USD\n\n¿Me confirman disponibilidad para completar la entrega? ¡Muchas gracias!`;
     return `https://wa.me/${telefonoRentCar}?text=${encodeURIComponent(texto)}`;
   };
 
@@ -266,7 +284,7 @@ export default function ReservasPublicasPage() {
           </div>
           <div>
             <strong style={{ fontSize: "16px", display: "block" }}>
-              {rentCarInfo?.nombre || "RentOS"}
+              {rentCarInfo?.nombre || "RentOS Principal"}
             </strong>
             <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
               Catálogo Oficial de Alquiler • {rentCarInfo?.ciudad || "Santo Domingo"}
@@ -310,10 +328,10 @@ export default function ReservasPublicasPage() {
         }}
       >
         <h1 style={{ fontSize: "32px", margin: "0 0 10px 0", fontWeight: 800 }}>
-          Encuentra tu Vehículo Ideal
+          {rentCarInfo ? rentCarInfo.nombre : "Encuentra tu Vehículo Ideal"}
         </h1>
         <p style={{ fontSize: "16px", color: "#94a3b8", maxWidth: "600px", margin: "0 auto 28px auto" }}>
-          Flota moderna, tarifas sin cargos ocultos, seguro incluido y confirmación instantánea.
+          Flota moderna en {rentCarInfo?.ciudad || "República Dominicana"}, tarifas transparentes, seguro incluido y confirmación instantánea.
         </p>
 
         {/* Buscador de Fechas */}
