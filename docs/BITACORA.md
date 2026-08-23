@@ -183,6 +183,21 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación de TypeScript en frontend y backend limpia (0 errores).
 - **Resultado:** Módulo GPS Satelital 100% operativo y conectado en `http://localhost:5173/gps`.
 
+### [2026-08-22] - Módulo de Autenticación, JWT y Control de Accesos por Roles (RBAC)
+- **Problema/Necesidad:** Implementar la autenticación de usuarios y asignación de roles (Paso 10 del Roadmap) para restringir accesos, proteger contraseñas con encriptación bcrypt y emitir tokens JWT.
+- **Decisión técnica:**
+  - `auth.routes.ts`: Inicio de sesión seguro `POST /api/auth/login` con validación de hashes bcrypt y generación de tokens JWT con 7 días de vigencia.
+  - `users.routes.ts`: CRUD completo de empleados y administradores con encriptación automática y soporte para roles (`SUPERADMIN`, `ADMIN_RENTCAR`, `EMPLEADO`).
+  - `UsuariosPage.tsx`: Panel administrativo de equipo con métricas de usuarios, formulario de creación y cambio rápido de estado activo/inactivo.
+- **Archivos afectados:** `backend/src/routes/auth.routes.ts`, `backend/src/routes/users.routes.ts`, `backend/src/index.ts`, `frontend/src/pages/Usuarios/UsuariosPage.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/App.tsx`, `frontend/src/services/api.ts`.
+- **Pruebas realizadas:**
+  - Creación de usuario asesor con hash seguro bcrypt (HTTP 201 Created).
+  - Validación de login correcto con emisión de token JWT firmado (HTTP 200 OK).
+  - Verificación de lista de usuarios y activación/desactivación de cuentas.
+  - Compilación TypeScript frontend/backend limpia (0 errores).
+- **Resultado:** Módulo de Autenticación y Usuarios 100% operativo y conectado en `http://localhost:5173/usuarios`.
+
+
 
 
 

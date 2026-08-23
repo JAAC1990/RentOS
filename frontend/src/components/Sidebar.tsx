@@ -41,6 +41,11 @@ const menuItems = [
     label: "GPS Satelital",
     icon: "🛰️",
   },
+  {
+    path: "/usuarios",
+    label: "Equipo y Usuarios",
+    icon: "👤",
+  },
 ];
 
 function Sidebar() {

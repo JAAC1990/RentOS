@@ -8,6 +8,7 @@ import EntregasPage from "./pages/Entregas/EntregasPage";
 import PagosPage from "./pages/Pagos/PagosPage";
 import MantenimientoPage from "./pages/Mantenimiento/MantenimientoPage";
 import GpsPage from "./pages/Gps/GpsPage";
+import UsuariosPage from "./pages/Usuarios/UsuariosPage";
 import "./App.css";
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path="/pagos" element={<PagosPage />} />
           <Route path="/mantenimiento" element={<MantenimientoPage />} />
           <Route path="/gps" element={<GpsPage />} />
+          <Route path="/usuarios" element={<UsuariosPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

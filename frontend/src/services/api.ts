@@ -13,6 +13,8 @@ export const API_URLS = {
   pagos: `${API_BASE_URL}/pagos`,
   mantenimientos: `${API_BASE_URL}/mantenimientos`,
   gps: `${API_BASE_URL}/gps`,
+  users: `${API_BASE_URL}/users`,
+  auth: `${API_BASE_URL}/auth`,
   backup: `${API_BASE_URL}/backup`,
 };
 

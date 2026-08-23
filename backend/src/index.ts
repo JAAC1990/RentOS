@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import authRoutes from "./routes/auth.routes.js";
 import backupRoutes from "./routes/backup.routes.js";
 import clientesRoutes from "./routes/clientes.routes.js";
 import contratosRoutes from "./routes/contratos.routes.js";
@@ -18,6 +19,7 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
+app.use("/api/auth", authRoutes);
 app.use("/api/backups", backupRoutes);
 app.use("/api/clientes", clientesRoutes);
 app.use("/api/contratos", contratosRoutes);
