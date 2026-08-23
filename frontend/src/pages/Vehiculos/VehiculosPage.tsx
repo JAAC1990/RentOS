@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { API_URLS } from "../../services/api";
 
 type Vehiculo = {
   id: number;
@@ -50,7 +51,7 @@ export default function VehiculosPage() {
   const [errorFormulario, setErrorFormulario] = useState("");
   const [mensaje, setMensaje] = useState("");
 
-  const API_URL = "http://localhost:3000/api/vehiculos";
+  const API_URL = API_URLS.vehiculos;
 
   const cargarVehiculos = async () => {
     try {
