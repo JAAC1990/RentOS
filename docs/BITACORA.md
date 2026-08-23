@@ -223,6 +223,20 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación TypeScript con 0 errores.
 - **Resultado:** Plataforma RentOS enriquecida con capacidades de impresión formal y reportería contable.
 
+### [2026-08-22] - Modo Oscuro Persistente y Scoring Crediticio / Buró de Riesgo
+- **Problema/Necesidad:** Añadir soporte de Modo Oscuro para ergonomía visual del usuario y un sistema de evaluación de riesgo crediticio para clientes antes de entregar vehículos.
+- **Decisión técnica:**
+  - `Header.tsx` & `index.css`: Interruptor de Modo Oscuro/Claro persistente en `localStorage` con adaptación completa de paleta en tarjetas, paneles, tablas e inputs.
+  - `credito.routes.ts`: Algoritmo de scoring crediticio (300 a 850 pts) con clasificación de riesgo (`BAJO`, `MEDIO`, `ALTO`), recomendaciones operativas y persistencia en modelo `ConsultaCredito`.
+  - `ClientesPage.tsx`: Botón interactivo `🔍 Buró Score` en cada cliente con medidor visual y opción de bloqueo inmediato en lista negra.
+- **Archivos afectados:** `backend/src/routes/credito.routes.ts`, `backend/src/index.ts`, `frontend/src/components/Header.tsx`, `frontend/src/index.css`, `frontend/src/pages/Clientes/ClientesPage.tsx`, `frontend/src/services/api.ts`.
+- **Pruebas realizadas:**
+  - Evaluación exitosa de cliente vía `POST /api/credito/evaluar` (Score 734, Nivel BAJO, HTTP 201 Created).
+  - Verificación del cambio de tema oscuro/claro y persistencia al recargar.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** RentOS cuenta con protección de riesgo de crédito y personalización visual avanzada.
+
+
 
 
 

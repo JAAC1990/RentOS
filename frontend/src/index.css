@@ -36,6 +36,37 @@
   --shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
 }
 
+[data-theme="dark"] {
+  --background: #0f172a;
+  --surface: #1e293b;
+  --border: #334155;
+  --text: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-light: #64748b;
+  --primary-soft: #1e3a8a;
+  --success-soft: #064e3b;
+  --warning-soft: #78350f;
+  --danger-soft: #7f1d1d;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  color: #f8fafc;
+  background: #0f172a;
+}
+
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .content-panel,
+[data-theme="dark"] .topbar,
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .data-table tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
 * {
   box-sizing: border-box;
 }

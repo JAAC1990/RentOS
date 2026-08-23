@@ -1,26 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
 
-type Documento = {
-  id: number;
-  tipo: string;
-  numero: string | null;
-  nombreArchivo: string;
-};
-
-type Contrato = {
-  id: number;
-  estado: string;
-  vehiculo: {
-    marca: string;
-    modelo: string;
-    placa: string;
-  };
-};
-
 type Cliente = {
   id: number;
-  rentCarId: number;
   nombre: string;
   apellido: string;
   telefono: string;
@@ -28,8 +10,6 @@ type Cliente = {
   direccion: string | null;
   fechaNacimiento: string | null;
   estado: "ACTIVO" | "INACTIVO" | "BLOQUEADO";
-  documentos?: Documento[];
-  contratos?: Contrato[];
   createdAt: string;
 };
 
@@ -41,6 +21,17 @@ type FormularioCliente = {
   direccion: string;
   fechaNacimiento: string;
   estado: "ACTIVO" | "INACTIVO" | "BLOQUEADO";
+};
+
+type EvaluacionCredito = {
+  consultaId: number;
+  cliente: string;
+  score: number;
+  nivelRiesgo: "BAJO" | "MEDIO" | "ALTO";
+  resultado: string;
+  recomendacion: string;
+  referencia: string;
+  fechaHora: string;
 };
 
 const formularioInicial: FormularioCliente = {
@@ -62,6 +53,10 @@ export default function ClientesPage() {
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
+  const [clienteScoring, setClienteScoring] = useState<Cliente | null>(null);
+  const [evaluacionActual, setEvaluacionActual] = useState<EvaluacionCredito | null>(null);
+  const [evaluando, setEvaluando] = useState(false);
+
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
 
@@ -77,17 +72,18 @@ export default function ClientesPage() {
       setError("");
 
       const respuesta = await fetch(API_URL);
-
       if (!respuesta.ok) {
-        throw new Error("No fue posible cargar los clientes.");
+        throw new Error("No fue posible obtener los clientes.");
       }
 
-      const datos = await respuesta.json();
+      const datos: Cliente[] = await respuesta.json();
       setClientes(datos);
     } catch (err) {
       console.error(err);
       setError(
-        "No se pudieron cargar los clientes. Verifique la conexión con el servidor de RentOS."
+        err instanceof Error
+          ? err.message
+          : "No fue posible conectar con el servidor para cargar clientes."
       );
     } finally {
       setCargando(false);
@@ -98,36 +94,28 @@ export default function ClientesPage() {
     cargarClientes();
   }, []);
 
-  // Estadísticas calculadas en tiempo real
+  // Estadísticas en tiempo real
   const stats = useMemo(() => {
     const total = clientes.length;
     const activos = clientes.filter((c) => c.estado === "ACTIVO").length;
     const inactivos = clientes.filter((c) => c.estado === "INACTIVO").length;
     const bloqueados = clientes.filter((c) => c.estado === "BLOQUEADO").length;
+
     return { total, activos, inactivos, bloqueados };
   }, [clientes]);
 
-  // Filtrado y búsqueda instantánea
+  // Filtrado y búsqueda
   const clientesFiltrados = useMemo(() => {
-    return clientes.filter((c) => {
+    return clientes.filter((cliente) => {
       const cumpleFiltroEstado =
-        filtroEstado === "TODOS" || c.estado === filtroEstado;
+        filtroEstado === "TODOS" || cliente.estado === filtroEstado;
 
-      const texto = `${c.nombre} ${c.apellido} ${c.telefono} ${c.email || ""} ${c.direccion || ""}`.toLowerCase();
-      const cumpleBusqueda = texto.includes(busqueda.toLowerCase());
+      const textoBusqueda = `${cliente.nombre} ${cliente.apellido} ${cliente.telefono} ${cliente.email || ""} ${cliente.direccion || ""}`.toLowerCase();
+      const cumpleBusqueda = textoBusqueda.includes(busqueda.toLowerCase());
 
       return cumpleFiltroEstado && cumpleBusqueda;
     });
   }, [clientes, busqueda, filtroEstado]);
-
-  const actualizarCampo = (campo: keyof FormularioCliente, valor: string) => {
-    setFormulario((actual) => ({
-      ...actual,
-      [campo]: valor,
-    }));
-    setErrorFormulario("");
-    setMensaje("");
-  };
 
   const validarFormulario = () => {
     setErrorFormulario("");
@@ -141,16 +129,12 @@ export default function ClientesPage() {
       return false;
     }
     if (!formulario.telefono.trim()) {
-      setErrorFormulario("El número de teléfono es obligatorio.");
+      setErrorFormulario("El teléfono de contacto es obligatorio.");
       return false;
     }
-
-    if (formulario.email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formulario.email.trim())) {
-        setErrorFormulario("El correo electrónico no tiene un formato válido.");
-        return false;
-      }
+    if (formulario.email.trim() && !formulario.email.includes("@")) {
+      setErrorFormulario("El formato del correo electrónico no es válido.");
+      return false;
     }
 
     return true;
@@ -231,15 +215,13 @@ export default function ClientesPage() {
         : "",
       estado: cliente.estado ?? "ACTIVO",
     });
-    setMostrarFormulario(true);
     setErrorFormulario("");
-    setMensaje("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setMostrarFormulario(true);
   };
 
   const eliminarCliente = async (id: number) => {
     const confirmar = window.confirm(
-      "¿Está seguro de que desea eliminar/desactivar este cliente?"
+      "¿Está seguro de que desea eliminar este cliente?"
     );
     if (!confirmar) return;
 
@@ -272,6 +254,55 @@ export default function ClientesPage() {
     }
   };
 
+  const consultarScoring = async (cliente: Cliente) => {
+    setClienteScoring(cliente);
+    setEvaluacionActual(null);
+    setEvaluando(true);
+
+    try {
+      const res = await fetch(`${API_URLS.credito}/evaluar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clienteId: cliente.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al evaluar score.");
+
+      setEvaluacionActual(data);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Error al evaluar buró crediticio.");
+    } finally {
+      setEvaluando(false);
+    }
+  };
+
+  const alternarBloqueo = async (cliente: Cliente) => {
+    const nuevoEstado = cliente.estado === "BLOQUEADO" ? "ACTIVO" : "BLOQUEADO";
+    try {
+      const res = await fetch(`${API_URL}/${cliente.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+
+      if (!res.ok) throw new Error("Error al actualizar estado.");
+
+      setMensaje(
+        nuevoEstado === "BLOQUEADO"
+          ? `🚫 ${cliente.nombre} ha sido ingresado a la lista de restricción / morosidad.`
+          : `✅ Restricción levantada para ${cliente.nombre}.`
+      );
+
+      setClienteScoring(null);
+      await cargarClientes();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Error al modificar estado.");
+    }
+  };
+
   const exportarCSV = () => {
     if (clientes.length === 0) return;
 
@@ -294,6 +325,10 @@ export default function ClientesPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const getIniciales = (nombre: string, apellido: string) => {
+    return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase();
   };
 
   return (
@@ -336,15 +371,15 @@ export default function ClientesPage() {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon available">✅</div>
+          <div className="stat-icon available">✓</div>
           <div className="stat-info">
-            <span className="stat-label">Clientes Activos</span>
+            <span className="stat-label">Activos</span>
             <strong className="stat-value">{stats.activos}</strong>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon">⏸️</div>
+          <div className="stat-icon rented">⏸</div>
           <div className="stat-info">
             <span className="stat-label">Inactivos</span>
             <strong className="stat-value">{stats.inactivos}</strong>
@@ -352,9 +387,9 @@ export default function ClientesPage() {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon maintenance">⚠️</div>
+          <div className="stat-icon maintenance">🚫</div>
           <div className="stat-info">
-            <span className="stat-label">Bloqueados</span>
+            <span className="stat-label">Bloqueados / Morosos</span>
             <strong className="stat-value">{stats.bloqueados}</strong>
           </div>
         </div>
@@ -364,11 +399,11 @@ export default function ClientesPage() {
       {mensaje && <div className="alert-box success">{mensaje}</div>}
       {error && <div className="alert-box error">{error}</div>}
 
-      {/* Formulario de Creación / Edición */}
+      {/* Formulario de Cliente */}
       {mostrarFormulario && (
         <section className="content-panel" id="formulario-cliente">
           <div className="panel-header">
-            <h2>{editandoId === null ? "Registrar Nuevo Cliente" : "Editar Datos del Cliente"}</h2>
+            <h2>{editandoId === null ? "Registrar Nuevo Cliente" : "Editar Información del Cliente"}</h2>
             <button className="secondary-button" onClick={limpiarFormulario}>
               Cancelar
             </button>
@@ -392,9 +427,11 @@ export default function ClientesPage() {
                 <input
                   id="nombre"
                   type="text"
-                  placeholder="Ej. Juan, María, Carlos"
+                  placeholder="Ej. Carlos"
                   value={formulario.nombre}
-                  onChange={(e) => actualizarCampo("nombre", e.target.value)}
+                  onChange={(e) =>
+                    setFormulario((prev) => ({ ...prev, nombre: e.target.value }))
+                  }
                   required
                 />
               </div>
@@ -404,21 +441,25 @@ export default function ClientesPage() {
                 <input
                   id="apellido"
                   type="text"
-                  placeholder="Ej. Pérez, Gómez, Rodríguez"
+                  placeholder="Ej. García"
                   value={formulario.apellido}
-                  onChange={(e) => actualizarCampo("apellido", e.target.value)}
+                  onChange={(e) =>
+                    setFormulario((prev) => ({ ...prev, apellido: e.target.value }))
+                  }
                   required
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="telefono">Teléfono (WhatsApp) *</label>
+                <label htmlFor="telefono">Teléfono / WhatsApp *</label>
                 <input
                   id="telefono"
                   type="tel"
-                  placeholder="Ej. 809-555-0123"
+                  placeholder="Ej. 809-555-0101"
                   value={formulario.telefono}
-                  onChange={(e) => actualizarCampo("telefono", e.target.value)}
+                  onChange={(e) =>
+                    setFormulario((prev) => ({ ...prev, telefono: e.target.value }))
+                  }
                   required
                 />
               </div>
@@ -428,20 +469,11 @@ export default function ClientesPage() {
                 <input
                   id="email"
                   type="email"
-                  placeholder="cliente@ejemplo.com"
+                  placeholder="ejemplo@correo.com"
                   value={formulario.email}
-                  onChange={(e) => actualizarCampo("email", e.target.value)}
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="direccion">Dirección / Ciudad</label>
-                <input
-                  id="direccion"
-                  type="text"
-                  placeholder="Ej. Piantini, Santo Domingo"
-                  value={formulario.direccion}
-                  onChange={(e) => actualizarCampo("direccion", e.target.value)}
+                  onChange={(e) =>
+                    setFormulario((prev) => ({ ...prev, email: e.target.value }))
+                  }
                 />
               </div>
 
@@ -451,7 +483,12 @@ export default function ClientesPage() {
                   id="fechaNacimiento"
                   type="date"
                   value={formulario.fechaNacimiento}
-                  onChange={(e) => actualizarCampo("fechaNacimiento", e.target.value)}
+                  onChange={(e) =>
+                    setFormulario((prev) => ({
+                      ...prev,
+                      fechaNacimiento: e.target.value,
+                    }))
+                  }
                 />
               </div>
 
@@ -461,14 +498,30 @@ export default function ClientesPage() {
                   id="estado"
                   value={formulario.estado}
                   onChange={(e) =>
-                    actualizarCampo("estado", e.target.value as "ACTIVO" | "INACTIVO" | "BLOQUEADO")
+                    setFormulario((prev) => ({
+                      ...prev,
+                      estado: e.target.value as FormularioCliente["estado"],
+                    }))
                   }
                   required
                 >
-                  <option value="ACTIVO">Activo (Apto para alquiler)</option>
+                  <option value="ACTIVO">Activo (Apto para rentar)</option>
                   <option value="INACTIVO">Inactivo</option>
-                  <option value="BLOQUEADO">Bloqueado (No alquilar)</option>
+                  <option value="BLOQUEADO">Bloqueado / Lista de Morosidad</option>
                 </select>
+              </div>
+
+              <div className="form-field" style={{ gridColumn: "span 3" }}>
+                <label htmlFor="direccion">Dirección Residencial</label>
+                <input
+                  id="direccion"
+                  type="text"
+                  placeholder="Ej. Calle Principal #12, Santo Domingo, D.N."
+                  value={formulario.direccion}
+                  onChange={(e) =>
+                    setFormulario((prev) => ({ ...prev, direccion: e.target.value }))
+                  }
+                />
               </div>
 
               <div className="form-actions">
@@ -476,7 +529,7 @@ export default function ClientesPage() {
                   {guardando
                     ? "Guardando..."
                     : editandoId === null
-                    ? "Guardar Cliente"
+                    ? "Registrar Cliente"
                     : "Guardar Cambios"}
                 </button>
                 <button
@@ -493,14 +546,14 @@ export default function ClientesPage() {
         </section>
       )}
 
-      {/* Barra de Búsqueda y Filtros */}
+      {/* Barra de Filtros y Búsqueda */}
       <div className="filter-bar">
         <div className="search-input-wrapper">
           <span className="search-icon">🔍</span>
           <input
             type="text"
             className="search-input"
-            placeholder="Buscar por nombre, teléfono o email..."
+            placeholder="Buscar por nombre, apellido, teléfono o email..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
@@ -541,7 +594,7 @@ export default function ClientesPage() {
       <div className="content-panel">
         <div className="panel-header">
           <h2>
-            Cartera de Clientes{" "}
+            Listado de Clientes{" "}
             <span style={{ color: "var(--text-secondary)", fontWeight: 500, fontSize: "13px" }}>
               ({clientesFiltrados.length} de {clientes.length} clientes)
             </span>
@@ -559,7 +612,7 @@ export default function ClientesPage() {
             <strong>No se encontraron clientes</strong>
             <span>
               {clientes.length === 0
-                ? "Aún no tienes clientes registrados. Haz clic en '+ Nuevo Cliente' para registrar al primero."
+                ? "Aún no tienes clientes registrados. Haz clic en '+ Nuevo Cliente' para agregar el primero."
                 : "No hay clientes que coincidan con la búsqueda o filtro seleccionado."}
             </span>
           </div>
@@ -569,70 +622,54 @@ export default function ClientesPage() {
               <thead>
                 <tr>
                   <th>Cliente</th>
-                  <th>Teléfono</th>
-                  <th>Email</th>
+                  <th>Contacto</th>
                   <th>Dirección</th>
-                  <th>Contratos</th>
                   <th>Estado</th>
                   <th style={{ textAlign: "right" }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {clientesFiltrados.map((c) => (
-                  <tr key={c.id}>
+                {clientesFiltrados.map((cliente) => (
+                  <tr key={cliente.id}>
                     <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <div
-                          style={{
-                            width: "34px",
-                            height: "34px",
-                            borderRadius: "50%",
-                            background: "var(--primary-soft)",
-                            color: "var(--primary)",
-                            display: "grid",
-                            placeItems: "center",
-                            fontWeight: 700,
-                            fontSize: "12px",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {c.nombre[0]?.toUpperCase()}
-                          {c.apellido[0]?.toUpperCase()}
+                      <div className="client-info-cell">
+                        <div className="client-avatar">
+                          {getIniciales(cliente.nombre, cliente.apellido)}
                         </div>
                         <div>
-                          <strong>{c.nombre} {c.apellido}</strong>
+                          <strong>{cliente.nombre} {cliente.apellido}</strong>
+                          <div style={{ color: "var(--text-secondary)", fontSize: "11px" }}>
+                            ID #{cliente.id}
+                          </div>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <code>{c.telefono}</code>
+                      <div>
+                        <strong>{cliente.telefono}</strong>
+                      </div>
+                      <small style={{ color: "var(--text-secondary)" }}>
+                        {cliente.email || <span style={{ color: "var(--text-light)" }}>Sin email</span>}
+                      </small>
                     </td>
-                    <td>{c.email || <span style={{ color: "var(--text-light)" }}>-</span>}</td>
-                    <td>{c.direccion || <span style={{ color: "var(--text-light)" }}>-</span>}</td>
                     <td>
-                      <span
-                        style={{
-                          background: "#f1f5f9",
-                          padding: "3px 8px",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        📋 {c.contratos?.length || 0} rentas
-                      </span>
+                      {cliente.direccion ? (
+                        <span>{cliente.direccion}</span>
+                      ) : (
+                        <span style={{ color: "var(--text-light)" }}>No registrada</span>
+                      )}
                     </td>
                     <td>
                       <span
                         className={`badge ${
-                          c.estado === "ACTIVO"
+                          cliente.estado === "ACTIVO"
                             ? "badge-disponible"
-                            : c.estado === "BLOQUEADO"
+                            : cliente.estado === "INACTIVO"
                             ? "badge-mantenimiento"
                             : "badge-inactivo"
                         }`}
                       >
-                        {c.estado}
+                        {cliente.estado}
                       </span>
                     </td>
                     <td style={{ textAlign: "right" }}>
@@ -640,16 +677,25 @@ export default function ClientesPage() {
                         <button
                           type="button"
                           className="btn-action-edit"
-                          onClick={() => editarCliente(c)}
+                          style={{ background: "#e0f2fe", color: "#0369a1", borderColor: "#bae6fd" }}
+                          title="Consultar Score Crediticio y Buró"
+                          onClick={() => consultarScoring(cliente)}
+                        >
+                          🔍 Buró Score
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-action-edit"
+                          onClick={() => editarCliente(cliente)}
                         >
                           ✏️ Editar
                         </button>
                         <button
                           type="button"
                           className="btn-action-delete"
-                          onClick={() => eliminarCliente(c.id)}
+                          onClick={() => eliminarCliente(cliente.id)}
                         >
-                          🗑️ Eliminar
+                          🗑️
                         </button>
                       </div>
                     </td>
@@ -660,6 +706,144 @@ export default function ClientesPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Scoring Crediticio & Buró de Riesgo */}
+      {clienteScoring && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "12px",
+              maxWidth: "540px",
+              width: "100%",
+              padding: "28px",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.3)",
+              color: "var(--text)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h2 style={{ margin: 0, fontSize: "18px" }}>
+                🛡️ Buró de Riesgo & Scoring Crediticio
+              </h2>
+              <button
+                className="secondary-button"
+                style={{ padding: "4px 8px" }}
+                onClick={() => setClienteScoring(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ marginBottom: "16px", padding: "12px", background: "var(--primary-soft)", borderRadius: "8px" }}>
+              <strong style={{ fontSize: "14px" }}>
+                {clienteScoring.nombre} {clienteScoring.apellido}
+              </strong>
+              <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                Tel: {clienteScoring.telefono} • Estado: <b>{clienteScoring.estado}</b>
+              </div>
+            </div>
+
+            {evaluando ? (
+              <div style={{ textAlign: "center", padding: "40px" }}>
+                <div style={{ fontSize: "32px", marginBottom: "10px" }}>⏳</div>
+                <strong>Consultando centrales de riesgo y scoring de RentOS...</strong>
+              </div>
+            ) : evaluacionActual ? (
+              <div>
+                {/* Medidor de Score */}
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "20px",
+                    borderRadius: "10px",
+                    background:
+                      evaluacionActual.nivelRiesgo === "BAJO"
+                        ? "var(--success-soft)"
+                        : evaluacionActual.nivelRiesgo === "MEDIO"
+                        ? "var(--warning-soft)"
+                        : "var(--danger-soft)",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <div style={{ fontSize: "12px", fontWeight: "bold", textTransform: "uppercase" }}>
+                    Score Crediticio Estimado (300 - 850)
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "44px",
+                      fontWeight: "900",
+                      color:
+                        evaluacionActual.nivelRiesgo === "BAJO"
+                          ? "var(--success)"
+                          : evaluacionActual.nivelRiesgo === "MEDIO"
+                          ? "var(--warning)"
+                          : "var(--danger)",
+                    }}
+                  >
+                    {evaluacionActual.score}
+                  </div>
+                  <span
+                    className={`badge ${
+                      evaluacionActual.nivelRiesgo === "BAJO"
+                        ? "badge-disponible"
+                        : evaluacionActual.nivelRiesgo === "MEDIO"
+                        ? "badge-mantenimiento"
+                        : "badge-inactivo"
+                    }`}
+                  >
+                    Nivel de Riesgo: {evaluacionActual.nivelRiesgo}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: "13px", lineHeight: "1.6", marginBottom: "20px" }}>
+                  <div style={{ fontWeight: "bold", marginBottom: "4px" }}>📋 Recomendación del Sistema:</div>
+                  <p style={{ margin: "0 0 10px 0", color: "var(--text-secondary)" }}>
+                    {evaluacionActual.recomendacion}
+                  </p>
+                  <small style={{ color: "var(--text-light)" }}>
+                    Referencia de auditoría: <code>{evaluacionActual.referencia}</code>
+                  </small>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "20px" }}>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    style={{
+                      color: clienteScoring.estado === "BLOQUEADO" ? "var(--success)" : "var(--danger)",
+                      borderColor: clienteScoring.estado === "BLOQUEADO" ? "var(--success)" : "var(--danger)",
+                    }}
+                    onClick={() => alternarBloqueo(clienteScoring)}
+                  >
+                    {clienteScoring.estado === "BLOQUEADO" ? "🔓 Desbloquear Cliente" : "🚫 Bloquear en Lista Negra"}
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => setClienteScoring(null)}
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
