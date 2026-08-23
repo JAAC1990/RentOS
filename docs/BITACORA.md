@@ -131,6 +131,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación TypeScript frontend/backend limpia (0 errores).
 - **Resultado:** Módulo de Contratos 100% funcional y operativo en `http://localhost:5173/contratos`.
 
+### [2026-08-22] - Módulo de Pagos, Caja y Facturación
+- **Problema/Necesidad:** Implementar el módulo de Pagos y Caja (Paso 7 del Roadmap) para registrar cobros de rentas, depósitos en garantía, balances y múltiples métodos de pago (Efectivo, Transferencia, Tarjeta, PayPal).
+- **Decisión técnica:**
+  - `PagosPage.tsx` con métricas de caja en vivo (Total Recaudado en verde, Pagos Realizados, Pendientes, Anulados).
+  - Formulario de cobro conectado con contratos existentes con autollenado de monto según días calculados.
+  - Soporte para anulación segura de transacciones y filtros por método de pago y estado.
+- **Archivos afectados:** `backend/src/routes/pagos.routes.ts`, `frontend/src/pages/Pagos/PagosPage.tsx`.
+- **Pruebas realizadas:**
+  - Verificación de endpoints `GET /api/pagos` y `POST /api/pagos` (HTTP 200 OK).
+  - Compilación TypeScript frontend/backend completa con 0 errores.
+- **Resultado:** Módulo de Pagos 100% operativo y conectado en `http://localhost:5173/pagos`.
+
+
 
 
 
