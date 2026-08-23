@@ -280,6 +280,33 @@ export default function VehiculosPage() {
     }
   };
 
+  const exportarCSV = () => {
+    if (vehiculos.length === 0) return;
+
+    const encabezados = ["ID", "Marca", "Modelo", "Anio", "Color", "Placa", "VIN", "Kilometraje", "Estado", "Tarifa Diaria"];
+    const filas = vehiculos.map((v) => [
+      v.id,
+      `"${v.marca}"`,
+      `"${v.modelo}"`,
+      v.anio,
+      `"${v.color || ""}"`,
+      `"${v.placa}"`,
+      `"${v.vin || ""}"`,
+      v.kilometraje,
+      v.estado,
+      v.tarifaDiaria,
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [encabezados.join(","), ...filas.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `RentOS_Vehiculos_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="vehiculos-container">
       {/* Encabezado Principal */}
@@ -289,19 +316,24 @@ export default function VehiculosPage() {
           <p>Administra la flota, tarifas, estados y disponibilidad de tus vehículos.</p>
         </div>
 
-        <button
-          className="primary-button"
-          onClick={() => {
-            if (mostrarFormulario && editandoId === null) {
-              setMostrarFormulario(false);
-            } else {
-              limpiarFormulario();
-              setMostrarFormulario(true);
-            }
-          }}
-        >
-          {mostrarFormulario && editandoId === null ? "Cerrar Formulario" : "+ Nuevo Vehículo"}
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button className="secondary-button" onClick={exportarCSV}>
+            📥 Exportar CSV
+          </button>
+          <button
+            className="primary-button"
+            onClick={() => {
+              if (mostrarFormulario && editandoId === null) {
+                setMostrarFormulario(false);
+              } else {
+                limpiarFormulario();
+                setMostrarFormulario(true);
+              }
+            }}
+          >
+            {mostrarFormulario && editandoId === null ? "Cerrar Formulario" : "+ Nuevo Vehículo"}
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de Estadísticas */}

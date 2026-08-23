@@ -45,6 +45,13 @@ type FormularioPago = {
   estado: "PAGADO" | "PENDIENTE" | "ANULADO";
 };
 
+type RentCarInfo = {
+  nombre: string;
+  rnc: string | null;
+  telefono: string | null;
+  direccion: string | null;
+};
+
 const formularioInicial: FormularioPago = {
   contratoId: "",
   monto: "",
@@ -56,11 +63,13 @@ const formularioInicial: FormularioPago = {
 export default function PagosPage() {
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [contratos, setContratos] = useState<Contrato[]>([]);
+  const [rentCarInfo, setRentCarInfo] = useState<RentCarInfo | null>(null);
 
   const [formulario, setFormulario] = useState<FormularioPago>(formularioInicial);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [pagoImprimir, setPagoImprimir] = useState<Pago | null>(null);
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("TODOS");
@@ -77,22 +86,25 @@ export default function PagosPage() {
       setCargando(true);
       setError("");
 
-      const [resPagos, resContratos] = await Promise.all([
+      const [resPagos, resContratos, resRentCar] = await Promise.all([
         fetch(API_PAGOS),
         fetch(API_URLS.contratos),
+        fetch(`${API_URLS.rentcars}/1`),
       ]);
 
       if (!resPagos.ok || !resContratos.ok) {
         throw new Error("No fue posible obtener la información de pagos.");
       }
 
-      const [datosPagos, datosContratos] = await Promise.all([
+      const [datosPagos, datosContratos, datosRentCar] = await Promise.all([
         resPagos.json(),
         resContratos.json(),
+        resRentCar.ok ? resRentCar.json() : null,
       ]);
 
       setPagos(datosPagos);
       setContratos(datosContratos);
+      setRentCarInfo(datosRentCar);
     } catch (err) {
       console.error(err);
       setError("No fue posible conectar con el servidor para cargar los pagos.");
@@ -251,6 +263,33 @@ export default function PagosPage() {
     }
   };
 
+  const exportarCSV = () => {
+    if (pagos.length === 0) return;
+
+    const encabezados = ["ID", "Fecha", "Contrato ID", "Cliente", "Vehiculo", "Placa", "Metodo", "Referencia", "Monto", "Estado"];
+    const filas = pagos.map((p) => [
+      p.id,
+      new Date(p.fecha).toLocaleDateString("es-DO"),
+      p.contratoId,
+      `"${p.contrato?.cliente?.nombre || ""} ${p.contrato?.cliente?.apellido || ""}"`,
+      `"${p.contrato?.vehiculo?.marca || ""} ${p.contrato?.vehiculo?.modelo || ""}"`,
+      `"${p.contrato?.vehiculo?.placa || ""}"`,
+      p.tipo,
+      `"${p.referencia || ""}"`,
+      p.monto,
+      p.estado,
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [encabezados.join(","), ...filas.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `RentOS_Pagos_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const iconoTipoPago = (tipo: string) => {
     switch (tipo) {
       case "EFECTIVO":
@@ -275,19 +314,24 @@ export default function PagosPage() {
           <p>Registra cobros de alquileres, depósitos y controla los balances de tu Rent Car.</p>
         </div>
 
-        <button
-          className="primary-button"
-          onClick={() => {
-            if (mostrarFormulario) {
-              setMostrarFormulario(false);
-            } else {
-              limpiarFormulario();
-              setMostrarFormulario(true);
-            }
-          }}
-        >
-          {mostrarFormulario ? "Cerrar Formulario" : "+ Registrar Pago"}
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button className="secondary-button" onClick={exportarCSV}>
+            📥 Exportar CSV
+          </button>
+          <button
+            className="primary-button"
+            onClick={() => {
+              if (mostrarFormulario) {
+                setMostrarFormulario(false);
+              } else {
+                limpiarFormulario();
+                setMostrarFormulario(true);
+              }
+            }}
+          >
+            {mostrarFormulario ? "Cerrar Formulario" : "+ Registrar Pago"}
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de Estadísticas */}
@@ -614,6 +658,15 @@ export default function PagosPage() {
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div className="actions-cell" style={{ justifyContent: "flex-end" }}>
+                        <button
+                          type="button"
+                          className="btn-action-edit"
+                          style={{ background: "#f1f5f9", color: "#334155" }}
+                          title="Ver e Imprimir Recibo"
+                          onClick={() => setPagoImprimir(p)}
+                        >
+                          🖨️ Recibo
+                        </button>
                         {p.estado !== "ANULADO" && (
                           <button
                             type="button"
@@ -633,6 +686,125 @@ export default function PagosPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Recibo Oficial Imprimible */}
+      {pagoImprimir && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              maxWidth: "550px",
+              width: "100%",
+              padding: "32px",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)",
+              color: "#1e293b",
+              fontFamily: "system-ui, sans-serif",
+            }}
+          >
+            <div style={{ textAlign: "center", borderBottom: "2px dashed #cbd5e1", paddingBottom: "16px", marginBottom: "16px" }}>
+              <h2 style={{ margin: "0 0 4px 0", fontSize: "18px", color: "var(--primary)" }}>
+                {rentCarInfo?.nombre || "RentOS Principal"}
+              </h2>
+              <div style={{ fontSize: "12px", color: "#64748b" }}>
+                RNC: {rentCarInfo?.rnc || "1-31-00000-1"} • Tel: {rentCarInfo?.telefono || "(809) 555-0199"}
+              </div>
+              <div style={{ fontSize: "15px", fontWeight: "bold", marginTop: "10px", color: "#334155" }}>
+                RECIBO OFICIAL DE PAGO #{String(pagoImprimir.id).padStart(6, "0")}
+              </div>
+              <div style={{ fontSize: "11px", color: "#64748b" }}>
+                Fecha y Hora: {new Date(pagoImprimir.fecha).toLocaleString("es-DO")}
+              </div>
+            </div>
+
+            <div style={{ fontSize: "13px", lineHeight: "1.8", marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#64748b" }}>Recibido de:</span>
+                <strong>
+                  {pagoImprimir.contrato?.cliente
+                    ? `${pagoImprimir.contrato.cliente.nombre} ${pagoImprimir.contrato.cliente.apellido}`
+                    : "Cliente"}
+                </strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#64748b" }}>Por concepto de:</span>
+                <span>Renta Contrato #{pagoImprimir.contratoId}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#64748b" }}>Vehículo:</span>
+                <span>
+                  {pagoImprimir.contrato?.vehiculo?.marca} {pagoImprimir.contrato?.vehiculo?.modelo} (
+                  <code>{pagoImprimir.contrato?.vehiculo?.placa}</code>)
+                </span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#64748b" }}>Método de Pago:</span>
+                <span>{iconoTipoPago(pagoImprimir.tipo)}</span>
+              </div>
+              {pagoImprimir.referencia && (
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#64748b" }}>Referencia / Voucher:</span>
+                  <code>{pagoImprimir.referencia}</code>
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                padding: "16px",
+                borderRadius: "8px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "24px",
+              }}
+            >
+              <strong style={{ fontSize: "14px" }}>TOTAL PAGADO:</strong>
+              <strong style={{ fontSize: "22px", color: "var(--success)" }}>
+                ${Number(pagoImprimir.monto).toFixed(2)}
+              </strong>
+            </div>
+
+            <div style={{ textAlign: "center", borderTop: "1px solid #cbd5e1", paddingTop: "20px" }}>
+              <div style={{ width: "180px", borderTop: "1px solid #94a3b8", margin: "0 auto 6px auto" }} />
+              <div style={{ fontSize: "11px", color: "#64748b" }}>Firma Autorizada / Caja</div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setPagoImprimir(null)}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => window.print()}
+              >
+                🖨️ Imprimir Recibo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,8 @@ type Cliente = {
   nombre: string;
   apellido: string;
   telefono: string;
+  email?: string | null;
+  direccion?: string | null;
   estado: string;
 };
 
@@ -15,6 +17,7 @@ type Vehiculo = {
   modelo: string;
   anio: number;
   placa: string;
+  vin?: string | null;
   color: string | null;
   tarifaDiaria: string | number;
   kilometraje: number;
@@ -50,6 +53,17 @@ type FormularioContrato = {
   observaciones: string;
 };
 
+type RentCarInfo = {
+  nombre: string;
+  rnc: string | null;
+  telefono: string | null;
+  email: string | null;
+  direccion: string | null;
+  ciudad: string;
+  moneda: string;
+  terminosContrato: string | null;
+};
+
 const hoy = new Date().toISOString().split("T")[0];
 const manana = new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0];
 
@@ -69,12 +83,14 @@ export default function ContratosPage() {
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
+  const [rentCarInfo, setRentCarInfo] = useState<RentCarInfo | null>(null);
 
   const [formulario, setFormulario] = useState<FormularioContrato>(formularioInicial);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [contratoImprimir, setContratoImprimir] = useState<Contrato | null>(null);
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
@@ -90,25 +106,28 @@ export default function ContratosPage() {
       setCargando(true);
       setError("");
 
-      const [resContratos, resClientes, resVehiculos] = await Promise.all([
+      const [resContratos, resClientes, resVehiculos, resRentCar] = await Promise.all([
         fetch(API_CONTRATOS),
         fetch(API_URLS.clientes),
         fetch(API_URLS.vehiculos),
+        fetch(`${API_URLS.rentcars}/1`),
       ]);
 
       if (!resContratos.ok || !resClientes.ok || !resVehiculos.ok) {
         throw new Error("No fue posible cargar la información de contratos.");
       }
 
-      const [datosContratos, datosClientes, datosVehiculos] = await Promise.all([
+      const [datosContratos, datosClientes, datosVehiculos, datosRentCar] = await Promise.all([
         resContratos.json(),
         resClientes.json(),
         resVehiculos.json(),
+        resRentCar.ok ? resRentCar.json() : null,
       ]);
 
       setContratos(datosContratos);
       setClientes(datosClientes);
       setVehiculos(datosVehiculos);
+      setRentCarInfo(datosRentCar);
     } catch (err) {
       console.error(err);
       setError("No fue posible conectar con el servidor para cargar contratos.");
@@ -325,6 +344,33 @@ export default function ContratosPage() {
     }
   };
 
+  const exportarCSV = () => {
+    if (contratos.length === 0) return;
+
+    const encabezados = ["ID", "Cliente", "Telefono", "Vehiculo", "Placa", "Fecha Inicio", "Fecha Fin", "Tarifa Diaria", "Deposito", "Estado"];
+    const filas = contratos.map((c) => [
+      c.id,
+      `"${c.cliente?.nombre || ""} ${c.cliente?.apellido || ""}"`,
+      `"${c.cliente?.telefono || ""}"`,
+      `"${c.vehiculo?.marca || ""} ${c.vehiculo?.modelo || ""}"`,
+      `"${c.vehiculo?.placa || ""}"`,
+      new Date(c.fechaInicio).toLocaleDateString("es-DO"),
+      new Date(c.fechaFin).toLocaleDateString("es-DO"),
+      c.tarifaDiaria,
+      c.deposito,
+      c.estado,
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [encabezados.join(","), ...filas.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `RentOS_Contratos_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const vehiculosDisponibles = useMemo(() => {
     return vehiculos.filter(
       (v) => v.estado === "DISPONIBLE" || (editandoId !== null && String(v.id) === formulario.vehiculoId)
@@ -340,19 +386,24 @@ export default function ContratosPage() {
           <p>Genera y administra los alquileres, cálculos de tarifas y devoluciones.</p>
         </div>
 
-        <button
-          className="primary-button"
-          onClick={() => {
-            if (mostrarFormulario && editandoId === null) {
-              setMostrarFormulario(false);
-            } else {
-              limpiarFormulario();
-              setMostrarFormulario(true);
-            }
-          }}
-        >
-          {mostrarFormulario && editandoId === null ? "Cerrar Formulario" : "+ Nuevo Contrato"}
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button className="secondary-button" onClick={exportarCSV}>
+            📥 Exportar CSV
+          </button>
+          <button
+            className="primary-button"
+            onClick={() => {
+              if (mostrarFormulario && editandoId === null) {
+                setMostrarFormulario(false);
+              } else {
+                limpiarFormulario();
+                setMostrarFormulario(true);
+              }
+            }}
+          >
+            {mostrarFormulario && editandoId === null ? "Cerrar Formulario" : "+ Nuevo Contrato"}
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de Estadísticas */}
@@ -759,6 +810,15 @@ export default function ContratosPage() {
                       </td>
                       <td style={{ textAlign: "right" }}>
                         <div className="actions-cell" style={{ justifyContent: "flex-end" }}>
+                          <button
+                            type="button"
+                            className="btn-action-edit"
+                            style={{ background: "#f1f5f9", color: "#334155" }}
+                            title="Ver e Imprimir Contrato Oficial"
+                            onClick={() => setContratoImprimir(c)}
+                          >
+                            🖨️ Contrato
+                          </button>
                           {c.estado === "ACTIVO" && (
                             <button
                               type="button"
@@ -786,6 +846,170 @@ export default function ContratosPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Impresión de Contrato Oficial */}
+      {contratoImprimir && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              maxWidth: "750px",
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: "36px",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)",
+              color: "#1e293b",
+              fontFamily: "system-ui, sans-serif",
+            }}
+          >
+            {/* Cabecera del Documento */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #e2e8f0", paddingBottom: "16px", marginBottom: "20px" }}>
+              <div>
+                <h2 style={{ margin: "0 0 4px 0", fontSize: "22px", color: "var(--primary)" }}>
+                  {rentCarInfo?.nombre || "RentOS Principal - Santo Domingo"}
+                </h2>
+                <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  RNC: {rentCarInfo?.rnc || "1-31-00000-1"} • Tel: {rentCarInfo?.telefono || "(809) 555-0199"}
+                </div>
+                <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  {rentCarInfo?.direccion || "Av. 27 de Febrero, Santo Domingo, D.N."}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "14px", fontWeight: "bold", color: "#334155" }}>
+                  CONTRATO DE ARRENDAMIENTO
+                </div>
+                <div style={{ fontSize: "18px", fontWeight: "900", color: "var(--primary)" }}>
+                  No. CT-{String(contratoImprimir.id).padStart(5, "0")}
+                </div>
+                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                  Fecha: {new Date(contratoImprimir.createdAt).toLocaleDateString("es-DO")}
+                </div>
+              </div>
+            </div>
+
+            {/* Datos de las Partes */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
+              <div style={{ background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <div style={{ fontSize: "11px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>
+                  Datos del Arrendatario (Cliente)
+                </div>
+                <div style={{ fontSize: "14px", fontWeight: "bold" }}>
+                  {contratoImprimir.cliente?.nombre} {contratoImprimir.cliente?.apellido}
+                </div>
+                <div style={{ fontSize: "12px", color: "#475569", marginTop: "2px" }}>
+                  Tel: {contratoImprimir.cliente?.telefono}
+                </div>
+                <div style={{ fontSize: "12px", color: "#475569" }}>
+                  Email: {contratoImprimir.cliente?.email || "No registrado"}
+                </div>
+              </div>
+
+              <div style={{ background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <div style={{ fontSize: "11px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>
+                  Vehículo Arrendado
+                </div>
+                <div style={{ fontSize: "14px", fontWeight: "bold" }}>
+                  {contratoImprimir.vehiculo?.marca} {contratoImprimir.vehiculo?.modelo} ({contratoImprimir.vehiculo?.anio})
+                </div>
+                <div style={{ fontSize: "12px", color: "#475569", marginTop: "2px" }}>
+                  Placa: <b>{contratoImprimir.vehiculo?.placa}</b> • Color: {contratoImprimir.vehiculo?.color || "N/D"}
+                </div>
+                <div style={{ fontSize: "12px", color: "#475569" }}>
+                  Km Salida: {contratoImprimir.kilometrajeInicial?.toLocaleString()} km
+                </div>
+              </div>
+            </div>
+
+            {/* Condiciones del Alquiler */}
+            <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "14px 16px", borderRadius: "8px", marginBottom: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+                <div>
+                  <div style={{ fontSize: "11px", color: "#64748b" }}>Fecha de Entrega:</div>
+                  <div style={{ fontSize: "13px", fontWeight: "bold" }}>
+                    {new Date(contratoImprimir.fechaInicio).toLocaleDateString("es-DO")}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "11px", color: "#64748b" }}>Fecha de Devolución:</div>
+                  <div style={{ fontSize: "13px", fontWeight: "bold" }}>
+                    {new Date(contratoImprimir.fechaFin).toLocaleDateString("es-DO")}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "11px", color: "#64748b" }}>Tarifa Diaria:</div>
+                  <div style={{ fontSize: "13px", fontWeight: "bold" }}>
+                    ${Number(contratoImprimir.tarifaDiaria).toFixed(2)} / día
+                  </div>
+                </div>
+              </div>
+              <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #bfdbfe", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "13px", color: "#1e3a8a" }}>
+                  Depósito de Garantía: <b>${Number(contratoImprimir.deposito).toFixed(2)}</b>
+                </span>
+                <span style={{ fontSize: "15px", fontWeight: "bold", color: "#1e3a8a" }}>
+                  Monto Estimado: ${(
+                    Math.max(1, Math.ceil((new Date(contratoImprimir.fechaFin).getTime() - new Date(contratoImprimir.fechaInicio).getTime()) / (1000 * 60 * 60 * 24))) * Number(contratoImprimir.tarifaDiaria)
+                  ).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Términos y Cláusulas */}
+            <div style={{ fontSize: "11px", color: "#64748b", lineHeight: "1.4", marginBottom: "24px" }}>
+              <div style={{ fontWeight: "bold", marginBottom: "4px" }}>CLÁUSULAS DEL CONTRATO:</div>
+              {rentCarInfo?.terminosContrato ||
+                "1. El arrendatario recibe el vehículo en óptimas condiciones de funcionamiento y se compromete a devolverlo en la fecha y hora pactadas. 2. Cualquier infracción de tránsito, peajes o daños durante el uso son exclusiva responsabilidad del arrendatario. 3. El depósito de garantía será reembolsado una vez verificada la unidad."}
+            </div>
+
+            {/* Firmas */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", marginTop: "30px", marginBottom: "20px" }}>
+              <div style={{ borderTop: "1px solid #94a3b8", textAlign: "center", paddingTop: "8px" }}>
+                <div style={{ fontSize: "12px", fontWeight: "bold" }}>Firma del Arrendatario</div>
+                <div style={{ fontSize: "11px", color: "#64748b" }}>{contratoImprimir.cliente?.nombre} {contratoImprimir.cliente?.apellido}</div>
+              </div>
+              <div style={{ borderTop: "1px solid #94a3b8", textAlign: "center", paddingTop: "8px" }}>
+                <div style={{ fontSize: "12px", fontWeight: "bold" }}>Firma y Sello del Rent Car</div>
+                <div style={{ fontSize: "11px", color: "#64748b" }}>{rentCarInfo?.nombre || "RentOS"}</div>
+              </div>
+            </div>
+
+            {/* Botones de Acción del Modal */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setContratoImprimir(null)}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => window.print()}
+              >
+                🖨️ Imprimir / Guardar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

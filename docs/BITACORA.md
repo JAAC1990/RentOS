@@ -210,6 +210,20 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Módulo de Configuración de Empresa 100% operativo y conectado en `http://localhost:5173/configuracion`.
 
+### [2026-08-22] - Documentos Imprimibles (Contratos & Recibos) y Exportación CSV
+- **Problema/Necesidad:** Facilitar la emisión de contratos físicos/PDF para firmas presenciales, vouchers de caja y exportación contable a Excel/CSV.
+- **Decisión técnica:**
+  - `ContratosPage.tsx`: Modal de Contrato de Arrendamiento formal con membrete del Rent Car, RNC, desglose de tarifa/depósito, cláusulas legales y recuadros de firma para ambas partes con `window.print()`.
+  - `PagosPage.tsx`: Recibo Oficial de Caja imprimible con comprobante y firma autorizada.
+  - Exportación instantánea a CSV compatible con Excel en módulos de Vehículos, Clientes, Contratos y Pagos.
+- **Archivos afectados:** `frontend/src/pages/Contratos/ContratosPage.tsx`, `frontend/src/pages/Pagos/PagosPage.tsx`, `frontend/src/pages/Vehiculos/VehiculosPage.tsx`, `frontend/src/pages/Clientes/ClientesPage.tsx`.
+- **Pruebas realizadas:**
+  - Prueba de renderizado de contratos y recibos en modal emergente con formato listo para impresión y guardado PDF.
+  - Descarga y verificación de archivos CSV generados.
+  - Compilación TypeScript con 0 errores.
+- **Resultado:** Plataforma RentOS enriquecida con capacidades de impresión formal y reportería contable.
+
+
 
 
 

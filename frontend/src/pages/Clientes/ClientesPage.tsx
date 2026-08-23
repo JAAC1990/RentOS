@@ -272,6 +272,30 @@ export default function ClientesPage() {
     }
   };
 
+  const exportarCSV = () => {
+    if (clientes.length === 0) return;
+
+    const encabezados = ["ID", "Nombre", "Apellido", "Telefono", "Email", "Direccion", "Estado"];
+    const filas = clientes.map((c) => [
+      c.id,
+      `"${c.nombre}"`,
+      `"${c.apellido}"`,
+      `"${c.telefono}"`,
+      `"${c.email || ""}"`,
+      `"${c.direccion || ""}"`,
+      c.estado,
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [encabezados.join(","), ...filas.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `RentOS_Clientes_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="clientes-container">
       {/* Encabezado Principal */}
@@ -281,19 +305,24 @@ export default function ClientesPage() {
           <p>Administra tu cartera de clientes, historial de rentas y expedientes.</p>
         </div>
 
-        <button
-          className="primary-button"
-          onClick={() => {
-            if (mostrarFormulario && editandoId === null) {
-              setMostrarFormulario(false);
-            } else {
-              limpiarFormulario();
-              setMostrarFormulario(true);
-            }
-          }}
-        >
-          {mostrarFormulario && editandoId === null ? "Cerrar Formulario" : "+ Nuevo Cliente"}
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button className="secondary-button" onClick={exportarCSV}>
+            📥 Exportar CSV
+          </button>
+          <button
+            className="primary-button"
+            onClick={() => {
+              if (mostrarFormulario && editandoId === null) {
+                setMostrarFormulario(false);
+              } else {
+                limpiarFormulario();
+                setMostrarFormulario(true);
+              }
+            }}
+          >
+            {mostrarFormulario && editandoId === null ? "Cerrar Formulario" : "+ Nuevo Cliente"}
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de Estadísticas */}
