@@ -26,6 +26,7 @@ function Header() {
   // Notificaciones
   const [notificaciones, setNotificaciones] = useState<AlertaNotificacion[]>([]);
   const [mostrarNotificaciones, setMostrarNotificaciones] = useState(false);
+  const [mostrarModalSalir, setMostrarModalSalir] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -134,7 +135,7 @@ function Header() {
     };
 
     cargarAlertas();
-    const interval = setInterval(cargarAlertas, 60000); // Refresco cada 60s
+    const interval = setInterval(cargarAlertas, 60000);
     return () => clearInterval(interval);
   }, [usuario]);
 
@@ -353,10 +354,10 @@ function Header() {
             </span>
           </div>
 
-          {/* Botón Salir */}
+          {/* Botón Salir con Confirmación */}
           <button
             type="button"
-            onClick={logout}
+            onClick={() => setMostrarModalSalir(true)}
             title="Cerrar Sesión"
             style={{
               background: "none",
@@ -374,6 +375,72 @@ function Header() {
           </button>
         </div>
       </div>
+
+      {/* Modal de Confirmación antes de Salir */}
+      {mostrarModalSalir && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.7)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "16px",
+              maxWidth: "420px",
+              width: "100%",
+              padding: "28px",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)",
+              color: "var(--text)",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "44px", marginBottom: "12px" }}>🚪</div>
+            <h2 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: 800 }}>
+              ¿Deseas cerrar tu sesión en RentOS?
+            </h2>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 24px 0", lineHeight: "1.5" }}>
+              Estás conectado como <b>{usuario?.nombre}</b> ({usuario?.rol}). Tendrás que volver a ingresar tu correo y contraseña para acceder a este panel.
+            </p>
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ minWidth: "120px", padding: "10px 18px" }}
+                onClick={() => setMostrarModalSalir(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                style={{
+                  minWidth: "140px",
+                  padding: "10px 18px",
+                  backgroundColor: "var(--danger)",
+                }}
+                onClick={() => {
+                  setMostrarModalSalir(false);
+                  logout();
+                }}
+              >
+                🚪 Sí, Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

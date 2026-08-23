@@ -412,6 +412,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** RentOS se consolida como una plataforma White-Label SaaS donde cada cliente proyecta su propia identidad de marca.
 
+### [2026-08-22] - Modal de Confirmación Previa al Salir del Portal & Aislamiento de Edición Multi-Empresa
+- **Problema/Necesidad:** Evitar el cierre de sesión accidental al presionar el botón `🚪 Salir` y garantizar que cada empresa "X" edite exclusivamente su propia sucursal en `/configuracion`, permitiendo al SuperAdmin auditar cualquier empresa con el selector superior.
+- **Decisión técnica:**
+  - `Header.tsx`: Modal flotante con advertencia **"¿Deseas cerrar tu sesión en RentOS?"** con botones `Cancelar` y `🚪 Sí, Cerrar Sesión`.
+  - `ConfiguracionPage.tsx`: Conexión de `tenantActivoId` de `useAuth()` para aislar la carga y actualización de la configuración por empresa activa.
+- **Archivos afectados:** `frontend/src/components/Header.tsx`, `frontend/src/pages/Configuracion/ConfiguracionPage.tsx`.
+- **Pruebas realizadas:**
+  - Despliegue y cancelación de modal de salida.
+  - Cierre de sesión efectivo al confirmar.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Flujo de navegación protegido contra salidas imprevistas y control claro de personalización para cada empresa.
+
+
 
 
 
