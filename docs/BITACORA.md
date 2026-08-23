@@ -169,6 +169,21 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación TypeScript frontend y backend limpia (0 errores).
 - **Resultado:** Módulo de Mantenimiento 100% operativo y conectado en `http://localhost:5173/mantenimiento`.
 
+### [2026-08-22] - Módulo de Monitoreo GPS Satelital y Geocercas
+- **Problema/Necesidad:** Implementar el rastreo satelital en tiempo real de la flota (Paso 9 del Roadmap), con velocímetro, nivel de batería de los dispositivos, geocercas y corte remoto de ignición anti-robo.
+- **Decisión técnica:**
+  - Modelo `UbicacionGPS` en PostgreSQL/Prisma para ingesta de coordenadas, velocidad, batería y estado del motor.
+  - Centro de control con mapa interactivo Leaflet / OpenStreetMap con marcadores dinámicos por estado (verde = en movimiento, azul = estacionado, rojo = inmovilizado).
+  - Funcionalidad de inmovilización y corte remoto de ignición (`POST /api/gps/inmovilizar/:vehiculoId`).
+  - Simulador de ping de telemetría en vivo para pruebas satelitales.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/gps.routes.ts`, `backend/src/index.ts`, `frontend/src/pages/Gps/GpsPage.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/App.tsx`, `frontend/src/services/api.ts`.
+- **Pruebas realizadas:**
+  - Inicialización automática de coordenadas y telemetrías para toda la flota en RD.
+  - Verificación de comandos de corte de motor e inmovilización remota vía API (HTTP 200 OK).
+  - Compilación de TypeScript en frontend y backend limpia (0 errores).
+- **Resultado:** Módulo GPS Satelital 100% operativo y conectado en `http://localhost:5173/gps`.
+
+
 
 
 

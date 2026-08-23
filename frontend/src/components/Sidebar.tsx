@@ -36,6 +36,11 @@ const menuItems = [
     label: "Mantenimiento",
     icon: "🛠️",
   },
+  {
+    path: "/gps",
+    label: "GPS Satelital",
+    icon: "🛰️",
+  },
 ];
 
 function Sidebar() {

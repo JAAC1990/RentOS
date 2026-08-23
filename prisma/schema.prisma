@@ -177,8 +177,29 @@ model Vehiculo {
   rentCar        RentCar         @relation(fields: [rentCarId], references: [id])
   contratos      Contrato[]
   mantenimientos Mantenimiento[]
+  ubicacionesGPS UbicacionGPS[]
 
   @@index([rentCarId])
+}
+
+model UbicacionGPS {
+  id             Int      @id @default(autoincrement())
+  vehiculoId     Int
+  latitud        Float
+  longitud       Float
+  velocidad      Float    @default(0.0)
+  rumbo          Float?   // 0 a 360 grados
+  nivelBateria   Float?   @default(100.0)
+  ignicion       Boolean  @default(false)
+  bloqueoMotor   Boolean  @default(false)
+  geocerca       String?  @default("Zona Urbana Principal")
+  direccionAprox String?
+  fechaHora      DateTime @default(now())
+
+  vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
+
+  @@index([vehiculoId])
+  @@index([fechaHora])
 }
 
 model Mantenimiento {

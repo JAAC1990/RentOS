@@ -12,6 +12,7 @@ export const API_URLS = {
   entregas: `${API_BASE_URL}/entregas`,
   pagos: `${API_BASE_URL}/pagos`,
   mantenimientos: `${API_BASE_URL}/mantenimientos`,
+  gps: `${API_BASE_URL}/gps`,
   backup: `${API_BASE_URL}/backup`,
 };
 
