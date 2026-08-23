@@ -143,6 +143,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación TypeScript frontend/backend completa con 0 errores.
 - **Resultado:** Módulo de Pagos 100% operativo y conectado en `http://localhost:5173/pagos`.
 
+### [2026-08-22] - Módulo de Entregas, Inspección y Dashboard Ejecutivo
+- **Problema/Necesidad:** Completar el ciclo de check-in / check-out de vehículos con registro de combustible y defectos, y centralizar la visión del negocio en el Dashboard principal.
+- **Decisión técnica:**
+  - `EntregasPage.tsx`: Inspección de devolución de flota, odómetro, checklist de combustible y defectos, automatizando la liberación del auto a `DISPONIBLE`.
+  - `DashboardPage.tsx`: Panel ejecutivo con métricas de ingresos, rentas en curso, flota disponible y accesos directos a contratos y cobros.
+- **Archivos afectados:** `backend/src/routes/entregas.routes.ts`, `frontend/src/pages/Entregas/EntregasPage.tsx`, `frontend/src/pages/Dashboard/DashboardPage.tsx`.
+- **Pruebas realizadas:**
+  - Verificación de endpoints de entregas (HTTP 200 OK).
+  - Verificación de renderizado de métricas e historial en Dashboard.
+  - Compilación de TypeScript en todo el proyecto (0 errores).
+- **Resultado:** Todas las pestañas de RentOS (Dashboard, Vehículos, Clientes, Contratos, Entregas, Pagos) 100% funcionales y conectadas.
+
+
 
 
 

@@ -1,20 +1,59 @@
- import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { API_URLS } from "../../services/api";
 
 type Vehiculo = {
   id: number;
+  marca: string;
+  modelo: string;
+  placa: string;
   estado: string;
 };
 
 type Cliente = {
   id: number;
+  nombre: string;
+  apellido: string;
   estado: string;
 };
 
-const API_URL = "http://localhost:3000/api";
+type Contrato = {
+  id: number;
+  fechaInicio: string;
+  fechaFin: string;
+  tarifaDiaria: number;
+  estado: string;
+  cliente: {
+    nombre: string;
+    apellido: string;
+  };
+  vehiculo: {
+    marca: string;
+    modelo: string;
+    placa: string;
+  };
+};
 
-function DashboardPage() {
+type Pago = {
+  id: number;
+  monto: number;
+  fecha: string;
+  tipo: string;
+  estado: string;
+  contrato?: {
+    cliente?: {
+      nombre: string;
+      apellido: string;
+    };
+  };
+};
+
+export default function DashboardPage() {
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [contratos, setContratos] = useState<Contrato[]>([]);
+  const [pagos, setPagos] = useState<Pago[]>([]);
+
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -24,32 +63,29 @@ function DashboardPage() {
         setCargando(true);
         setError("");
 
-        const [vehiculosResponse, clientesResponse] = await Promise.all([
-          fetch(`${API_URL}/vehiculos`),
-          fetch(`${API_URL}/clientes`),
-        ]);
+        const [resVehiculos, resClientes, resContratos, resPagos] =
+          await Promise.all([
+            fetch(API_URLS.vehiculos),
+            fetch(API_URLS.clientes),
+            fetch(API_URLS.contratos),
+            fetch(API_URLS.pagos),
+          ]);
 
-        if (!vehiculosResponse.ok) {
-          throw new Error("No fue posible obtener los vehículos.");
-        }
+        const [datosVehiculos, datosClientes, datosContratos, datosPagos] =
+          await Promise.all([
+            resVehiculos.ok ? resVehiculos.json() : [],
+            resClientes.ok ? resClientes.json() : [],
+            resContratos.ok ? resContratos.json() : [],
+            resPagos.ok ? resPagos.json() : [],
+          ]);
 
-        if (!clientesResponse.ok) {
-          throw new Error("No fue posible obtener los clientes.");
-        }
-
-        const vehiculosData: Vehiculo[] = await vehiculosResponse.json();
-        const clientesData: Cliente[] = await clientesResponse.json();
-
-        setVehiculos(vehiculosData);
-        setClientes(clientesData);
+        setVehiculos(datosVehiculos);
+        setClientes(datosClientes);
+        setContratos(datosContratos);
+        setPagos(datosPagos);
       } catch (err) {
         console.error("Error al cargar el dashboard:", err);
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "No fue posible cargar los datos del dashboard.",
-        );
+        setError("No fue posible cargar las métricas del dashboard.");
       } finally {
         setCargando(false);
       }
@@ -58,177 +94,220 @@ function DashboardPage() {
     cargarDashboard();
   }, []);
 
-  const totalVehiculos = vehiculos.length;
+  const stats = useMemo(() => {
+    const totalVehiculos = vehiculos.length;
+    const disponibles = vehiculos.filter((v) => v.estado === "DISPONIBLE").length;
+    const alquilados = vehiculos.filter((v) => v.estado === "ALQUILADO").length;
+    const mantenimiento = vehiculos.filter((v) => v.estado === "MANTENIMIENTO").length;
 
-  const vehiculosDisponibles = vehiculos.filter(
-    (vehiculo) => vehiculo.estado === "DISPONIBLE",
-  ).length;
+    const totalIngresos = pagos
+      .filter((p) => p.estado === "PAGADO")
+      .reduce((sum, p) => sum + Number(p.monto), 0);
 
-  const vehiculosAlquilados = vehiculos.filter(
-    (vehiculo) => vehiculo.estado === "ALQUILADO",
-  ).length;
+    const rentasActivas = contratos.filter((c) => c.estado === "ACTIVO").length;
+    const totalClientes = clientes.length;
 
-  const vehiculosMantenimiento = vehiculos.filter(
-    (vehiculo) => vehiculo.estado === "MANTENIMIENTO",
-  ).length;
-
-  const totalClientes = clientes.length;
+    return {
+      totalVehiculos,
+      disponibles,
+      alquilados,
+      mantenimiento,
+      totalIngresos: totalIngresos.toFixed(2),
+      rentasActivas,
+      totalClientes,
+    };
+  }, [vehiculos, clientes, contratos, pagos]);
 
   return (
-    <section>
+    <div className="dashboard-container">
+      {/* Encabezado Principal */}
       <div className="page-heading">
         <div>
-          <h1>Dashboard</h1>
+          <h1>Panel de Control Principal</h1>
+          <p>Visión ejecutiva de la operación, finanzas y estado de flota de tu Rent Car.</p>
+        </div>
 
-          <p>
-            Resumen general de la operación de tu Rent Car.
-          </p>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Link to="/contratos" className="primary-button">
+            + Emitir Contrato
+          </Link>
+          <Link to="/pagos" className="secondary-button">
+            + Cobrar / Pago
+          </Link>
         </div>
       </div>
 
-      {error && (
-        <div className="content-panel" style={{ marginBottom: "22px" }}>
-          <div className="empty-state">
-            <div className="empty-state-icon">⚠️</div>
+      {error && <div className="alert-box error">{error}</div>}
 
-            <strong>No fue posible cargar los datos</strong>
-
-            <span>{error}</span>
-          </div>
-        </div>
-      )}
-
+      {/* Tarjetas de Métricas Principales */}
       <div className="stats-grid">
         <div className="stat-card">
+          <div className="stat-icon available">💰</div>
+          <div className="stat-info">
+            <span className="stat-label">Ingresos Totales</span>
+            <strong className="stat-value" style={{ color: "var(--success)" }}>
+              ${stats.totalIngresos}
+            </strong>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon rented">🔑</div>
+          <div className="stat-info">
+            <span className="stat-label">Rentas en Curso</span>
+            <strong className="stat-value" style={{ color: "var(--primary)" }}>
+              {stats.rentasActivas}
+            </strong>
+          </div>
+        </div>
+
+        <div className="stat-card">
           <div className="stat-icon">🚗</div>
-
-          <div className="stat-label">Vehículos</div>
-
-          <div className="stat-value">
-            {cargando ? "—" : totalVehiculos}
-          </div>
-
-          <div className="stat-description">
-            Total registrado
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">✓</div>
-
-          <div className="stat-label">Disponibles</div>
-
-          <div className="stat-value">
-            {cargando ? "—" : vehiculosDisponibles}
-          </div>
-
-          <div className="stat-description">
-            Listos para alquilar
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon">🔑</div>
-
-          <div className="stat-label">Alquilados</div>
-
-          <div className="stat-value">
-            {cargando ? "—" : vehiculosAlquilados}
-          </div>
-
-          <div className="stat-description">
-            En alquiler actualmente
+          <div className="stat-info">
+            <span className="stat-label">Flota Disponible</span>
+            <strong className="stat-value">{stats.disponibles} de {stats.totalVehiculos}</strong>
           </div>
         </div>
 
         <div className="stat-card">
           <div className="stat-icon">👥</div>
-
-          <div className="stat-label">Clientes</div>
-
-          <div className="stat-value">
-            {cargando ? "—" : totalClientes}
-          </div>
-
-          <div className="stat-description">
-            Clientes registrados
+          <div className="stat-info">
+            <span className="stat-label">Cartera de Clientes</span>
+            <strong className="stat-value">{stats.totalClientes}</strong>
           </div>
         </div>
       </div>
 
-      <div className="dashboard-grid">
-        <div className="dashboard-panel">
+      {/* Cuadrícula de Paneles de Operación */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "24px" }}>
+        {/* Panel 1: Rentas y Alquileres Recientes */}
+        <div className="content-panel">
           <div className="panel-header">
-            <div>
-              <h2>Actividad reciente</h2>
+            <h2>Rentas Recientes</h2>
+            <Link to="/contratos" style={{ color: "var(--primary)", fontSize: "12px", fontWeight: 600 }}>
+              Ver todas ➔
+            </Link>
+          </div>
 
-              <p>
-                Movimientos recientes del sistema.
-              </p>
+          {cargando ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">⏳</div>
+              <span>Cargando contratos...</span>
             </div>
-          </div>
-
-          <div className="empty-state">
-            <div className="empty-state-icon">📊</div>
-
-            <strong>Actividad pendiente</strong>
-
-            <span>
-              La actividad reciente se conectará posteriormente
-              con contratos, entregas y pagos.
-            </span>
-          </div>
+          ) : contratos.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">📄</div>
+              <strong>No hay rentas activas</strong>
+              <span>Genera contratos en la pestaña de Contratos.</span>
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Vehículo</th>
+                    <th>Devolución</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contratos.slice(0, 5).map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <strong>{c.cliente?.nombre} {c.cliente?.apellido}</strong>
+                      </td>
+                      <td>
+                        {c.vehiculo?.marca} {c.vehiculo?.modelo} (<code>{c.vehiculo?.placa}</code>)
+                      </td>
+                      <td>{new Date(c.fechaFin).toLocaleDateString("es-DO")}</td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            c.estado === "ACTIVO"
+                              ? "badge-alquilado"
+                              : c.estado === "FINALIZADO"
+                              ? "badge-disponible"
+                              : "badge-mantenimiento"
+                          }`}
+                        >
+                          {c.estado}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        <div className="dashboard-panel">
+        {/* Panel 2: Flujo de Caja y Cobros Recientes */}
+        <div className="content-panel">
           <div className="panel-header">
-            <div>
-              <h2>Estado de la flota</h2>
-
-              <p>
-                Situación actual de los vehículos.
-              </p>
-            </div>
+            <h2>Últimos Cobros Registrados</h2>
+            <Link to="/pagos" style={{ color: "var(--primary)", fontSize: "12px", fontWeight: 600 }}>
+              Ver caja ➔
+            </Link>
           </div>
 
-          <div className="fleet-status">
-            <div className="fleet-row">
-              <span>
-                <i className="legend-dot available" />
-                Disponibles
-              </span>
-
-              <strong>
-                {cargando ? "—" : vehiculosDisponibles}
-              </strong>
+          {cargando ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">⏳</div>
+              <span>Cargando transacciones...</span>
             </div>
-
-            <div className="fleet-row">
-              <span>
-                <i className="legend-dot rented" />
-                Alquilados
-              </span>
-
-              <strong>
-                {cargando ? "—" : vehiculosAlquilados}
-              </strong>
+          ) : pagos.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">💳</div>
+              <strong>No hay cobros registrados</strong>
+              <span>Registra cobros y recibos en la pestaña de Pagos.</span>
             </div>
-
-            <div className="fleet-row">
-              <span>
-                <i className="legend-dot maintenance" />
-                Mantenimiento
-              </span>
-
-              <strong>
-                {cargando ? "—" : vehiculosMantenimiento}
-              </strong>
+          ) : (
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Método</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagos.slice(0, 5).map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <strong>
+                          {p.contrato?.cliente
+                            ? `${p.contrato.cliente.nombre} ${p.contrato.cliente.apellido}`
+                            : `Transacción #${p.id}`}
+                        </strong>
+                      </td>
+                      <td>{p.tipo}</td>
+                      <td>
+                        <strong style={{ color: p.estado === "PAGADO" ? "var(--success)" : "inherit" }}>
+                          ${Number(p.monto).toFixed(2)}
+                        </strong>
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${
+                            p.estado === "PAGADO"
+                              ? "badge-disponible"
+                              : "badge-inactivo"
+                          }`}
+                        >
+                          {p.estado}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
+          )}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
-
-export default DashboardPage;
