@@ -10,6 +10,7 @@ import MantenimientoPage from "./pages/Mantenimiento/MantenimientoPage";
 import GpsPage from "./pages/Gps/GpsPage";
 import UsuariosPage from "./pages/Usuarios/UsuariosPage";
 import ConfiguracionPage from "./pages/Configuracion/ConfiguracionPage";
+import RedAliadaPage from "./pages/RedAliada/RedAliadaPage";
 import "./App.css";
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/mantenimiento" element={<MantenimientoPage />} />
           <Route path="/gps" element={<GpsPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
+          <Route path="/red" element={<RedAliadaPage />} />
           <Route path="/configuracion" element={<ConfiguracionPage />} />
         </Route>
       </Routes>

@@ -16,6 +16,7 @@ export const API_URLS = {
   users: `${API_BASE_URL}/users`,
   auth: `${API_BASE_URL}/auth`,
   credito: `${API_BASE_URL}/credito`,
+  red: `${API_BASE_URL}/red`,
   rentcars: `${API_BASE_URL}/rentcars`,
   backup: `${API_BASE_URL}/backup`,
 };

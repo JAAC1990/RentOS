@@ -47,6 +47,11 @@ const menuItems = [
     icon: "👤",
   },
   {
+    path: "/red",
+    label: "Red de Aliados",
+    icon: "🌐",
+  },
+  {
     path: "/configuracion",
     label: "Configuración",
     icon: "⚙️",

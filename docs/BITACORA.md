@@ -236,6 +236,21 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** RentOS cuenta con protección de riesgo de crédito y personalización visual avanzada.
 
+### [2026-08-22] - Red de Rent Cars Aliados, Búsqueda Cruzada de Flota & Transferencias
+- **Problema/Necesidad:** Permitir la interconexión entre empresas de Rent a Car (Paso 12 del Roadmap) para buscar inventario disponible en negocios aliados cuando no hay flota propia y solicitar transferencias inter-sucursal.
+- **Decisión técnica:**
+  - Modelo `TransferenciaFlota` en Prisma para ciclo de vida de préstamos inter-empresa (`PENDIENTE`, `APROBADA`, `EN_TRANSITO`, `COMPLETADA`).
+  - `red.routes.ts`: Búsqueda cruzada multi-empresa `GET /api/red/flota` con filtros por ciudad (Santo Domingo, Punta Cana, Santiago) y marca, más endpoints de solicitud y cambio de estado.
+  - `RedAliadaPage.tsx`: Marketplace de flota compartida, directorio de aliados con contactos directos y panel de control de transferencias de flota en tiempo real.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/red.routes.ts`, `backend/src/index.ts`, `frontend/src/pages/RedAliada/RedAliadaPage.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/App.tsx`, `frontend/src/services/api.ts`.
+- **Pruebas realizadas:**
+  - Sincronización Prisma e inicialización de aliados en Punta Cana y Santiago.
+  - Consulta cruzada de flota multi-ciudad vía `GET /api/red/flota` (HTTP 200 OK).
+  - Creación y despacho de solicitud de transferencia entre Rent Cars.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Módulo de Red de Aliados 100% operativo y conectado en `http://localhost:5173/red`.
+
+
 
 
 

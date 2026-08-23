@@ -183,6 +183,7 @@ model Vehiculo {
   contratos      Contrato[]
   mantenimientos Mantenimiento[]
   ubicacionesGPS UbicacionGPS[]
+  transferencias TransferenciaFlota[]
 
   @@index([rentCarId])
 }
@@ -337,4 +338,24 @@ model Pago {
 
   @@index([contratoId])
   @@index([usuarioId])
+}
+
+model TransferenciaFlota {
+  id               Int       @id @default(autoincrement())
+  vehiculoId       Int
+  origenRentCarId  Int
+  destinoRentCarId Int
+  fechaSolicitud   DateTime  @default(now())
+  fechaDevolucion  DateTime?
+  tarifaPactada    Decimal   @db.Decimal(10, 2)
+  estado           String    @default("PENDIENTE") // PENDIENTE, APROBADA, EN_TRANSITO, COMPLETADA, RECHAZADA
+  notas            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
+
+  @@index([vehiculoId])
+  @@index([origenRentCarId])
+  @@index([destinoRentCarId])
 }
