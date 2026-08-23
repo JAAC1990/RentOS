@@ -174,4 +174,135 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// DELETE /api/rentcars/:id
+// Eliminar permanentemente una empresa / Rent a Car y sus registros asociados
+router.delete("/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: "El ID del Rent Car no es válido." });
+    }
+
+    if (id === 1) {
+      return res.status(400).json({
+        error: "No es posible eliminar la empresa matriz principal de RentOS (ID #1).",
+      });
+    }
+
+    const rentcar = await prisma.rentCar.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            vehiculos: true,
+            contratos: true,
+            usuarios: true,
+          },
+        },
+      },
+    });
+
+    if (!rentcar) {
+      return res.status(404).json({ error: "Rent Car no encontrado." });
+    }
+
+    // Eliminación en cascada segura dentro de una transacción
+    await prisma.$transaction(async (tx) => {
+      // 1. Obtener contratos del RentCar
+      const contratos = await tx.contrato.findMany({
+        where: { rentCarId: id },
+        select: { id: true },
+      });
+      const contratoIds = contratos.map((c) => c.id);
+
+      // 2. Obtener entregas asociadas a esos contratos
+      if (contratoIds.length > 0) {
+        const entregas = await tx.entrega.findMany({
+          where: { contratoId: { in: contratoIds } },
+          select: { id: true },
+        });
+        const entregaIds = entregas.map((e) => e.id);
+
+        if (entregaIds.length > 0) {
+          // Eliminar defectos y evidencias
+          await tx.defectoVehiculo.deleteMany({
+            where: { entregaId: { in: entregaIds } },
+          });
+          await tx.evidencia.deleteMany({
+            where: { entregaId: { in: entregaIds } },
+          });
+          await tx.entrega.deleteMany({
+            where: { id: { in: entregaIds } },
+          });
+        }
+
+        // Eliminar pagos asociados a contratos
+        await tx.pago.deleteMany({
+          where: { contratoId: { in: contratoIds } },
+        });
+
+        // Eliminar contratos
+        await tx.contrato.deleteMany({
+          where: { rentCarId: id },
+        });
+      }
+
+      // 3. Obtener vehículos del RentCar
+      const vehiculos = await tx.vehiculo.findMany({
+        where: { rentCarId: id },
+        select: { id: true },
+      });
+      const vehiculoIds = vehiculos.map((v) => v.id);
+
+      if (vehiculoIds.length > 0) {
+        // Eliminar mantenimientos y GPS
+        await tx.mantenimiento.deleteMany({
+          where: { vehiculoId: { in: vehiculoIds } },
+        });
+        await tx.ubicacionGPS.deleteMany({
+          where: { vehiculoId: { in: vehiculoIds } },
+        });
+        await tx.transferenciaFlota.deleteMany({
+          where: {
+            OR: [
+              { vehiculoId: { in: vehiculoIds } },
+              { rentCarOrigenId: id },
+              { rentCarDestinoId: id },
+            ],
+          },
+        });
+        await tx.vehiculo.deleteMany({
+          where: { rentCarId: id },
+        });
+      }
+
+      // 4. Eliminar mantenimientos directos si quedara alguno
+      await tx.mantenimiento.deleteMany({
+        where: { rentCarId: id },
+      });
+
+      // 5. Eliminar usuarios del RentCar
+      await tx.usuario.deleteMany({
+        where: { rentCarId: id },
+      });
+
+      // 6. Eliminar el RentCar
+      await tx.rentCar.delete({
+        where: { id },
+      });
+    });
+
+    res.json({
+      mensaje: `La empresa "${rentcar.nombre}" (ID #${rentcar.id}) ha sido eliminada exitosamente junto con sus registros asociados.`,
+    });
+  } catch (error) {
+    console.error("Error al eliminar Rent Car:", error);
+    res.status(500).json({
+      error: "No fue posible eliminar el Rent Car.",
+      detalle: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
 export default router;

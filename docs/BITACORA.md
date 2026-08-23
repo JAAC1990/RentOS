@@ -373,6 +373,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Captura telefónica internacional optimizada y gestión centralizada de onboarding para el SuperAdministrador.
 
+### [2026-08-22] - Eliminación Segura de Empresas Rent a Car en Cascada
+- **Problema/Necesidad:** Permitir al SuperAdministrador eliminar permanentemente una empresa de Rent a Car (suspendida, rechazada o de prueba), limpiando de forma transaccional todos sus vehículos, contratos, mantenimientos, pagos y usuarios vinculados, protegiendo la empresa matriz (ID #1).
+- **Decisión técnica:**
+  - `rentcars.routes.ts`: Endpoint `DELETE /api/rentcars/:id` con transacción en cascada (`prisma.$transaction`) que borra ordenadamente defectos, evidencias, entregas, pagos, contratos, mantenimientos, coordenadas GPS, vehículos, usuarios y la empresa.
+  - `SolicitudesPage.tsx`: Botón **`🗑️ Eliminar`** con diálogo de confirmación de seguridad irreversible.
+- **Archivos afectados:** `backend/src/routes/rentcars.routes.ts`, `frontend/src/pages/SuperAdmin/SolicitudesPage.tsx`.
+- **Pruebas realizadas:**
+  - Eliminación exitosa de empresa de prueba (HTTP 200 OK).
+  - Bloqueo de seguridad verificado para la empresa matriz ID #1.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Control y limpieza total del parque multi-tenant de empresas para el SuperAdministrador.
+
+
 
 
 

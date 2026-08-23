@@ -125,14 +125,47 @@ export default function SolicitudesPage() {
     }
   };
 
+  const eliminarEmpresa = async (s: SolicitudRentCar) => {
+    if (s.id === 1) {
+      alert("No es posible eliminar la empresa matriz principal de RentOS (ID #1).");
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `⚠️ ¿ESTÁS SEGURO DE ELIMINAR PERMANENTEMENTE LA EMPRESA?\n\nEmpresa: "${s.nombre}" (ID #${s.id})\n\nEsta acción eliminará de forma irreversible:\n- La empresa y su configuración\n- Todos sus vehículos registrados\n- Todos sus contratos y entregas\n- Los usuarios y accesos de sus empleados\n\n¿Deseas continuar?`
+    );
+    if (!confirmar) return;
+
+    try {
+      setProcesandoId(s.id);
+      setError("");
+      setMensaje("");
+
+      const res = await fetch(`${API_URLS.rentcars}/${s.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al eliminar empresa.");
+
+      setMensaje(`🗑️ ${data.mensaje}`);
+      await cargarSolicitudes();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Error al eliminar empresa.");
+    } finally {
+      setProcesandoId(null);
+    }
+  };
+
   return (
     <div className="solicitudes-container">
       {/* Encabezado Principal */}
       <div className="page-heading">
         <div>
-          <h1>👑 Autorización de Empresas & Solicitudes de Rent Cars</h1>
+          <h1>👑 Gestión & Autorización de Empresas (Rent a Cars)</h1>
           <p>
-            Revisa, autoriza o rechaza las nuevas empresas de Rent a Car que solicitan unirse a RentOS.
+            Revisa, autoriza, rechaza o elimina las empresas de Rent a Car registradas en RentOS.
           </p>
         </div>
 
@@ -245,7 +278,7 @@ export default function SolicitudesPage() {
                   <th>Correo de Acceso</th>
                   <th>Ciudad</th>
                   <th>Estado</th>
-                  <th style={{ textAlign: "right" }}>Acción de Autorización</th>
+                  <th style={{ textAlign: "right" }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -311,41 +344,49 @@ export default function SolicitudesPage() {
                         </span>
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        {estaPendiente ? (
-                          <div className="actions-cell" style={{ justifyContent: "flex-end", gap: "6px" }}>
+                        <div className="actions-cell" style={{ justifyContent: "flex-end", gap: "6px" }}>
+                          {estaPendiente ? (
+                            <>
+                              <button
+                                type="button"
+                                className="primary-button"
+                                style={{ backgroundColor: "var(--success)", padding: "6px 12px", fontSize: "12px" }}
+                                onClick={() => autorizarCuenta(s)}
+                                disabled={procesandoId === s.id}
+                              >
+                                {procesandoId === s.id ? "⏳..." : "✅ Autorizar"}
+                              </button>
+                              <button
+                                type="button"
+                                className="secondary-button"
+                                style={{ color: "var(--danger)", borderColor: "#fca5a5", padding: "6px 10px", fontSize: "12px" }}
+                                onClick={() => rechazarCuenta(s)}
+                                disabled={procesandoId === s.id}
+                                title="Rechazar solicitud"
+                              >
+                                ✕
+                              </button>
+                            </>
+                          ) : (
+                            <span style={{ fontSize: "12px", color: "var(--success)", fontWeight: 600 }}>
+                              ✓ Activa
+                            </span>
+                          )}
+
+                          {/* Botón Eliminar Empresa Permanente (Excepto Matriz ID #1) */}
+                          {s.id !== 1 && (
                             <button
                               type="button"
-                              className="primary-button"
-                              style={{ backgroundColor: "var(--success)", padding: "6px 12px", fontSize: "12px" }}
-                              onClick={() => autorizarCuenta(s)}
+                              className="btn-action-delete"
+                              onClick={() => eliminarEmpresa(s)}
                               disabled={procesandoId === s.id}
+                              title="Eliminar permanentemente esta empresa y todos sus datos"
+                              style={{ marginLeft: "4px" }}
                             >
-                              {procesandoId === s.id ? "⏳..." : "✅ Autorizar Cuenta"}
+                              🗑️ Eliminar
                             </button>
-                            <button
-                              type="button"
-                              className="secondary-button"
-                              style={{ color: "var(--danger)", borderColor: "#fca5a5", padding: "6px 10px", fontSize: "12px" }}
-                              onClick={() => rechazarCuenta(s)}
-                              disabled={procesandoId === s.id}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : s.activo ? (
-                          <span style={{ fontSize: "12px", color: "var(--success)", fontWeight: 600 }}>
-                            ✓ Cuenta Operativa
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            style={{ padding: "4px 8px", fontSize: "11px" }}
-                            onClick={() => autorizarCuenta(s)}
-                          >
-                            Reactivar
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
