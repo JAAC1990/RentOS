@@ -1,4 +1,4 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import {
   crearBackup,
   listarBackups,
@@ -12,11 +12,9 @@ const router = Router();
 router.get("/", async (_req, res) => {
   try {
     const backups = await listarBackups();
-
     res.json(backups);
   } catch (error) {
     console.error("Error al listar backups:", error);
-
     res.status(500).json({
       error: "No fue posible obtener los backups.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -28,11 +26,12 @@ router.get("/", async (_req, res) => {
 router.post("/", async (_req, res) => {
   try {
     const backup = await crearBackup();
+    const tamanoKb = (backup.tamaño / 1024).toFixed(2);
 
     await enviarAlerta(
       "INFO",
-      "Backup creado",
-      `Se creó correctamente el backup ${backup.archivo}.`,
+      "💾 Copia de Seguridad Generada (Backup)",
+      `Se ha creado y verificado con éxito el respaldo de la base de datos de RentOS.\n\n📁 <b>Archivo:</b> <code>${backup.archivo}</code>\n📦 <b>Tamaño:</b> ${tamanoKb} KB\n🟢 <b>Estado:</b> Respaldo verificado e íntegro.`
     );
 
     res.status(201).json({
@@ -44,8 +43,8 @@ router.post("/", async (_req, res) => {
 
     await enviarAlerta(
       "ERROR",
-      "Backup fallido",
-      error instanceof Error ? error.message : String(error),
+      "❌ Fallo en Copia de Seguridad (Backup)",
+      `Ocurrió un error al intentar generar el respaldo:\n\n⚠️ <b>Error:</b> ${error instanceof Error ? error.message : String(error)}`
     );
 
     res.status(500).json({
@@ -70,8 +69,8 @@ router.post("/restore", async (req, res) => {
 
     await enviarAlerta(
       "ALERTA",
-      "Base de datos restaurada",
-      `Se restauró el backup ${archivo}.`,
+      "🔄 Base de Datos Restaurada",
+      `Se ha restaurado exitosamente la base de datos con el archivo de respaldo:\n\n📁 <b>Archivo:</b> <code>${archivo}</code>\n⚠️ <b>Atención:</b> La información ha sido sobreescrita con la versión del backup.`
     );
 
     res.json({
@@ -83,8 +82,8 @@ router.post("/restore", async (req, res) => {
 
     await enviarAlerta(
       "ERROR",
-      "Restauración fallida",
-      error instanceof Error ? error.message : String(error),
+      "❌ Fallo al Restaurar Base de Datos",
+      `No fue posible restaurar la base de datos:\n\n⚠️ <b>Detalle:</b> ${error instanceof Error ? error.message : String(error)}`
     );
 
     res.status(500).json({

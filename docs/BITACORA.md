@@ -143,17 +143,18 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación TypeScript frontend/backend completa con 0 errores.
 - **Resultado:** Módulo de Pagos 100% operativo y conectado en `http://localhost:5173/pagos`.
 
-### [2026-08-22] - Módulo de Entregas, Inspección y Dashboard Ejecutivo
-- **Problema/Necesidad:** Completar el ciclo de check-in / check-out de vehículos con registro de combustible y defectos, y centralizar la visión del negocio en el Dashboard principal.
+### [2026-08-22] - Notificaciones Automáticas de Respaldo (Backup) a Telegram
+- **Problema/Necesidad:** Alertar al administrador de RentOS en tiempo real a su Telegram cuando se genere o restaure una copia de seguridad de la base de datos PostgreSQL.
 - **Decisión técnica:**
-  - `EntregasPage.tsx`: Inspección de devolución de flota, odómetro, checklist de combustible y defectos, automatizando la liberación del auto a `DISPONIBLE`.
-  - `DashboardPage.tsx`: Panel ejecutivo con métricas de ingresos, rentas en curso, flota disponible y accesos directos a contratos y cobros.
-- **Archivos afectados:** `backend/src/routes/entregas.routes.ts`, `frontend/src/pages/Entregas/EntregasPage.tsx`, `frontend/src/pages/Dashboard/DashboardPage.tsx`.
+  - Integración de `alert.service.ts` y `telegram.ts` con la API oficial de Telegram Bots.
+  - Formateo enriquecido en HTML con nombre del archivo `.sql`, tamaño en KB, fecha/hora y estado del respaldo.
+  - Generación de copias con `pg_dump` y almacenamiento en `/backups`.
+- **Archivos afectados:** `backend/src/routes/backup.routes.ts`, `backend/src/services/alert.service.ts`, `backend/src/lib/telegram.ts`, `scripts/test_telegram.ts`.
 - **Pruebas realizadas:**
-  - Verificación de endpoints de entregas (HTTP 200 OK).
-  - Verificación de renderizado de métricas e historial en Dashboard.
-  - Compilación de TypeScript en todo el proyecto (0 errores).
-- **Resultado:** Todas las pestañas de RentOS (Dashboard, Vehículos, Clientes, Contratos, Entregas, Pagos) 100% funcionales y conectadas.
+  - Ejecución de `test_telegram.ts` confirmando recepción de alerta de prueba en el canal/chat de Telegram.
+  - Ejecución de `POST /api/backups` generando exitosamente el archivo SQL y despachando la notificación inmediata con peso y nombre de archivo.
+- **Resultado:** Sistema de backups y alertas en Telegram 100% activo y probado.
+
 
 
 
