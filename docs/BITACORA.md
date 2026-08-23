@@ -436,6 +436,19 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Proceso de personalización de marca sin barreras de hospedaje externo de imágenes.
 
+### [2026-08-22] - Corrección de Límite de Payload en Backend (50MB) & Compresor Automático de Canvas
+- **Problema/Necesidad:** Al guardar logotipos de alta resolución en formato Base64, el backend de Express rechazaba la petición con error 413 (Payload Too Large) debido al límite por defecto de 100 KB en `express.json()`.
+- **Decisión técnica:**
+  - `backend/src/index.ts`: Configurado `express.json({ limit: "50mb" })` y `express.urlencoded({ limit: "50mb", extended: true })`.
+  - `ConfiguracionPage.tsx`: Compresor y redimensionador inteligente con Canvas HTML5 en el navegador (redimensiona a máximo 600px manteniendo proporción y optimiza a PNG/JPEG liviano) con captura detallada de mensajes de error de la API.
+- **Archivos afectados:** `backend/src/index.ts`, `frontend/src/pages/Configuracion/ConfiguracionPage.tsx`.
+- **Pruebas realizadas:**
+  - Envío y guardado de logo Base64 de alta resolución vía `PUT /api/rentcars/1` (HTTP 200 OK).
+  - Verificación del renderizado del logo guardado en la base de datos.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Guardado rápido y confiable de logotipos sin errores de tamaño.
+
+
 
 
 

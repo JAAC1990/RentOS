@@ -63,17 +63,52 @@ export default function ConfiguracionPage() {
       return;
     }
 
-    if (file.size > 4 * 1024 * 1024) {
-      setError("La imagen no debe superar los 4 MB para optimizar la velocidad de carga.");
+    if (file.size > 10 * 1024 * 1024) {
+      setError("La imagen no debe superar los 10 MB.");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      if (event.target?.result) {
-        setLogoUrl(event.target.result as string);
-        setMensaje("🖼️ Logotipo cargado desde tu dispositivo. Recuerda pulsar 'Guardar Personalización'.");
-      }
+      const src = event.target?.result as string;
+      if (!src) return;
+
+      // Optimizar y redimensionar imagen en Canvas para guardado ultraligero
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const optimizedDataUrl = canvas.toDataURL(file.type === "image/png" ? "image/png" : "image/jpeg", 0.9);
+          setLogoUrl(optimizedDataUrl);
+          setMensaje("🖼️ Logotipo cargado y optimizado con éxito. Pulsa 'Guardar Personalización'.");
+        } else {
+          setLogoUrl(src);
+        }
+      };
+      img.onerror = () => {
+        setLogoUrl(src);
+      };
+      img.src = src;
     };
     reader.readAsDataURL(file);
   };
@@ -151,21 +186,21 @@ export default function ConfiguracionPage() {
       const targetId = tenantActivoId || 1;
       const datos = {
         nombre: nombre.trim(),
-        eslogan: eslogan.trim() || undefined,
-        logoUrl: logoUrl.trim() || undefined,
+        eslogan: eslogan.trim() || null,
+        logoUrl: logoUrl.trim() || null,
         colorPrimario: colorPrimario.trim() || "#0284c7",
-        rnc: rnc.trim() || undefined,
+        rnc: rnc.trim() || null,
         ciudad: ciudad.trim(),
-        direccion: direccion.trim() || undefined,
-        telefono: telefono.trim() || undefined,
-        whatsapp: whatsapp.trim() || undefined,
-        email: email.trim() || undefined,
+        direccion: direccion.trim() || null,
+        telefono: telefono.trim() || null,
+        whatsapp: whatsapp.trim() || null,
+        email: email.trim() || null,
         moneda,
         depositoEstandar: Number(depositoEstandar),
         limiteKilometrajeDiario: Number(limiteKm),
         cargoKmExtra: Number(cargoKmExtra),
-        terminosContrato: terminosContrato.trim() || undefined,
-        telegramChatId: telegramChatId.trim() || undefined,
+        terminosContrato: terminosContrato.trim() || null,
+        telegramChatId: telegramChatId.trim() || null,
       };
 
       const res = await fetch(`${API_RENTCARS}/${targetId}`, {
@@ -174,7 +209,16 @@ export default function ConfiguracionPage() {
         body: JSON.stringify(datos),
       });
 
-      if (!res.ok) throw new Error("No fue posible guardar los cambios de configuración.");
+      if (!res.ok) {
+        let errMsg = "No fue posible guardar los cambios de configuración.";
+        try {
+          const errData = await res.json();
+          if (errData.error) errMsg = `${errData.error} ${errData.detalle || ""}`.trim();
+        } catch {
+          // ignore
+        }
+        throw new Error(errMsg);
+      }
 
       setMensaje("✅ Configuración, marca y logotipo de la empresa actualizados con éxito.");
       await cargarConfiguracion();
