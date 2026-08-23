@@ -197,6 +197,20 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación TypeScript frontend/backend limpia (0 errores).
 - **Resultado:** Módulo de Autenticación y Usuarios 100% operativo y conectado en `http://localhost:5173/usuarios`.
 
+### [2026-08-22] - Módulo de Configuración de Empresa, Marca y Parámetros Comerciales
+- **Problema/Necesidad:** Permitir la personalización de marca (Paso 11 & 12 del Roadmap), identidad fiscal (RNC), moneda de cobro, depósitos estándar, límites de kilometraje diario, cláusulas de contratos y generación de backups bajo demanda.
+- **Decisión técnica:**
+  - Ampliación del modelo `RentCar` en Prisma con campos `moneda`, `terminosContrato`, `limiteKilometrajeDiario`, `cargoKmExtra` y `depositoEstandar`.
+  - `ConfiguracionPage.tsx`: Panel de control para edición de identidad comercial, políticas contractuales y botón directo de generación de backups de base de datos con despacho a Telegram.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/rentcars.routes.ts`, `frontend/src/pages/Configuracion/ConfiguracionPage.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/App.tsx`, `frontend/src/services/api.ts`.
+- **Pruebas realizadas:**
+  - Sincronización de base de datos (`prisma db push`).
+  - Consulta y actualización de datos de empresa mediante `GET /api/rentcars/1` y `PUT /api/rentcars/1` (HTTP 200 OK).
+  - Disparador de copia de seguridad con notificación exitosa a Telegram.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Módulo de Configuración de Empresa 100% operativo y conectado en `http://localhost:5173/configuracion`.
+
+
 
 
 

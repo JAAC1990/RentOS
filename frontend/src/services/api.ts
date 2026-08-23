@@ -15,6 +15,7 @@ export const API_URLS = {
   gps: `${API_BASE_URL}/gps`,
   users: `${API_BASE_URL}/users`,
   auth: `${API_BASE_URL}/auth`,
+  rentcars: `${API_BASE_URL}/rentcars`,
   backup: `${API_BASE_URL}/backup`,
 };
 

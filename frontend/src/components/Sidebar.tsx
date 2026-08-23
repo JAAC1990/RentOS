@@ -46,6 +46,11 @@ const menuItems = [
     label: "Equipo y Usuarios",
     icon: "👤",
   },
+  {
+    path: "/configuracion",
+    label: "Configuración",
+    icon: "⚙️",
+  },
 ];
 
 function Sidebar() {

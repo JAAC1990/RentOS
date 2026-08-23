@@ -3,10 +3,7 @@ import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-/**
- * GET /api/rentcars
- * Lista todas las empresas (Rent Cars) registradas.
- */
+// GET /api/rentcars
 router.get("/", async (_req, res) => {
   try {
     const rentcars = await prisma.rentCar.findMany({
@@ -16,6 +13,8 @@ router.get("/", async (_req, res) => {
             vehiculos: true,
             clientes: true,
             contratos: true,
+            usuarios: true,
+            mantenimientos: true,
           },
         },
       },
@@ -32,10 +31,7 @@ router.get("/", async (_req, res) => {
   }
 });
 
-/**
- * GET /api/rentcars/:id
- * Obtiene el detalle de un Rent Car por su ID.
- */
+// GET /api/rentcars/:id
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -52,6 +48,7 @@ router.get("/:id", async (req, res) => {
             vehiculos: true,
             clientes: true,
             contratos: true,
+            usuarios: true,
           },
         },
       },
@@ -71,13 +68,23 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-/**
- * POST /api/rentcars
- * Registra un nuevo Rent Car (Tenant).
- */
+// POST /api/rentcars
 router.post("/", async (req, res) => {
   try {
-    const { nombre, rnc, telefono, email, direccion, ciudad, logoUrl } = req.body;
+    const {
+      nombre,
+      rnc,
+      telefono,
+      email,
+      direccion,
+      ciudad,
+      logoUrl,
+      moneda,
+      terminosContrato,
+      limiteKilometrajeDiario,
+      cargoKmExtra,
+      depositoEstandar,
+    } = req.body;
 
     if (!nombre || !nombre.trim()) {
       return res.status(400).json({ error: "El nombre del Rent Car es obligatorio." });
@@ -92,6 +99,11 @@ router.post("/", async (req, res) => {
         direccion: direccion ? direccion.trim() : null,
         ciudad: ciudad ? ciudad.trim() : "Santo Domingo",
         logoUrl: logoUrl ? logoUrl.trim() : null,
+        moneda: moneda ? String(moneda).trim() : "USD",
+        terminosContrato: terminosContrato ? String(terminosContrato).trim() : null,
+        limiteKilometrajeDiario: limiteKilometrajeDiario ? Number(limiteKilometrajeDiario) : 200,
+        cargoKmExtra: cargoKmExtra !== undefined ? Number(cargoKmExtra) : 0.25,
+        depositoEstandar: depositoEstandar !== undefined ? Number(depositoEstandar) : 200.0,
       },
     });
 
@@ -105,10 +117,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-/**
- * PUT /api/rentcars/:id
- * Actualiza la información y personalización de un Rent Car.
- */
+// PUT /api/rentcars/:id
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -117,20 +126,41 @@ router.put("/:id", async (req, res) => {
       return res.status(400).json({ error: "El ID del Rent Car no es válido." });
     }
 
-    const { nombre, rnc, telefono, email, direccion, ciudad, logoUrl, activo } = req.body;
+    const {
+      nombre,
+      rnc,
+      telefono,
+      email,
+      direccion,
+      ciudad,
+      logoUrl,
+      moneda,
+      terminosContrato,
+      limiteKilometrajeDiario,
+      cargoKmExtra,
+      depositoEstandar,
+      activo,
+    } = req.body;
+
+    const dataToUpdate: Record<string, unknown> = {};
+
+    if (nombre !== undefined) dataToUpdate.nombre = nombre.trim();
+    if (rnc !== undefined) dataToUpdate.rnc = rnc ? rnc.trim() : null;
+    if (telefono !== undefined) dataToUpdate.telefono = telefono ? telefono.trim() : null;
+    if (email !== undefined) dataToUpdate.email = email ? email.trim() : null;
+    if (direccion !== undefined) dataToUpdate.direccion = direccion ? direccion.trim() : null;
+    if (ciudad !== undefined) dataToUpdate.ciudad = ciudad ? ciudad.trim() : "Santo Domingo";
+    if (logoUrl !== undefined) dataToUpdate.logoUrl = logoUrl ? logoUrl.trim() : null;
+    if (moneda !== undefined) dataToUpdate.moneda = String(moneda).trim();
+    if (terminosContrato !== undefined) dataToUpdate.terminosContrato = terminosContrato ? String(terminosContrato).trim() : null;
+    if (limiteKilometrajeDiario !== undefined) dataToUpdate.limiteKilometrajeDiario = Number(limiteKilometrajeDiario);
+    if (cargoKmExtra !== undefined) dataToUpdate.cargoKmExtra = Number(cargoKmExtra);
+    if (depositoEstandar !== undefined) dataToUpdate.depositoEstandar = Number(depositoEstandar);
+    if (activo !== undefined) dataToUpdate.activo = Boolean(activo);
 
     const rentcar = await prisma.rentCar.update({
       where: { id },
-      data: {
-        ...(nombre !== undefined && { nombre: nombre.trim() }),
-        ...(rnc !== undefined && { rnc: rnc ? rnc.trim() : null }),
-        ...(telefono !== undefined && { telefono: telefono ? telefono.trim() : null }),
-        ...(email !== undefined && { email: email ? email.trim() : null }),
-        ...(direccion !== undefined && { direccion: direccion ? direccion.trim() : null }),
-        ...(ciudad !== undefined && { ciudad: ciudad ? ciudad.trim() : "Santo Domingo" }),
-        ...(logoUrl !== undefined && { logoUrl: logoUrl ? logoUrl.trim() : null }),
-        ...(activo !== undefined && { activo: Boolean(activo) }),
-      },
+      data: dataToUpdate,
     });
 
     res.json(rentcar);

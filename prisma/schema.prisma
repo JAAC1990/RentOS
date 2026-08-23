@@ -75,11 +75,16 @@ model RentCar {
   telefono  String?
   email     String?
   direccion String?
-  ciudad    String   @default("Santo Domingo")
-  logoUrl   String?  // URL o ruta al logo de la empresa
-  activo    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  ciudad                  String   @default("Santo Domingo")
+  logoUrl                 String?  // URL o ruta al logo de la empresa
+  moneda                  String   @default("USD") // USD, DOP, EUR
+  terminosContrato        String?  // Cláusulas estándar del contrato
+  limiteKilometrajeDiario Int?     @default(200)
+  cargoKmExtra            Decimal? @default(0.25) @db.Decimal(10, 2)
+  depositoEstandar        Decimal? @default(200.00) @db.Decimal(10, 2)
+  activo                  Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   usuarios       Usuario[]
   vehiculos      Vehiculo[]
