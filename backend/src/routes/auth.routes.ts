@@ -1,10 +1,119 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { RolUsuario } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "rentos_super_secret_jwt_key_2026";
+
+// Asegurar usuarios iniciales para pruebas de roles
+async function asegurarUsuariosIniciales() {
+  const hash = await bcrypt.hash("admin123", 10);
+
+  // 1. SuperAdmin Global (Acceso a todas las empresas)
+  await prisma.usuario.upsert({
+    where: { email: "superadmin@rentos.do" },
+    update: {},
+    create: {
+      nombre: "SuperAdministrador Global",
+      email: "superadmin@rentos.do",
+      password: hash,
+      rol: RolUsuario.SUPERADMIN,
+      rentCarId: null,
+      activo: true,
+    },
+  });
+
+  // 2. Administrador RentCar Santo Domingo (Tenant #1)
+  await prisma.usuario.upsert({
+    where: { email: "admin@rentos.local" },
+    update: { password: hash, rol: RolUsuario.ADMIN_RENTCAR, rentCarId: 1 },
+    create: {
+      nombre: "Administrador Santo Domingo",
+      email: "admin@rentos.local",
+      password: hash,
+      rol: RolUsuario.ADMIN_RENTCAR,
+      rentCarId: 1,
+      activo: true,
+    },
+  });
+
+  // 3. Administrador RentCar Punta Cana (Tenant #2)
+  const rentCarPuntaCana = await prisma.rentCar.findFirst({ where: { id: 2 } });
+  if (rentCarPuntaCana) {
+    await prisma.usuario.upsert({
+      where: { email: "puntacana@rentos.do" },
+      update: {},
+      create: {
+        nombre: "Administrador Punta Cana",
+        email: "puntacana@rentos.do",
+        password: hash,
+        rol: RolUsuario.ADMIN_RENTCAR,
+        rentCarId: 2,
+        activo: true,
+      },
+    });
+  }
+
+  // 4. Empleado Mostrador
+  await prisma.usuario.upsert({
+    where: { email: "juan@rentos.do" },
+    update: { password: hash },
+    create: {
+      nombre: "Juan Pérez (Asesor)",
+      email: "juan@rentos.do",
+      password: hash,
+      rol: RolUsuario.EMPLEADO,
+      rentCarId: 1,
+      activo: true,
+    },
+  });
+}
+
+// ======================================================
+// GET /api/auth/cuentas-demo
+// Cuentas de prueba para el panel de login
+// ======================================================
+router.get("/cuentas-demo", async (_req, res) => {
+  try {
+    await asegurarUsuariosIniciales();
+
+    res.json([
+      {
+        rol: "SUPERADMIN",
+        etiqueta: "👑 SuperAdministrador (SaaS Global)",
+        email: "superadmin@rentos.do",
+        password: "admin123",
+        descripcion: "Control de todas las empresas, métricas globales y configuración SaaS",
+      },
+      {
+        rol: "ADMIN_RENTCAR",
+        etiqueta: "🏢 Administrador (Santo Domingo)",
+        email: "admin@rentos.local",
+        password: "admin123",
+        descripcion: "Gestión completa de flota, contratos y tarifas de Santo Domingo",
+      },
+      {
+        rol: "ADMIN_RENTCAR",
+        etiqueta: "🏖️ Administrador (Punta Cana)",
+        email: "puntacana@rentos.do",
+        password: "admin123",
+        descripcion: "Gestión de sucursal turística Punta Cana & Bávaro",
+      },
+      {
+        rol: "EMPLEADO",
+        etiqueta: "👤 Empleado / Asesor",
+        email: "juan@rentos.do",
+        password: "admin123",
+        descripcion: "Creación de contratos y entregas en mostrador",
+      },
+    ]);
+  } catch (error) {
+    console.error("Error al obtener cuentas demo:", error);
+    res.status(500).json({ error: "No fue posible obtener cuentas demo." });
+  }
+});
 
 // ======================================================
 // POST /api/auth/login
@@ -17,6 +126,8 @@ router.post("/login", async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: "Email y contraseña son requeridos." });
     }
+
+    await asegurarUsuariosIniciales();
 
     const emailTrim = String(email).trim().toLowerCase();
     const usuario = await prisma.usuario.findUnique({
@@ -32,13 +143,11 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ error: "Esta cuenta de usuario ha sido desactivada." });
     }
 
-    // Verificar contraseña (soporta hash bcrypt o migración transparente)
     let passwordValida = false;
     if (usuario.password.startsWith("$2a$") || usuario.password.startsWith("$2b$")) {
       passwordValida = await bcrypt.compare(String(password), usuario.password);
     } else {
       passwordValida = usuario.password === String(password);
-      // Si era texto plano, migrar automáticamente a hash seguro
       if (passwordValida) {
         const nuevoHash = await bcrypt.hash(String(password), 10);
         await prisma.usuario.update({
@@ -57,7 +166,7 @@ router.post("/login", async (req, res) => {
       nombre: usuario.nombre,
       email: usuario.email,
       rol: usuario.rol,
-      rentCarId: usuario.rentCarId || 1,
+      rentCarId: usuario.rentCarId,
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
@@ -67,7 +176,7 @@ router.post("/login", async (req, res) => {
       token,
       usuario: {
         ...payload,
-        rentCarNombre: usuario.rentCar?.nombre || "RentOS Principal",
+        rentCarNombre: usuario.rentCar?.nombre || (usuario.rol === "SUPERADMIN" ? "RentOS SaaS Global" : "RentOS Principal"),
       },
     });
   } catch (error) {
@@ -81,7 +190,6 @@ router.post("/login", async (req, res) => {
 
 // ======================================================
 // GET /api/auth/perfil
-// Obtener perfil del usuario con JWT
 // ======================================================
 router.get("/perfil", async (req, res) => {
   try {

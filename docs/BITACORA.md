@@ -305,6 +305,23 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** RentOS cuenta con sistema predictivo de mantenimiento preventivo y alertas aisladas por tenant.
 
+### [2026-08-22] - Autenticación JWT, Portal de Login & Selector de Empresa para SuperAdmin
+- **Problema/Necesidad:** Proveer una experiencia de inicio de sesión segura (`/login`) que distinga entre SuperAdministrador Global (control de todas las sucursales), Administradores de Rent a Car (restringidos a su negocio) y Empleados, con protección de rutas y selector dinámico de tenant.
+- **Decisión técnica:**
+  - `auth.routes.ts`: Emisión y validación de tokens JWT (7 días), hashing con bcrypt y endpoint `GET /api/auth/cuentas-demo` con tarjetas de acceso rápido por rol.
+  - `AuthContext.tsx`: Gestión global de estado de autenticación, token en `localStorage` y selector de tenant activo para SuperAdmin.
+  - `LoginPage.tsx`: Pantalla de login moderna con diseño dual y tarjetas interactivas de prueba para cada perfil (`SUPERADMIN`, `ADMIN_RENTCAR`, `EMPLEADO`).
+  - `Header.tsx`: Avatar dinámico con badge de rol, switcher de sucursal en tiempo real para SuperAdmin y botón de cierre de sesión (`🚪 Salir`).
+  - `App.tsx`: Enrutador protegido mediante `<RutaProtegida />` que redirige a `/login` a usuarios no autenticados.
+- **Archivos afectados:** `backend/src/routes/auth.routes.ts`, `frontend/src/context/AuthContext.tsx`, `frontend/src/pages/Auth/LoginPage.tsx`, `frontend/src/components/Header.tsx`, `frontend/src/App.tsx`.
+- **Pruebas realizadas:**
+  - Login exitoso de SuperAdmin (`superadmin@rentos.do`) y Administrador (`admin@rentos.local`) vía API y formulario.
+  - Switcher de sucursales verificado en el Header.
+  - Redirección automática de rutas protegidas hacia `/login`.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** RentOS cuenta con ciclo de autenticación y control de acceso RBAC completo.
+
+
 
 
 
