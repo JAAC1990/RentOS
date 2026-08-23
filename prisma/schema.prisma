@@ -175,9 +175,13 @@ model Vehiculo {
   vin          String?        @unique
   kilometraje  Int            @default(0)
   estado       EstadoVehiculo @default(DISPONIBLE)
-  tarifaDiaria Decimal        @db.Decimal(10, 2)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  tarifaDiaria          Decimal        @db.Decimal(10, 2)
+  seguroPoliza          String?        // Póliza de seguro (ej. "Seguros Universal #UN-9922")
+  seguroVencimiento     DateTime?      // Fecha de expiración de póliza
+  marbeteVencimiento    DateTime?      // Vencimiento del impuesto de circulación
+  inspeccionVencimiento DateTime?      // Vencimiento de revista / inspección técnica
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   rentCar        RentCar         @relation(fields: [rentCarId], references: [id])
   contratos      Contrato[]

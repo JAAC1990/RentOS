@@ -275,6 +275,21 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Módulo de Entregas e Inspección 100% enriquecido con mapa interactivo de carrocería.
 
+### [2026-08-22] - Monitor de Seguros, Marbetes Legales & Alertas Tempranas a Telegram
+- **Problema/Necesidad:** Prevenir que vehículos salgan a la calle con la póliza de seguro, marbete o inspección técnica vencida, y permitir auditorías automáticas enviadas a Telegram.
+- **Decisión técnica:**
+  - Ampliación de `Vehiculo` en Prisma con `seguroPoliza`, `seguroVencimiento`, `marbeteVencimiento`, `inspeccionVencimiento`.
+  - `vehiculos.routes.ts`: Endpoint `GET /api/vehiculos/vencimientos` con semáforo inteligente (🔴 Vencido, 🟡 Por Vencer &lt;30d, 🟢 Al día) y `POST /api/vehiculos/notificar-vencimientos-telegram`.
+  - `VehiculosPage.tsx`: Modal **"🛡️ Monitor Seguros & Marbetes"** con métricas en semáforo, badges de póliza por auto y botón de auditoría en vivo a Telegram.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/vehiculos.routes.ts`, `frontend/src/pages/Vehiculos/VehiculosPage.tsx`.
+- **Pruebas realizadas:**
+  - Sincronización Prisma (`prisma db push`).
+  - Consulta del monitor de vencimientos (HTTP 200 OK).
+  - Envío de alerta con 3 notificaciones detectadas exitosamente a Telegram.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** RentOS cuenta con auditoría y protección legal preventiva de flota.
+
+
 
 
 

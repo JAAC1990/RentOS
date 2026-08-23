@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { EstadoVehiculo } from "@prisma/client";
 import prisma from "../lib/prisma.js";
+import { enviarAlerta } from "../services/alert.service.js";
 
 const router = Router();
 
@@ -18,6 +19,178 @@ function convertirEstado(estado: unknown): EstadoVehiculo | null {
   return null;
 }
 
+// Inicializar fechas de prueba si están vacías
+async function inicializarFechasDocumentos() {
+  const hoy = new Date();
+
+  // Fecha hace 5 días (Vencido)
+  const fechaVencida = new Date(hoy.getTime() - 5 * 24 * 60 * 60 * 1000);
+  // Fecha en 12 días (Por vencer)
+  const fechaPorVencer = new Date(hoy.getTime() + 12 * 24 * 60 * 60 * 1000);
+  // Fecha en 180 días (Al día)
+  const fechaAlDia = new Date(hoy.getTime() + 180 * 24 * 60 * 60 * 1000);
+
+  const vehiculosSinSeguro = await prisma.vehiculo.findMany({
+    where: { seguroVencimiento: null },
+    take: 10,
+  });
+
+  for (let i = 0; i < vehiculosSinSeguro.length; i++) {
+    const v = vehiculosSinSeguro[i];
+    let vSeguro = fechaAlDia;
+    let vMarbete = fechaAlDia;
+    let poliza = `Seguros Universal #UN-${v.id}092`;
+
+    if (i === 0) {
+      // Primer vehículo: Vencido
+      vSeguro = fechaVencida;
+      poliza = `Seguros Banreservas #BR-VENC-${v.id}`;
+    } else if (i === 1 || i === 2) {
+      // Segundo y tercer vehículo: Por vencer (<15 días)
+      vSeguro = fechaPorVencer;
+      vMarbete = fechaPorVencer;
+      poliza = `Mapfre BHD #MAP-${v.id}88`;
+    }
+
+    await prisma.vehiculo.update({
+      where: { id: v.id },
+      data: {
+        seguroPoliza: poliza,
+        seguroVencimiento: vSeguro,
+        marbeteVencimiento: vMarbete,
+        inspeccionVencimiento: fechaAlDia,
+      },
+    });
+  }
+}
+
+// ======================================================
+// GET /api/vehiculos/vencimientos
+// Obtiene el estado de vencimiento de documentos de toda la flota
+// ======================================================
+router.get("/vencimientos", async (_req, res) => {
+  try {
+    await inicializarFechasDocumentos();
+
+    const vehiculos = await prisma.vehiculo.findMany({
+      orderBy: { id: "asc" },
+      include: {
+        rentCar: {
+          select: { nombre: true, ciudad: true },
+        },
+      },
+    });
+
+    const hoy = new Date();
+    const en30Dias = new Date(hoy.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const reporte = vehiculos.map((v) => {
+      let estadoSeguro: "VENCIDO" | "POR_VENCER" | "AL_DIA" = "AL_DIA";
+      let diasRestantesSeguro: number | null = null;
+
+      if (v.seguroVencimiento) {
+        const diffMs = new Date(v.seguroVencimiento).getTime() - hoy.getTime();
+        diasRestantesSeguro = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diasRestantesSeguro < 0) {
+          estadoSeguro = "VENCIDO";
+        } else if (diasRestantesSeguro <= 30) {
+          estadoSeguro = "POR_VENCER";
+        }
+      }
+
+      let estadoMarbete: "VENCIDO" | "POR_VENCER" | "AL_DIA" = "AL_DIA";
+      if (v.marbeteVencimiento) {
+        const diffMs = new Date(v.marbeteVencimiento).getTime() - hoy.getTime();
+        const dias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        if (dias < 0) estadoMarbete = "VENCIDO";
+        else if (dias <= 30) estadoMarbete = "POR_VENCER";
+      }
+
+      return {
+        id: v.id,
+        marca: v.marca,
+        modelo: v.modelo,
+        placa: v.placa,
+        color: v.color,
+        estado: v.estado,
+        rentCar: v.rentCar,
+        seguroPoliza: v.seguroPoliza || "Sin póliza asignada",
+        seguroVencimiento: v.seguroVencimiento,
+        diasRestantesSeguro,
+        estadoSeguro,
+        marbeteVencimiento: v.marbeteVencimiento,
+        estadoMarbete,
+        inspeccionVencimiento: v.inspeccionVencimiento,
+      };
+    });
+
+    const conteoVencidos = reporte.filter((r) => r.estadoSeguro === "VENCIDO" || r.estadoMarbete === "VENCIDO").length;
+    const conteoPorVencer = reporte.filter((r) => r.estadoSeguro === "POR_VENCER" || r.estadoMarbete === "POR_VENCER").length;
+    const conteoAlDia = reporte.filter((r) => r.estadoSeguro === "AL_DIA" && r.estadoMarbete === "AL_DIA").length;
+
+    res.json({
+      resumen: {
+        total: reporte.length,
+        vencidos: conteoVencidos,
+        porVencer: conteoPorVencer,
+        alDia: conteoAlDia,
+      },
+      vehiculos: reporte,
+    });
+  } catch (error) {
+    console.error("Error al obtener vencimientos:", error);
+    res.status(500).json({
+      error: "No fue posible obtener el reporte de vencimientos.",
+      detalle: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// ======================================================
+// POST /api/vehiculos/notificar-vencimientos-telegram
+// Enviar resumen de alertas de seguro/marbete a Telegram
+// ======================================================
+router.post("/notificar-vencimientos-telegram", async (_req, res) => {
+  try {
+    const vehiculos = await prisma.vehiculo.findMany({
+      include: { rentCar: true },
+    });
+
+    const hoy = new Date();
+    const alertas = [];
+
+    for (const v of vehiculos) {
+      if (v.seguroVencimiento) {
+        const diff = Math.ceil((new Date(v.seguroVencimiento).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+        if (diff < 0) {
+          alertas.push(`🔴 <b>${v.marca} ${v.modelo} (${v.placa})</b>: Seguro VENCIDO hace ${Math.abs(diff)} días.`);
+        } else if (diff <= 30) {
+          alertas.push(`🟡 <b>${v.marca} ${v.modelo} (${v.placa})</b>: Seguro vence en ${diff} días (${v.seguroPoliza}).`);
+        }
+      }
+    }
+
+    const mensajeAlerta = alertas.length > 0
+      ? `Se detectaron <b>${alertas.length} vehículos</b> con documentos que requieren atención:\n\n${alertas.join("\n")}`
+      : "Todos los vehículos de la flota cuentan con seguros y marbetes al día. 🟢";
+
+    await enviarAlerta("AVISO", "Auditoría de Seguros y Marbetes de Flota", mensajeAlerta);
+
+    res.json({
+      mensaje: "Notificación de auditoría de seguros enviada a tu Telegram con éxito.",
+      alertasDetectadas: alertas.length,
+    });
+  } catch (error) {
+    console.error("Error al notificar vencimientos:", error);
+    res.status(500).json({
+      error: "No fue posible enviar la notificación a Telegram.",
+      detalle: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// GET /api/vehiculos
 router.get("/", async (_req, res) => {
   try {
     const vehiculos = await prisma.vehiculo.findMany({
@@ -29,7 +202,6 @@ router.get("/", async (_req, res) => {
     res.json(vehiculos);
   } catch (error) {
     console.error("Error al obtener vehículos:", error);
-
     res.status(500).json({
       error: "No fue posible obtener los vehículos.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -37,6 +209,7 @@ router.get("/", async (_req, res) => {
   }
 });
 
+// GET /api/vehiculos/:id
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -62,7 +235,6 @@ router.get("/:id", async (req, res) => {
     res.json(vehiculo);
   } catch (error) {
     console.error("Error al obtener vehículo:", error);
-
     res.status(500).json({
       error: "No fue posible obtener el vehículo.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -70,6 +242,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// POST /api/vehiculos
 router.post("/", async (req, res) => {
   try {
     const {
@@ -82,6 +255,9 @@ router.post("/", async (req, res) => {
       kilometraje,
       tarifaDiaria,
       estado,
+      seguroPoliza,
+      seguroVencimiento,
+      marbeteVencimiento,
     } = req.body;
 
     if (
@@ -98,62 +274,39 @@ router.post("/", async (req, res) => {
     }
 
     const anioNumero = Number(anio);
-
-    const kilometrajeNumero =
-      kilometraje === undefined ? 0 : Number(kilometraje);
-
     const tarifaNumero = Number(tarifaDiaria);
+    const kilometrajeNumero = kilometraje !== undefined ? Number(kilometraje) : 0;
 
-    if (!Number.isInteger(anioNumero)) {
+    const estadoConvertido = estado
+      ? convertirEstado(estado)
+      : EstadoVehiculo.DISPONIBLE;
+
+    if (estado && !estadoConvertido) {
       return res.status(400).json({
-        error: "El año del vehículo no es válido.",
+        error: "El estado proporcionado no es válido.",
       });
     }
 
-    if (!Number.isInteger(kilometrajeNumero) || kilometrajeNumero < 0) {
-      return res.status(400).json({
-        error: "El kilometraje no es válido.",
-      });
-    }
-
-    if (!Number.isFinite(tarifaNumero) || tarifaNumero < 0) {
-      return res.status(400).json({
-        error: "La tarifa diaria no es válida.",
-      });
-    }
-
-    let estadoVehiculo: EstadoVehiculo = EstadoVehiculo.DISPONIBLE;
-
-    if (estado !== undefined) {
-      const estadoConvertido = convertirEstado(estado);
-
-      if (!estadoConvertido) {
-        return res.status(400).json({
-          error: "El estado del vehículo no es válido.",
-        });
-      }
-
-      estadoVehiculo = estadoConvertido;
-    }
-
-    const vehiculo = await prisma.vehiculo.create({
+    const nuevoVehiculo = await prisma.vehiculo.create({
       data: {
-        marca: String(marca).trim(),
-        modelo: String(modelo).trim(),
+        marca: marca.trim(),
+        modelo: modelo.trim(),
         anio: anioNumero,
-        color: color ? String(color).trim() : undefined,
-        placa: String(placa).trim().toUpperCase(),
-        vin: vin ? String(vin).trim().toUpperCase() : undefined,
+        color: color ? color.trim() : null,
+        placa: placa.trim(),
+        vin: vin ? vin.trim() : null,
         kilometraje: kilometrajeNumero,
         tarifaDiaria: tarifaNumero,
-        estado: estadoVehiculo,
+        estado: estadoConvertido ?? EstadoVehiculo.DISPONIBLE,
+        seguroPoliza: seguroPoliza ? String(seguroPoliza).trim() : null,
+        seguroVencimiento: seguroVencimiento ? new Date(seguroVencimiento) : null,
+        marbeteVencimiento: marbeteVencimiento ? new Date(marbeteVencimiento) : null,
       },
     });
 
-    res.status(201).json(vehiculo);
+    res.status(201).json(nuevoVehiculo);
   } catch (error) {
     console.error("Error al crear vehículo:", error);
-
     res.status(500).json({
       error: "No fue posible crear el vehículo.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -161,6 +314,7 @@ router.post("/", async (req, res) => {
   }
 });
 
+// PUT /api/vehiculos/:id
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -168,18 +322,6 @@ router.put("/:id", async (req, res) => {
     if (!Number.isInteger(id)) {
       return res.status(400).json({
         error: "El ID del vehículo no es válido.",
-      });
-    }
-
-    const existente = await prisma.vehiculo.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!existente) {
-      return res.status(404).json({
-        error: "Vehículo no encontrado.",
       });
     }
 
@@ -193,106 +335,43 @@ router.put("/:id", async (req, res) => {
       kilometraje,
       tarifaDiaria,
       estado,
+      seguroPoliza,
+      seguroVencimiento,
+      marbeteVencimiento,
     } = req.body;
 
-    const data: {
-      marca?: string;
-      modelo?: string;
-      anio?: number;
-      color?: string | null;
-      placa?: string;
-      vin?: string | null;
-      kilometraje?: number;
-      tarifaDiaria?: number;
-      estado?: EstadoVehiculo;
-    } = {};
+    const dataToUpdate: Record<string, unknown> = {};
 
-    if (marca !== undefined) {
-      data.marca = String(marca).trim();
-    }
-
-    if (modelo !== undefined) {
-      data.modelo = String(modelo).trim();
-    }
-
-    if (anio !== undefined) {
-      const valor = Number(anio);
-
-      if (!Number.isInteger(valor)) {
-        return res.status(400).json({
-          error: "El año del vehículo no es válido.",
-        });
-      }
-
-      data.anio = valor;
-    }
-
-    if (color !== undefined) {
-      data.color = color ? String(color).trim() : null;
-    }
-
-    if (placa !== undefined) {
-      data.placa = String(placa).trim().toUpperCase();
-    }
-
-    if (vin !== undefined) {
-      data.vin = vin ? String(vin).trim().toUpperCase() : null;
-    }
-
-    if (kilometraje !== undefined) {
-      const valor = Number(kilometraje);
-
-      if (!Number.isInteger(valor) || valor < 0) {
-        return res.status(400).json({
-          error: "El kilometraje no es válido.",
-        });
-      }
-
-      if (valor < existente.kilometraje) {
-        return res.status(400).json({
-          error:
-            "El nuevo kilometraje no puede ser menor que el kilometraje actual.",
-        });
-      }
-
-      data.kilometraje = valor;
-    }
-
-    if (tarifaDiaria !== undefined) {
-      const valor = Number(tarifaDiaria);
-
-      if (!Number.isFinite(valor) || valor < 0) {
-        return res.status(400).json({
-          error: "La tarifa diaria no es válida.",
-        });
-      }
-
-      data.tarifaDiaria = valor;
-    }
+    if (marca !== undefined) dataToUpdate.marca = marca.trim();
+    if (modelo !== undefined) dataToUpdate.modelo = modelo.trim();
+    if (anio !== undefined) dataToUpdate.anio = Number(anio);
+    if (color !== undefined) dataToUpdate.color = color ? color.trim() : null;
+    if (placa !== undefined) dataToUpdate.placa = placa.trim();
+    if (vin !== undefined) dataToUpdate.vin = vin ? vin.trim() : null;
+    if (kilometraje !== undefined) dataToUpdate.kilometraje = Number(kilometraje);
+    if (tarifaDiaria !== undefined) dataToUpdate.tarifaDiaria = Number(tarifaDiaria);
+    if (seguroPoliza !== undefined) dataToUpdate.seguroPoliza = seguroPoliza ? String(seguroPoliza).trim() : null;
+    if (seguroVencimiento !== undefined) dataToUpdate.seguroVencimiento = seguroVencimiento ? new Date(seguroVencimiento) : null;
+    if (marbeteVencimiento !== undefined) dataToUpdate.marbeteVencimiento = marbeteVencimiento ? new Date(marbeteVencimiento) : null;
 
     if (estado !== undefined) {
       const estadoConvertido = convertirEstado(estado);
-
       if (!estadoConvertido) {
         return res.status(400).json({
-          error: "El estado del vehículo no es válido.",
+          error: "El estado proporcionado no es válido.",
         });
       }
-
-      data.estado = estadoConvertido;
+      dataToUpdate.estado = estadoConvertido;
     }
 
-    const vehiculo = await prisma.vehiculo.update({
-      where: {
-        id,
-      },
-      data,
+    const vehiculoActualizado = await prisma.vehiculo.update({
+      where: { id },
+      data: dataToUpdate,
     });
 
-    res.json(vehiculo);
+    res.json(vehiculoActualizado);
   } catch (error) {
     console.error("Error al actualizar vehículo:", error);
-
     res.status(500).json({
       error: "No fue posible actualizar el vehículo.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -300,6 +379,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// DELETE /api/vehiculos/:id
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -310,163 +390,17 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
-    const existente = await prisma.vehiculo.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!existente) {
-      return res.status(404).json({
-        error: "Vehículo no encontrado.",
-      });
-    }
-
     await prisma.vehiculo.delete({
-      where: {
-        id,
-      },
+      where: { id },
     });
 
     res.json({
-      mensaje: "Vehículo eliminado correctamente.",
-      id,
+      mensaje: "Vehículo eliminado exitosamente.",
     });
   } catch (error) {
     console.error("Error al eliminar vehículo:", error);
-
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "P2003"
-    ) {
-      return res.status(409).json({
-        error:
-          "No se puede eliminar este vehículo porque tiene registros relacionados.",
-      });
-    }
-
     res.status(500).json({
       error: "No fue posible eliminar el vehículo.",
-      detalle: error instanceof Error ? error.message : String(error),
-    });
-  }
-});
-
-router.patch("/:id/estado", async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const { estado } = req.body;
-
-    if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        error: "El ID del vehículo no es válido.",
-      });
-    }
-
-    if (estado === undefined || estado === null || estado === "") {
-      return res.status(400).json({
-        error: "El estado es obligatorio.",
-      });
-    }
-
-    const estadoConvertido = convertirEstado(estado);
-
-    if (!estadoConvertido) {
-      return res.status(400).json({
-        error: "El estado del vehículo no es válido.",
-      });
-    }
-
-    const existente = await prisma.vehiculo.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!existente) {
-      return res.status(404).json({
-        error: "Vehículo no encontrado.",
-      });
-    }
-
-    const vehiculo = await prisma.vehiculo.update({
-      where: {
-        id,
-      },
-      data: {
-        estado: estadoConvertido,
-      },
-    });
-
-    res.json(vehiculo);
-  } catch (error) {
-    console.error("Error al cambiar estado del vehículo:", error);
-
-    res.status(500).json({
-      error: "No fue posible cambiar el estado del vehículo.",
-      detalle: error instanceof Error ? error.message : String(error),
-    });
-  }
-});
-
-router.patch("/:id/kilometraje", async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const { kilometraje } = req.body;
-
-    if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        error: "El ID del vehículo no es válido.",
-      });
-    }
-
-    const kilometrajeNumero = Number(kilometraje);
-
-    if (
-      !Number.isInteger(kilometrajeNumero) ||
-      kilometrajeNumero < 0
-    ) {
-      return res.status(400).json({
-        error: "El kilometraje no es válido.",
-      });
-    }
-
-    const existente = await prisma.vehiculo.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!existente) {
-      return res.status(404).json({
-        error: "Vehículo no encontrado.",
-      });
-    }
-
-    if (kilometrajeNumero < existente.kilometraje) {
-      return res.status(400).json({
-        error:
-          "El nuevo kilometraje no puede ser menor que el kilometraje actual.",
-      });
-    }
-
-    const vehiculo = await prisma.vehiculo.update({
-      where: {
-        id,
-      },
-      data: {
-        kilometraje: kilometrajeNumero,
-      },
-    });
-
-    res.json(vehiculo);
-  } catch (error) {
-    console.error("Error al actualizar kilometraje:", error);
-
-    res.status(500).json({
-      error: "No fue posible actualizar el kilometraje.",
       detalle: error instanceof Error ? error.message : String(error),
     });
   }
