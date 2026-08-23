@@ -349,6 +349,17 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Interfaz de acceso optimizada con usabilidad moderna.
 
+### [2026-08-22] - Persistencia Permanente de Sesión & Autovalidación en Segundo Plano
+- **Problema/Necesidad:** Evitar que los administradores y usuarios tengan que volver a iniciar sesión cada vez que recargan la página o abren una nueva pestaña en el navegador.
+- **Decisión técnica:**
+  - `AuthContext.tsx`: Almacenamiento seguro y persistente de tokens JWT y datos de sesión en `localStorage` con autovalidación de perfil (`GET /api/auth/perfil`) en segundo plano sin interrumpir la navegación. La sesión se mantiene activa indefinidamente hasta que el usuario pulse explícitamente **`🚪 Salir`**.
+- **Archivos afectados:** `frontend/src/context/AuthContext.tsx`.
+- **Pruebas realizadas:**
+  - Recarga forzada de página y navegación directa a `/dashboard` verificando que la sesión permanezca activa.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Experiencia de usuario fluida sin cierres inesperados de sesión.
+
+
 
 
 

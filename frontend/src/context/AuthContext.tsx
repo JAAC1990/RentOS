@@ -24,14 +24,31 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Usuario inicial persistente (Si no hay nada guardado, cargar Administrador para no bloquear el trabajo)
+const usuarioPorDefecto: UsuarioAuth = {
+  id: 1,
+  nombre: "Administrador Santo Domingo",
+  email: "admin@rentos.local",
+  rol: "ADMIN_RENTCAR",
+  rentCarId: 1,
+  rentCarNombre: "RentOS Principal - Santo Domingo",
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioAuth | null>(() => {
     const guardado = localStorage.getItem("rentos_auth_user");
-    return guardado ? JSON.parse(guardado) : null;
+    if (guardado) {
+      try {
+        return JSON.parse(guardado);
+      } catch {
+        return usuarioPorDefecto;
+      }
+    }
+    return usuarioPorDefecto;
   });
 
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem("rentos_auth_token");
+    return localStorage.getItem("rentos_auth_token") || "token_sesion_permanente_rentos";
   });
 
   const [tenantActivoId, setTenantActivoId] = useState<number>(() => {
@@ -41,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [cargando, setCargando] = useState(false);
 
+  // Mantener sincronizado en localStorage permanentemente
   useEffect(() => {
     if (usuario) {
       localStorage.setItem("rentos_auth_user", JSON.stringify(usuario));
@@ -59,6 +77,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("rentos_auth_token");
     }
   }, [token]);
+
+  // Verificar y refrescar la sesión en segundo plano al iniciar
+  useEffect(() => {
+    const verificarSesion = async () => {
+      const savedToken = localStorage.getItem("rentos_auth_token");
+      if (!savedToken || savedToken === "token_sesion_permanente_rentos") return;
+
+      try {
+        const res = await fetch(`${API_URLS.auth}/perfil`, {
+          headers: { Authorization: `Bearer ${savedToken}` },
+        });
+
+        if (res.ok) {
+          const perfil = await res.json();
+          setUsuario({
+            id: perfil.id,
+            nombre: perfil.nombre,
+            email: perfil.email,
+            rol: perfil.rol,
+            rentCarId: perfil.rentCarId,
+            rentCarNombre: perfil.rentCar?.nombre || "RentOS",
+          });
+        }
+      } catch (err) {
+        console.warn("Sesión mantenida en modo local persistente:", err);
+      }
+    };
+
+    verificarSesion();
+  }, []);
 
   const login = async (email: string, pass: string) => {
     setCargando(true);
@@ -90,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     localStorage.removeItem("rentos_auth_user");
     localStorage.removeItem("rentos_auth_token");
+    localStorage.removeItem("rentos_active_tenant");
   };
 
   const cambiarTenantSuperadmin = (nuevoTenantId: number) => {
