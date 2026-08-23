@@ -6,6 +6,55 @@ datasource db {
   provider = "postgresql"
 }
 
+enum EstadoCliente {
+  ACTIVO
+  INACTIVO
+  BLOQUEADO
+}
+
+enum TipoDocumento {
+  CEDULA
+  LICENCIA
+  PASAPORTE
+}
+
+enum EstadoVehiculo {
+  DISPONIBLE
+  ALQUILADO
+  MANTENIMIENTO
+  INACTIVO
+}
+
+enum EstadoContrato {
+  BORRADOR
+  ACTIVO
+  FINALIZADO
+  CANCELADO
+}
+
+enum TipoEvidencia {
+  FOTO_CLIENTE
+  FOTO_VEHICULO_SALIDA
+  FOTO_DEFECTO_SALIDA
+  AUDIO_CONFIRMACION
+  FOTO_VEHICULO_DEVOLUCION
+  FOTO_DEFECTO_DEVOLUCION
+}
+
+enum TipoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+  PAYPAL
+  OTRO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+  ANULADO
+}
+
 model Usuario {
   id        Int      @id @default(autoincrement())
   nombre    String
@@ -14,4 +63,181 @@ model Usuario {
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  clientesRegistrados UsuarioCliente[]
+  consultasCredito    ConsultaCredito[]
+  documentos          DocumentoCliente[]
+  entregas            Entrega[]
+  pagos               Pago[]
 }
+
+model Cliente {
+  id              Int           @id @default(autoincrement())
+  nombre          String
+  apellido        String
+  telefono        String
+  email           String?
+  direccion       String?
+  fechaNacimiento DateTime?
+  estado          EstadoCliente @default(ACTIVO)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  usuarios         UsuarioCliente[]
+  documentos       DocumentoCliente[]
+  contratos        Contrato[]
+  consultasCredito ConsultaCredito[]
+}
+
+model UsuarioCliente {
+  usuarioId Int
+  clienteId Int
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  @@id([usuarioId, clienteId])
+}
+
+model DocumentoCliente {
+  id               Int           @id @default(autoincrement())
+  clienteId        Int
+  tipo             TipoDocumento
+  numero           String?
+  archivoUrl       String
+  nombreArchivo    String
+  fechaVencimiento DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  cargadoPorId     Int
+
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+  cargadoPor Usuario @relation(fields: [cargadoPorId], references: [id])
+
+  @@index([clienteId])
+}
+
+model Vehiculo {
+  id           Int            @id @default(autoincrement())
+  marca        String
+  modelo       String
+  anio         Int
+  color        String?
+  placa        String         @unique
+  vin          String?        @unique
+  kilometraje  Int            @default(0)
+  estado       EstadoVehiculo @default(DISPONIBLE)
+  tarifaDiaria Decimal        @db.Decimal(10, 2)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  contratos Contrato[]
+}
+
+model Contrato {
+  id                 Int             @id @default(autoincrement())
+  clienteId          Int
+  vehiculoId         Int
+  fechaInicio        DateTime
+  fechaFin           DateTime
+  tarifaDiaria       Decimal         @db.Decimal(10, 2)
+  deposito            Decimal         @db.Decimal(10, 2)
+  kilometrajeInicial Int
+  kilometrajeFinal   Int?
+  estado             EstadoContrato @default(BORRADOR)
+  observaciones      String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  cliente  Cliente  @relation(fields: [clienteId], references: [id])
+  vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
+  entrega  Entrega?
+  pagos    Pago[]
+
+  @@index([clienteId])
+  @@index([vehiculoId])
+}
+
+model Entrega {
+  id               Int      @id @default(autoincrement())
+  contratoId       Int      @unique
+  usuarioId        Int
+  fechaHora        DateTime @default(now())
+  kilometraje      Int
+  nivelCombustible String?
+  tieneDefectos    Boolean  @default(false)
+  observaciones    String?
+
+  contrato   Contrato    @relation(fields: [contratoId], references: [id])
+  usuario    Usuario     @relation(fields: [usuarioId], references: [id])
+  evidencias Evidencia[]
+  defectos    DefectoVehiculo[]
+
+  @@index([usuarioId])
+}
+
+model DefectoVehiculo {
+  id          Int      @id @default(autoincrement())
+  entregaId   Int
+  descripcion String
+  ubicacion   String?
+  severidad   String?
+  createdAt   DateTime @default(now())
+
+  entrega    Entrega     @relation(fields: [entregaId], references: [id])
+  evidencias Evidencia[]
+
+  @@index([entregaId])
+}
+
+model Evidencia {
+  id            Int           @id @default(autoincrement())
+  entregaId     Int
+  defectoId     Int?
+  tipo          TipoEvidencia
+  archivoUrl    String
+  nombreArchivo String
+  mimeType      String?
+  descripcion   String?
+  createdAt     DateTime      @default(now())
+
+  entrega Entrega         @relation(fields: [entregaId], references: [id])
+  defecto DefectoVehiculo? @relation(fields: [defectoId], references: [id])
+
+  @@index([entregaId])
+  @@index([defectoId])
+}
+
+model ConsultaCredito {
+  id          Int      @id @default(autoincrement())
+  clienteId   Int
+  usuarioId   Int
+  fechaHora   DateTime @default(now())
+  referencia  String?
+  resultado   String?
+  observacion String?
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([clienteId])
+  @@index([usuarioId])
+}
+
+model Pago {
+  id         Int         @id @default(autoincrement())
+  contratoId Int
+  monto      Decimal     @db.Decimal(10, 2)
+  fecha      DateTime    @default(now())
+  tipo       TipoPago
+  referencia String?
+  estado     EstadoPago @default(PAGADO)
+  usuarioId  Int
+
+  contrato Contrato @relation(fields: [contratoId], references: [id])
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@index([contratoId])
+  @@index([usuarioId])
+}
+

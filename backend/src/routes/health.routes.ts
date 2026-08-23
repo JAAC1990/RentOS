@@ -1,12 +1,12 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 
 const router = Router();
 
-router.get("/health", (_req, res) => {
+router.get("/", (_req, res) => {
   res.json({
     sistema: "RentOS",
     estado: "activo",
-    mensaje: "La API de RentOS está funcionando correctamente"
+    mensaje: "La API de RentOS está funcionando correctamente",
   });
 });
 
