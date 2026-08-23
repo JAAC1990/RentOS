@@ -448,6 +448,21 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** Guardado rápido y confiable de logotipos sin errores de tamaño.
 
+### [2026-08-22] - Logotipo Oficial en Contratos Imprimibles & Reglas CSS de Impresión a 1 Sola Página
+- **Problema/Necesidad:** Al emitir o imprimir el contrato de alquiler (`window.print()`), el logotipo empresarial no se visualizaba en la cabecera y el fondo de la pantalla junto a los botones de navegación generaban saltos de página innecesarios (3 hojas).
+- **Decisión técnica:**
+  - `ContratosPage.tsx`:
+    - Incorporación de `rentCarInfo.logoUrl` en el encabezado oficial del contrato, adaptado al color corporativo de la empresa.
+    - Conexión dinámica con `useAuth()` y `tenantActivoId` para cargar la información y logo de la empresa correspondiente.
+    - Reglas CSS de `@media print` que aíslan únicamente el documento de contrato, ocultan los botones de acción (`no-print`), eliminan el sombreado/overlay y ajustan los márgenes para que el documento encaje de forma pulcra y profesional en **1 sola página**.
+- **Archivos afectados:** `frontend/src/pages/Contratos/ContratosPage.tsx`.
+- **Pruebas realizadas:**
+  - Renderizado del logotipo en la vista previa del contrato.
+  - Verificación de impresión limpia sin elementos del panel.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** Contrato de arrendamiento formal, con logotipo institucional y formato de impresión a 1 página listo para firma y archivo.
+
+
 
 
 
