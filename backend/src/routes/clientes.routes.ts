@@ -5,11 +5,16 @@ const router = Router();
 
 // ======================================================
 // GET /api/clientes
-// Obtener todos los clientes
+// Obtener todos los clientes (filtrados opcionalmente por rentCarId)
 // ======================================================
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
   try {
+    const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
+
     const clientes = await prisma.cliente.findMany({
+      where: {
+        rentCarId,
+      },
       orderBy: {
         createdAt: "desc",
       },
@@ -26,7 +31,6 @@ router.get("/", async (_req, res) => {
     res.json(clientes);
   } catch (error) {
     console.error("Error al obtener clientes:", error);
-
     res.status(500).json({
       error: "No fue posible obtener los clientes.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -36,56 +40,39 @@ router.get("/", async (_req, res) => {
 
 // ======================================================
 // GET /api/clientes/:id
-// Obtener un cliente específico
+// Obtener un cliente específico con su expediente completo
 // ======================================================
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
 
     if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        error: "El ID del cliente no es válido.",
-      });
+      return res.status(400).json({ error: "El ID del cliente no es válido." });
     }
 
     const cliente = await prisma.cliente.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
       include: {
         documentos: true,
-
         contratos: {
           include: {
             vehiculo: true,
             pagos: true,
-
-            entrega: {
-              include: {
-                evidencias: true,
-              },
-            },
           },
         },
-
         consultasCredito: {
-          orderBy: {
-            fechaHora: "desc",
-          },
+          orderBy: { fechaHora: "desc" },
         },
       },
     });
 
     if (!cliente) {
-      return res.status(404).json({
-        error: "Cliente no encontrado.",
-      });
+      return res.status(404).json({ error: "Cliente no encontrado." });
     }
 
     res.json(cliente);
   } catch (error) {
     console.error("Error al obtener cliente:", error);
-
     res.status(500).json({
       error: "No fue posible obtener el cliente.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -95,7 +82,7 @@ router.get("/:id", async (req, res) => {
 
 // ======================================================
 // POST /api/clientes
-// Crear un cliente
+// Registrar un nuevo cliente
 // ======================================================
 router.post("/", async (req, res) => {
   try {
@@ -106,6 +93,8 @@ router.post("/", async (req, res) => {
       email,
       direccion,
       fechaNacimiento,
+      rentCarId,
+      estado,
     } = req.body;
 
     if (!nombre || !apellido || !telefono) {
@@ -116,28 +105,20 @@ router.post("/", async (req, res) => {
 
     const cliente = await prisma.cliente.create({
       data: {
+        rentCarId: rentCarId ? Number(rentCarId) : 1,
         nombre: String(nombre).trim(),
         apellido: String(apellido).trim(),
         telefono: String(telefono).trim(),
-
-        email: email
-          ? String(email).trim()
-          : undefined,
-
-        direccion: direccion
-          ? String(direccion).trim()
-          : undefined,
-
-        fechaNacimiento: fechaNacimiento
-          ? new Date(fechaNacimiento)
-          : undefined,
+        email: email ? String(email).trim() : null,
+        direccion: direccion ? String(direccion).trim() : null,
+        fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : null,
+        estado: estado || "ACTIVO",
       },
     });
 
     res.status(201).json(cliente);
   } catch (error) {
     console.error("Error al crear cliente:", error);
-
     res.status(500).json({
       error: "No fue posible crear el cliente.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -147,28 +128,14 @@ router.post("/", async (req, res) => {
 
 // ======================================================
 // PUT /api/clientes/:id
-// Actualizar un cliente
+// Actualizar información del cliente
 // ======================================================
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
 
     if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        error: "El ID del cliente no es válido.",
-      });
-    }
-
-    const clienteExistente = await prisma.cliente.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!clienteExistente) {
-      return res.status(404).json({
-        error: "Cliente no encontrado.",
-      });
+      return res.status(400).json({ error: "El ID del cliente no es válido." });
     }
 
     const {
@@ -182,54 +149,23 @@ router.put("/:id", async (req, res) => {
     } = req.body;
 
     const cliente = await prisma.cliente.update({
-      where: {
-        id,
-      },
-
+      where: { id },
       data: {
-        nombre:
-          nombre !== undefined
-            ? String(nombre).trim()
-            : undefined,
-
-        apellido:
-          apellido !== undefined
-            ? String(apellido).trim()
-            : undefined,
-
-        telefono:
-          telefono !== undefined
-            ? String(telefono).trim()
-            : undefined,
-
-        email:
-          email !== undefined
-            ? String(email).trim()
-            : undefined,
-
-        direccion:
-          direccion !== undefined
-            ? String(direccion).trim()
-            : undefined,
-
-        fechaNacimiento:
-          fechaNacimiento !== undefined
-            ? fechaNacimiento
-              ? new Date(fechaNacimiento)
-              : null
-            : undefined,
-
-        estado:
-          estado !== undefined
-            ? estado
-            : undefined,
+        ...(nombre !== undefined && { nombre: String(nombre).trim() }),
+        ...(apellido !== undefined && { apellido: String(apellido).trim() }),
+        ...(telefono !== undefined && { telefono: String(telefono).trim() }),
+        ...(email !== undefined && { email: email ? String(email).trim() : null }),
+        ...(direccion !== undefined && { direccion: direccion ? String(direccion).trim() : null }),
+        ...(fechaNacimiento !== undefined && {
+          fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : null,
+        }),
+        ...(estado !== undefined && { estado }),
       },
     });
 
     res.json(cliente);
   } catch (error) {
     console.error("Error al actualizar cliente:", error);
-
     res.status(500).json({
       error: "No fue posible actualizar el cliente.",
       detalle: error instanceof Error ? error.message : String(error),
@@ -239,49 +175,44 @@ router.put("/:id", async (req, res) => {
 
 // ======================================================
 // DELETE /api/clientes/:id
-// Desactivar un cliente
+// Eliminar o desactivar un cliente
 // ======================================================
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
 
     if (!Number.isInteger(id)) {
-      return res.status(400).json({
-        error: "El ID del cliente no es válido.",
+      return res.status(400).json({ error: "El ID del cliente no es válido." });
+    }
+
+    // Comprobar si tiene contratos activos
+    const contratos = await prisma.contrato.count({
+      where: { clienteId: id },
+    });
+
+    if (contratos > 0) {
+      // Si tiene historial de contratos, se desactiva para no romper historial
+      const cliente = await prisma.cliente.update({
+        where: { id },
+        data: { estado: "INACTIVO" },
+      });
+      return res.json({
+        mensaje: "El cliente tiene contratos asociados; se marcó como INACTIVO para proteger el historial.",
+        cliente,
       });
     }
 
-    const clienteExistente = await prisma.cliente.findUnique({
-      where: {
-        id,
-      },
-    });
+    // Si no tiene contratos, se puede eliminar completamente
+    await prisma.documentoCliente.deleteMany({ where: { clienteId: id } });
+    await prisma.usuarioCliente.deleteMany({ where: { clienteId: id } });
+    await prisma.consultaCredito.deleteMany({ where: { clienteId: id } });
+    await prisma.cliente.delete({ where: { id } });
 
-    if (!clienteExistente) {
-      return res.status(404).json({
-        error: "Cliente no encontrado.",
-      });
-    }
-
-    const cliente = await prisma.cliente.update({
-      where: {
-        id,
-      },
-
-      data: {
-        estado: "INACTIVO",
-      },
-    });
-
-    res.json({
-      mensaje: "Cliente marcado como inactivo.",
-      cliente,
-    });
+    res.json({ mensaje: "Cliente eliminado correctamente." });
   } catch (error) {
-    console.error("Error al desactivar cliente:", error);
-
+    console.error("Error al eliminar cliente:", error);
     res.status(500).json({
-      error: "No fue posible desactivar el cliente.",
+      error: "No fue posible eliminar el cliente.",
       detalle: error instanceof Error ? error.message : String(error),
     });
   }

@@ -108,14 +108,15 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Consulta de aislamiento comprobando que la flota del Rent Car 1 (8 vehículos) y Rent Car 2 (1 vehículo) operan con total independencia.
 - **Resultado:** Base de datos sincronizada (`prisma db push`), frontend y backend compilando al 100% con cero errores de TypeScript.
 
-### [2026-08-22] - Modernización Visual de la Flota de Vehículos y Header SaaS
-- **Problema/Necesidad:** La pantalla de Vehículos utilizaba controles HTML sin estilo que desentonaban con la interfaz principal de RentOS. Se requería un diseño profesional acorde a un SaaS moderno.
-- **Decisión técnica:** Implementación de tarjetas de estadísticas en tiempo real (Total, Disponibles, Alquilados, Mantenimiento), barra de búsqueda en tiempo real, filtros por estado, badges visuales de color (`DISPONIBLE` en verde, `ALQUILADO` en azul, `MANTENIMIENTO` en naranja) y encabezado dinámico con badge de la empresa activa.
-- **Archivos afectados:** `frontend/src/index.css`, `frontend/src/pages/Vehiculos/VehiculosPage.tsx`, `frontend/src/components/Header.tsx`.
+### [2026-08-22] - Módulo Completo de Gestión de Clientes
+- **Problema/Necesidad:** Desarrollar el módulo de Clientes (Paso 5 del Roadmap) para permitir el registro de clientes, gestión de estados (`ACTIVO`, `INACTIVO`, `BLOQUEADO`), historial de rentas y búsqueda rápida.
+- **Decisión técnica:** Creación de `ClientesPage.tsx` con tarjetas de métricas en tiempo real, tabla responsiva con avatares de iniciales, formulario modal/desplegable con validación de teléfono/email y soporte de eliminación protegida con preservación de historial de contratos.
+- **Archivos afectados:** `backend/src/routes/clientes.routes.ts`, `frontend/src/pages/Clientes/ClientesPage.tsx`, `prisma/seed_clientes.ts`.
 - **Pruebas realizadas:**
-  - Build de producción Vite completado exitosamente sin errores de TypeScript.
-  - Verificación de cálculo de métricas en tiempo real según la flota registrada.
-  - Verificación de filtros y búsqueda instantánea por marca, modelo, placa y VIN.
-- **Resultado:** Interfaz moderna, responsiva y totalmente alineada con la identidad visual de RentOS.
+  - Inserción y consulta de clientes en PostgreSQL mediante Prisma.
+  - Verificación de respuestas en endpoint `GET /api/clientes` (HTTP 200 OK).
+  - Compilación de TypeScript en frontend y backend con 0 errores.
+- **Resultado:** Módulo de Clientes 100% operativo y conectado en `http://localhost:5173/clientes`.
+
 
 
