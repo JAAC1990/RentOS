@@ -12,6 +12,7 @@ import mantenimientoRoutes from "./routes/mantenimiento.routes.js";
 import pagosRoutes from "./routes/pagos.routes.js";
 import redRoutes from "./routes/red.routes.js";
 import rentcarsRoutes from "./routes/rentcars.routes.js";
+import solicitudesRoutes from "./routes/solicitudes.routes.js";
 import usersRoutes from "./routes/users.routes.js";
 import vehiculosRoutes from "./routes/vehiculos.routes.js";
 
@@ -33,6 +34,7 @@ app.use("/api/mantenimientos", mantenimientoRoutes);
 app.use("/api/pagos", pagosRoutes);
 app.use("/api/red", redRoutes);
 app.use("/api/rentcars", rentcarsRoutes);
+app.use("/api/solicitudes", solicitudesRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/vehiculos", vehiculosRoutes);
 

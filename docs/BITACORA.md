@@ -321,6 +321,23 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** RentOS cuenta con ciclo de autenticación y control de acceso RBAC completo.
 
+### [2026-08-22] - Solicitud de Registro de Rent Cars & Aprobación Requerida por SuperAdmin
+- **Problema/Necesidad:** Exigir que cualquier nueva empresa de Rent a Car solicite autorización previa al SuperAdmin antes de activar su cuenta y entrar al sistema SaaS, enviando una alerta instantánea a Telegram.
+- **Decisión técnica:**
+  - Ampliación del modelo `RentCar` en Prisma con `contactoNombre` y `estadoRegistro` (`PENDIENTE`, `APROBADO`, `RECHAZADO`).
+  - `solicitudes.routes.ts`: Endpoint público `POST /api/solicitudes/registro` que crea el RentCar y el usuario administrador en estado inactivo (`activo: false`) y despacha una alerta detallada a Telegram; y endpoints `POST /api/solicitudes/:id/aprobar` y `POST /api/solicitudes/:id/rechazar`.
+  - `RegistroRentCarPage.tsx`: Formulario de onboarding público en `/registro` con confirmación visual.
+  - `UsuariosPage.tsx`: Banner interactivo **"🚨 Solicitudes de Nuevos Rent a Cars Pendientes de tu Autorización"** exclusivo para el SuperAdmin con botones de aprobación y rechazo en 1 clic.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/solicitudes.routes.ts`, `backend/src/index.ts`, `frontend/src/pages/Auth/RegistroRentCarPage.tsx`, `frontend/src/pages/Auth/LoginPage.tsx`, `frontend/src/pages/Usuarios/UsuariosPage.tsx`, `frontend/src/services/api.ts`, `frontend/src/App.tsx`.
+- **Pruebas realizadas:**
+  - Sincronización Prisma (`prisma db push`).
+  - Envío de solicitud de registro de prueba para *"Caribe Rent Car La Romana"*.
+  - Despacho automático de alerta de autorización al bot de Telegram.
+  - Aprobación y activación de cuenta por el SuperAdmin vía API.
+  - Compilación limpia de TypeScript (0 errores).
+- **Resultado:** RentOS cuenta con un flujo seguro de onboarding y control total de altas de empresas para el SuperAdministrador.
+
+
 
 
 

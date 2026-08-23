@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 
@@ -173,14 +173,21 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div style={{ marginTop: "24px", textAlign: "center" }}>
+          <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "8px", textAlign: "center" }}>
+            <Link
+              to="/registro"
+              style={{ fontSize: "13px", color: "var(--primary)", textDecoration: "none", fontWeight: 700 }}
+            >
+              🚀 ¿Eres dueño de un Rent a Car? Solicita tu cuenta aquí ↗
+            </Link>
+
             <a
               href="/reservar"
               target="_blank"
               rel="noreferrer"
-              style={{ fontSize: "12px", color: "var(--primary)", textDecoration: "none", fontWeight: 600 }}
+              style={{ fontSize: "12px", color: "var(--text-secondary)", textDecoration: "none" }}
             >
-              🌐 Ver Portal Público de Reservas ↗
+              🌐 Ver Catálogo Público de Reservas ↗
             </a>
           </div>
         </div>

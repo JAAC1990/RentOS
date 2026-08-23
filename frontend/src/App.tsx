@@ -14,6 +14,7 @@ import ConfiguracionPage from "./pages/Configuracion/ConfiguracionPage";
 import RedAliadaPage from "./pages/RedAliada/RedAliadaPage";
 import ReservasPublicasPage from "./pages/Publico/ReservasPublicasPage";
 import LoginPage from "./pages/Auth/LoginPage";
+import RegistroRentCarPage from "./pages/Auth/RegistroRentCarPage";
 import "./App.css";
 
 function RutaProtegida() {
@@ -29,6 +30,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/registro" element={<RegistroRentCarPage />} />
       {/* Catálogo Público de Reservas para Clientes */}
       <Route path="/reservar" element={<ReservasPublicasPage />} />
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 
 type Usuario = {
@@ -6,6 +7,18 @@ type Usuario = {
   nombre: string;
   email: string;
   rol: "SUPERADMIN" | "ADMIN_RENTCAR" | "EMPLEADO";
+  activo: boolean;
+  createdAt: string;
+};
+
+type SolicitudRentCar = {
+  id: number;
+  nombre: string;
+  contactoNombre: string | null;
+  email: string | null;
+  telefono: string | null;
+  ciudad: string;
+  estadoRegistro: string;
   activo: boolean;
   createdAt: string;
 };
@@ -27,7 +40,9 @@ const formularioInicial: FormularioUsuario = {
 };
 
 export default function UsuariosPage() {
+  const { usuario: usuarioActual } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [solicitudes, setSolicitudes] = useState<SolicitudRentCar[]>([]);
   const [formulario, setFormulario] = useState<FormularioUsuario>(formularioInicial);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -42,26 +57,41 @@ export default function UsuariosPage() {
   const [mensaje, setMensaje] = useState("");
 
   const API_USERS = API_URLS.users;
+  const API_SOLICITUDES = API_URLS.solicitudes || "http://localhost:3000/api/solicitudes";
 
-  const cargarUsuarios = async () => {
+  const cargarDatos = async () => {
     try {
       setCargando(true);
       setError("");
-      const res = await fetch(API_USERS);
-      if (!res.ok) throw new Error("No fue posible cargar la lista de usuarios.");
-      const datos: Usuario[] = await res.json();
-      setUsuarios(datos);
+
+      const [resUsers, resSol] = await Promise.all([
+        fetch(API_USERS),
+        fetch(API_SOLICITUDES).catch(() => null),
+      ]);
+
+      if (!resUsers.ok) throw new Error("No fue posible cargar la lista de usuarios.");
+      const datosUsers: Usuario[] = await resUsers.json();
+      setUsuarios(datosUsers);
+
+      if (resSol && resSol.ok) {
+        const datosSol: SolicitudRentCar[] = await resSol.json();
+        setSolicitudes(datosSol);
+      }
     } catch (err) {
       console.error(err);
-      setError("No fue posible conectar con el servidor de usuarios.");
+      setError("No fue posible conectar con el servidor.");
     } finally {
       setCargando(false);
     }
   };
 
   useEffect(() => {
-    cargarUsuarios();
+    cargarDatos();
   }, []);
+
+  const solicitudesPendientes = useMemo(() => {
+    return solicitudes.filter((s) => s.estadoRegistro === "PENDIENTE" || (!s.activo && s.estadoRegistro !== "RECHAZADO"));
+  }, [solicitudes]);
 
   // Estadísticas en tiempo real
   const stats = useMemo(() => {
@@ -110,19 +140,6 @@ export default function UsuariosPage() {
     setMostrarFormulario(false);
   };
 
-  const iniciarEdicion = (u: Usuario) => {
-    setEditandoId(u.id);
-    setFormulario({
-      nombre: u.nombre,
-      email: u.email,
-      password: "",
-      rol: u.rol,
-      activo: u.activo,
-    });
-    setErrorFormulario("");
-    setMostrarFormulario(true);
-  };
-
   const guardarUsuario = async () => {
     if (!validarFormulario()) return;
 
@@ -131,98 +148,103 @@ export default function UsuariosPage() {
       setErrorFormulario("");
       setMensaje("");
 
-      const datos = {
-        nombre: formulario.nombre.trim(),
-        email: formulario.email.trim().toLowerCase(),
-        password: formulario.password ? formulario.password : undefined,
-        rol: formulario.rol,
-        activo: formulario.activo,
-      };
-
       const url = editandoId === null ? API_USERS : `${API_USERS}/${editandoId}`;
       const metodo = editandoId === null ? "POST" : "PUT";
 
-      const respuesta = await fetch(url, {
+      const res = await fetch(url, {
         method: metodo,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(datos),
+        body: JSON.stringify(formulario),
       });
 
-      const resultado = await respuesta.json().catch(() => null);
-
-      if (!respuesta.ok) {
-        throw new Error(
-          resultado?.error || resultado?.message || "No fue posible guardar el usuario."
-        );
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No fue posible guardar el usuario.");
       }
 
-      setMensaje(
-        editandoId === null
-          ? "✅ Usuario registrado con éxito."
-          : "✅ Datos y permisos del usuario actualizados."
-      );
-
+      setMensaje(editandoId === null ? "✅ Usuario creado exitosamente." : "✅ Usuario actualizado.");
       limpiarFormulario();
-      await cargarUsuarios();
+      await cargarDatos();
     } catch (err) {
       console.error(err);
-      setErrorFormulario(
-        err instanceof Error ? err.message : "Error al guardar el usuario."
-      );
+      setErrorFormulario(err instanceof Error ? err.message : "Error al procesar usuario.");
     } finally {
       setGuardando(false);
     }
   };
 
-  const alternarEstado = async (u: Usuario) => {
+  const editarUsuario = (u: Usuario) => {
+    setEditandoId(u.id);
+    setFormulario({
+      nombre: u.nombre,
+      email: u.email,
+      password: "",
+      rol: u.rol,
+      activo: u.activo,
+    });
+    setMostrarFormulario(true);
+  };
+
+  const toggleEstado = async (u: Usuario) => {
     try {
       setError("");
       setMensaje("");
 
-      const res = await fetch(`${API_USERS}/${u.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activo: !u.activo }),
+      const res = await fetch(`${API_USERS}/${u.id}/toggle-estado`, {
+        method: "PATCH",
       });
 
-      if (!res.ok) throw new Error("Error al cambiar estado.");
+      if (!res.ok) throw new Error("No fue posible cambiar el estado del usuario.");
 
-      setMensaje(`Cuenta de ${u.nombre} ${!u.activo ? 'activada' : 'desactivada'}.`);
-      await cargarUsuarios();
+      setMensaje(`Cuenta de ${u.nombre} ${u.activo ? "desactivada" : "activada"} con éxito.`);
+      await cargarDatos();
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Error al cambiar estado.");
     }
   };
 
-  const eliminarUsuario = async (id: number) => {
-    const confirmar = window.confirm(
-      "¿Está seguro de que desea eliminar este usuario del sistema?"
-    );
+  const autorizarRentCar = async (sol: SolicitudRentCar) => {
+    try {
+      setError("");
+      setMensaje("");
+
+      const res = await fetch(`${API_SOLICITUDES}/${sol.id}/aprobar`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al autorizar empresa.");
+
+      setMensaje(`🎉 ${data.mensaje}`);
+      await cargarDatos();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Error al autorizar empresa.");
+    }
+  };
+
+  const rechazarRentCar = async (sol: SolicitudRentCar) => {
+    const confirmar = window.confirm(`¿Rechazar solicitud de ${sol.nombre}?`);
     if (!confirmar) return;
 
     try {
       setError("");
       setMensaje("");
 
-      const res = await fetch(`${API_USERS}/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("No fue posible eliminar el usuario.");
+      const res = await fetch(`${API_SOLICITUDES}/${sol.id}/rechazar`, {
+        method: "POST",
+      });
 
-      setMensaje("🗑️ Usuario eliminado correctamente.");
-      await cargarUsuarios();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al rechazar empresa.");
+
+      setMensaje(data.mensaje);
+      await cargarDatos();
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Error al eliminar.");
+      setError(err instanceof Error ? err.message : "Error al rechazar empresa.");
     }
-  };
-
-  const getIniciales = (nombre: string) => {
-    return nombre
-      .split(" ")
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
   };
 
   return (
@@ -230,8 +252,8 @@ export default function UsuariosPage() {
       {/* Encabezado Principal */}
       <div className="page-heading">
         <div>
-          <h1>Equipo y Control de Accesos</h1>
-          <p>Administra los usuarios de tu Rent Car, contraseñas y permisos por roles (RBAC).</p>
+          <h1>Equipo, Usuarios & Autorización de Rent Cars</h1>
+          <p>Control de roles (SuperAdmin, Admin RentCar, Empleado) y autorización de nuevas empresas.</p>
         </div>
 
         <button
@@ -260,28 +282,26 @@ export default function UsuariosPage() {
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon rented">👑</div>
+          <div className="stat-icon available">🛡️</div>
           <div className="stat-info">
             <span className="stat-label">Administradores</span>
-            <strong className="stat-value" style={{ color: "var(--primary)" }}>
-              {stats.administradores}
-            </strong>
+            <strong className="stat-value">{stats.administradores}</strong>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon available">👔</div>
+          <div className="stat-icon rented">👤</div>
           <div className="stat-info">
-            <span className="stat-label">Empleados / Asesores</span>
+            <span className="stat-label">Empleados</span>
             <strong className="stat-value">{stats.empleados}</strong>
           </div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-icon maintenance">🚫</div>
+          <div className="stat-icon maintenance">⏳</div>
           <div className="stat-info">
-            <span className="stat-label">Inactivos</span>
-            <strong className="stat-value">{stats.inactivos}</strong>
+            <span className="stat-label">Solicitudes Pendientes</span>
+            <strong className="stat-value">{solicitudesPendientes.length}</strong>
           </div>
         </div>
       </div>
@@ -290,11 +310,82 @@ export default function UsuariosPage() {
       {mensaje && <div className="alert-box success">{mensaje}</div>}
       {error && <div className="alert-box error">{error}</div>}
 
+      {/* BANNER DE SOLICITUDES DE RENT CARS PENDIENTES DE AUTORIZACIÓN (PARA SUPERADMIN) */}
+      {solicitudesPendientes.length > 0 && (
+        <section
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "2px solid #f59e0b",
+            borderRadius: "14px",
+            padding: "20px 24px",
+            marginBottom: "24px",
+            boxShadow: "0 10px 25px -5px rgba(245, 158, 11, 0.15)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+            <div>
+              <h2 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#d97706", display: "flex", alignItems: "center", gap: "8px" }}>
+                🚨 Solicitudes de Nuevos Rent a Cars Pendientes de tu Autorización ({solicitudesPendientes.length})
+              </h2>
+              <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                Estos negocios completaron el registro web y están esperando tu aprobación para activar su cuenta y entrar al sistema.
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {solicitudesPendientes.map((sol) => (
+              <div
+                key={sol.id}
+                style={{
+                  padding: "14px 18px",
+                  background: "var(--primary-soft)",
+                  borderRadius: "10px",
+                  border: "1px solid var(--border)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div>
+                  <strong style={{ fontSize: "15px" }}>{sol.nombre}</strong>
+                  <span style={{ fontSize: "12px", color: "var(--text-secondary)", marginLeft: "8px" }}>
+                    📍 {sol.ciudad}
+                  </span>
+                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
+                    👤 Dueño: <b>{sol.contactoNombre || "No especificado"}</b> • 📞 {sol.telefono} • 📧 {sol.email}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    style={{ backgroundColor: "var(--success)", padding: "8px 14px", fontSize: "13px" }}
+                    onClick={() => autorizarRentCar(sol)}
+                  >
+                    ✅ Autorizar y Activar Cuenta
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    style={{ color: "var(--danger)", borderColor: "#fca5a5", padding: "8px 12px", fontSize: "13px" }}
+                    onClick={() => rechazarRentCar(sol)}
+                  >
+                    ❌ Rechazar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Formulario de Usuario */}
       {mostrarFormulario && (
-        <section className="content-panel" id="formulario-usuario">
+        <section className="content-panel" style={{ marginBottom: "24px" }}>
           <div className="panel-header">
-            <h2>{editandoId === null ? "Crear Nuevo Usuario de Sistema" : "Modificar Usuario y Permisos"}</h2>
+            <h2>{editandoId === null ? "Crear Nuevo Usuario" : "Editar Usuario"}</h2>
             <button className="secondary-button" onClick={limpiarFormulario}>
               Cancelar
             </button>
@@ -311,173 +402,135 @@ export default function UsuariosPage() {
               e.preventDefault();
               guardarUsuario();
             }}
+            style={{ padding: "20px" }}
           >
             <div className="form-grid">
               <div className="form-field">
-                <label htmlFor="nombreUsuario">Nombre Completo *</label>
+                <label htmlFor="userNombre">Nombre y Apellido *</label>
                 <input
-                  id="nombreUsuario"
+                  id="userNombre"
                   type="text"
-                  placeholder="Ej. Carlos Mendoza"
+                  placeholder="Ej. Roberto Gómez"
                   value={formulario.nombre}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, nombre: e.target.value }))
-                  }
+                  onChange={(e) => setFormulario((prev) => ({ ...prev, nombre: e.target.value }))}
                   required
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="emailUsuario">Correo Electrónico (Login) *</label>
+                <label htmlFor="userEmail">Correo Electrónico *</label>
                 <input
-                  id="emailUsuario"
+                  id="userEmail"
                   type="email"
-                  placeholder="ejemplo@rentos.do"
+                  placeholder="roberto@rentos.do"
                   value={formulario.email}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, email: e.target.value }))
-                  }
+                  onChange={(e) => setFormulario((prev) => ({ ...prev, email: e.target.value }))}
                   required
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="passwordUsuario">
-                  {editandoId === null ? "Contraseña *" : "Nueva Contraseña (dejar vacío para no cambiar)"}
+                <label htmlFor="userPass">
+                  {editandoId === null ? "Contraseña *" : "Nueva Contraseña (Opcional)"}
                 </label>
                 <input
-                  id="passwordUsuario"
+                  id="userPass"
                   type="password"
-                  placeholder={editandoId === null ? "Mínimo 6 caracteres" : "••••••••"}
+                  placeholder={editandoId === null ? "Mínimo 6 caracteres" : "Dejar en blanco para no cambiar"}
                   value={formulario.password}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, password: e.target.value }))
-                  }
+                  onChange={(e) => setFormulario((prev) => ({ ...prev, password: e.target.value }))}
                   required={editandoId === null}
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="rolUsuario">Rol y Permisos *</label>
+                <label htmlFor="userRol">Rol de Permisos *</label>
                 <select
-                  id="rolUsuario"
+                  id="userRol"
                   value={formulario.rol}
                   onChange={(e) =>
-                    setFormulario((prev) => ({
-                      ...prev,
-                      rol: e.target.value as FormularioUsuario["rol"],
-                    }))
+                    setFormulario((prev) => ({ ...prev, rol: e.target.value as FormularioUsuario["rol"] }))
                   }
                   required
                 >
-                  <option value="EMPLEADO">👔 Empleado / Operador (Contratos, Entregas y Cobros)</option>
-                  <option value="ADMIN_RENTCAR">👑 Administrador Rent Car (Acceso Completo)</option>
-                  <option value="SUPERADMIN">🛡️ SuperAdmin Global</option>
+                  <option value="EMPLEADO">👤 Empleado / Asesor de Mostrador</option>
+                  <option value="ADMIN_RENTCAR">🏢 Administrador de Rent a Car</option>
+                  {usuarioActual?.rol === "SUPERADMIN" && (
+                    <option value="SUPERADMIN">👑 SuperAdministrador (SaaS Global)</option>
+                  )}
                 </select>
               </div>
+            </div>
 
-              <div className="form-field">
-                <label htmlFor="activoUsuario">Estado de la Cuenta *</label>
-                <select
-                  id="activoUsuario"
-                  value={formulario.activo ? "true" : "false"}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, activo: e.target.value === "true" }))
-                  }
-                  required
-                >
-                  <option value="true">Activo (Permite acceso al sistema)</option>
-                  <option value="false">Inactivo (Acceso bloqueado)</option>
-                </select>
-              </div>
-
-              <div className="form-actions">
-                <button type="submit" className="primary-button" disabled={guardando}>
-                  {guardando
-                    ? "Guardando..."
-                    : editandoId === null
-                    ? "Registrar Usuario"
-                    : "Guardar Cambios"}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={limpiarFormulario}
-                  disabled={guardando}
-                >
-                  Cancelar
-                </button>
-              </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+              <button type="button" className="secondary-button" onClick={limpiarFormulario} disabled={guardando}>
+                Cancelar
+              </button>
+              <button type="submit" className="primary-button" disabled={guardando}>
+                {guardando ? "Guardando..." : editandoId === null ? "Crear Usuario" : "Guardar Cambios"}
+              </button>
             </div>
           </form>
         </section>
       )}
 
-      {/* Barra de Filtros y Búsqueda */}
-      <div className="filter-bar">
-        <div className="search-input-wrapper">
-          <span className="search-icon">🔍</span>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Buscar por nombre, email o rol..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-          />
-        </div>
-
-        <div className="filter-group">
-          <label htmlFor="filtro-rol" style={{ fontSize: "12px", fontWeight: 600 }}>
-            Rol:
-          </label>
-          <select
-            id="filtro-rol"
-            className="filter-select"
-            value={filtroRol}
-            onChange={(e) => setFiltroRol(e.target.value)}
-          >
-            <option value="TODOS">Todos los roles</option>
-            <option value="ADMIN_RENTCAR">Administradores</option>
-            <option value="EMPLEADO">Empleados</option>
-            <option value="SUPERADMIN">SuperAdmins</option>
-          </select>
-
-          {(busqueda || filtroRol !== "TODOS") && (
-            <button
-              className="secondary-button"
-              style={{ padding: "8px 12px", fontSize: "12px" }}
-              onClick={() => {
-                setBusqueda("");
-                setFiltroRol("TODOS");
-              }}
-            >
-              Limpiar filtros
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Tabla de Usuarios */}
       <div className="content-panel">
         <div className="panel-header">
           <h2>
-            Listado de Usuarios{" "}
+            Listado de Usuarios Registrados{" "}
             <span style={{ color: "var(--text-secondary)", fontWeight: 500, fontSize: "13px" }}>
-              ({usuariosFiltrados.length} de {usuarios.length} miembros)
+              ({usuariosFiltrados.length} usuarios)
             </span>
           </h2>
+
+          <div style={{ display: "flex", gap: "10px" }}>
+            <select
+              value={filtroRol}
+              onChange={(e) => setFiltroRol(e.target.value)}
+              style={{
+                padding: "6px 10px",
+                borderRadius: "6px",
+                border: "1px solid var(--border)",
+                fontSize: "12px",
+                background: "var(--surface)",
+                color: "var(--text)",
+              }}
+            >
+              <option value="TODOS">Todos los roles</option>
+              <option value="SUPERADMIN">SuperAdmins</option>
+              <option value="ADMIN_RENTCAR">Administradores</option>
+              <option value="EMPLEADO">Empleados</option>
+            </select>
+
+            <div style={{ width: "220px" }}>
+              <input
+                type="text"
+                placeholder="Buscar por nombre o email..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "6px 10px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border)",
+                  fontSize: "12px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {cargando ? (
           <div className="empty-state">
             <div className="empty-state-icon">⏳</div>
-            <strong>Cargando equipo de trabajo...</strong>
+            <strong>Cargando usuarios...</strong>
           </div>
         ) : usuariosFiltrados.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">👥</div>
+            <div className="empty-state-icon">👤</div>
             <strong>No se encontraron usuarios</strong>
-            <span>Haz clic en '+ Nuevo Usuario' para registrar a tu equipo.</span>
           </div>
         ) : (
           <div className="table-container">
@@ -488,7 +541,7 @@ export default function UsuariosPage() {
                   <th>Correo Electrónico</th>
                   <th>Rol</th>
                   <th>Estado</th>
-                  <th>Fecha de Registro</th>
+                  <th>Fecha de Creación</th>
                   <th style={{ textAlign: "right" }}>Acciones</th>
                 </tr>
               </thead>
@@ -496,67 +549,55 @@ export default function UsuariosPage() {
                 {usuariosFiltrados.map((u) => (
                   <tr key={u.id}>
                     <td>
-                      <div className="client-info-cell">
-                        <div className="client-avatar">
-                          {getIniciales(u.nombre)}
-                        </div>
-                        <div>
-                          <strong>{u.nombre}</strong>
-                        </div>
-                      </div>
+                      <strong>{u.nombre}</strong>
                     </td>
-                    <td>{u.email}</td>
+                    <td>
+                      <code>{u.email}</code>
+                    </td>
                     <td>
                       <span
                         className={`badge ${
-                          u.rol === "ADMIN_RENTCAR" || u.rol === "SUPERADMIN"
+                          u.rol === "SUPERADMIN"
                             ? "badge-alquilado"
-                            : "badge-disponible"
+                            : u.rol === "ADMIN_RENTCAR"
+                            ? "badge-disponible"
+                            : "badge-mantenimiento"
                         }`}
                       >
-                        {u.rol === "ADMIN_RENTCAR"
-                          ? "👑 Admin RentCar"
-                          : u.rol === "SUPERADMIN"
-                          ? "🛡️ SuperAdmin"
-                          : "👔 Empleado"}
+                        {u.rol === "SUPERADMIN"
+                          ? "👑 SuperAdmin"
+                          : u.rol === "ADMIN_RENTCAR"
+                          ? "🏢 Admin RentCar"
+                          : "👤 Empleado"}
                       </span>
                     </td>
                     <td>
-                      <span
-                        className={`badge ${
-                          u.activo ? "badge-disponible" : "badge-inactivo"
-                        }`}
-                      >
-                        {u.activo ? "ACTIVO" : "INACTIVO"}
+                      <span className={`badge ${u.activo ? "badge-disponible" : "badge-inactivo"}`}>
+                        {u.activo ? "Activo" : "Inactivo"}
                       </span>
                     </td>
-                    <td>{new Date(u.createdAt).toLocaleDateString("es-DO")}</td>
+                    <td>
+                      <small style={{ color: "var(--text-secondary)" }}>
+                        {new Date(u.createdAt).toLocaleDateString("es-DO")}
+                      </small>
+                    </td>
                     <td style={{ textAlign: "right" }}>
                       <div className="actions-cell" style={{ justifyContent: "flex-end" }}>
                         <button
                           type="button"
                           className="btn-action-edit"
-                          onClick={() => iniciarEdicion(u)}
+                          onClick={() => editarUsuario(u)}
                         >
                           ✏️ Editar
                         </button>
                         <button
                           type="button"
-                          className="btn-action-edit"
-                          style={{
-                            background: u.activo ? "var(--warning-soft)" : "var(--success-soft)",
-                            color: u.activo ? "var(--warning)" : "var(--success)",
-                          }}
-                          onClick={() => alternarEstado(u)}
-                        >
-                          {u.activo ? "Desactivar" : "Activar"}
-                        </button>
-                        <button
-                          type="button"
                           className="btn-action-delete"
-                          onClick={() => eliminarUsuario(u.id)}
+                          style={{ color: u.activo ? "var(--danger)" : "var(--success)" }}
+                          title={u.activo ? "Desactivar cuenta" : "Activar cuenta"}
+                          onClick={() => toggleEstado(u)}
                         >
-                          🗑️
+                          {u.activo ? "🚫 Desactivar" : "✓ Activar"}
                         </button>
                       </div>
                     </td>
