@@ -1,42 +1,65 @@
 # 📖 Manual Oficial de Usuario - RentOS
 
-> **RentOS (Rent Operating System)** es una plataforma SaaS multi-tenant diseñada para la administración integral, operativa y financiera de empresas de alquiler de vehículos (*Rent a Car*).
+> **RentOS (Rent Operating System)** es una plataforma SaaS multi-tenant empresarial diseñada para la gestión, control operativo y administración financiera integral de empresas de alquiler de vehículos (*Rent a Car*).
 
 ---
 
-## 📑 Índice de Contenidos
+## 🏛️ 1. Definición del Sistema
 
-1. [Arquitectura del Sistema & Roles de Usuario](#1-arquitectura-del-sistema--roles-de-usuario)
-2. [Inicio de Sesión, Seguridad & Cierre de Sesión](#2-inicio-de-sesión-seguridad--cierre-de-sesión)
-3. [Personalización de Marca & Logotipo White-Label](#3-personalización-de-marca--logotipo-white-label)
-4. [Catálogo Web Público de Reservas](#4-catálogo-web-público-de-reservas)
-5. [Dashboard Financiero & Operativo](#5-dashboard-financiero--operativo)
-6. [Gestión de Flota de Vehículos](#6-gestión-de-flota-de-vehículos)
-7. [Calendario de Flota & Disponibilidad Timeline / Gantt](#7-calendario-de-flota--disponibilidad-timeline--gantt)
-8. [Directorio de Clientes](#8-directorio-de-clientes)
-9. [Contratos, Firma Digital & Envío por WhatsApp](#9-contratos-firma-digital--envío-por-whatsapp)
-10. [Recepción, Inspección 360° & Fotos de Daños](#10-recepción-inspección-360--fotos-de-daños)
-11. [Facturación, Recibos Fiscales & NCF](#11-facturación-recibos-fiscales--ncf)
-12. [Mantenimiento Preventivo & Alertas de Taller](#12-mantenimiento-preventivo--alertas-de-taller)
-13. [Rastreo GPS Satelital en Tiempo Real](#13-rastreo-gps-satelital-en-tiempo-real)
-14. [Red de Aliados & Transferencias de Flota](#14-red-de-aliados--transferencias-de-flota)
-15. [Panel de SuperAdmin & Aprobación de Empresas](#15-panel-de-superadmin--aprobación-de-empresas)
-16. [Centro de Respaldos & Restauración para SuperAdmin](#16-centro-de-respaldos--restauración-para-superadmin)
+### ¿Qué es RentOS?
+**RentOS** es una solución tecnológica *All-in-One* (*Todo en Uno*) creada bajo el modelo **Software as a Service (SaaS)** con capacidad **White-Label** (Marca Blanca). Permite a múltiples empresas de Rent a Car operar sus negocios de manera 100% independiente, con su propio logotipo, eslogan, colores de marca, catálogo web público y portal administrativo.
+
+### Propósito & Alcance:
+* **Automatización Operativa:** Elimina el uso de contratos en papel mediante firma digital táctil, impresión limpia en 1 página y despacho directo a WhatsApp.
+* **Control Integral de Flota:** Monitoreo satelital GPS, odómetros, alertas preventivas de taller/aceite y auditoría de vencimiento de seguros y marbetes.
+* **Gestión Visual de Daños (Check-in/Check-out):** Mapeo de rayones y abolladuras en diagrama 360° con captura de fotos desde smartphone.
+* **Finanzas & Caja:** Emisión de comprobantes con NCF, cierre de caja en vivo por método de pago y ranking de rentabilidad de vehículos.
+* **Prevención de Sobreventas:** Calendario de disponibilidad interactivo tipo Gantt / Timeline mensual.
+
+### Stack Tecnológico:
+* **Backend:** Node.js, Express, TypeScript, Prisma ORM, PostgreSQL (con adaptadores de alto rendimiento).
+* **Frontend:** React 19, Vite, TypeScript, Canvas HTML5, CSS Variables adaptativas.
+* **Seguridad:** Autenticación JWT, encriptación bcrypt, aislamiento multi-tenant por `rentCarId` y protección de rutas por rol.
 
 ---
 
-## 1. Arquitectura del Sistema & Roles de Usuario
+## 🔑 2. Cuentas de Acceso & Contraseñas del Sistema
 
-RentOS funciona bajo una arquitectura **Multi-Tenant Aislada**, lo que significa que cada empresa Rent a Car opera con sus propios datos, clientes, flota, contratos e identidad visual de forma totalmente independiente y confidencial.
+El sistema cuenta con las siguientes credenciales preconfiguradas para acceso inmediato según el rol requerido:
 
-### Roles de Acceso:
-* **👑 SuperAdmin (Administrador Global):** Gestiona la plataforma, aprueba o rechaza solicitudes de nuevas empresas Rent a Car, modera suscripciones y supervisa la red.
-* **🏢 Admin RentCar (Dueño / Administrador de Empresa):** Control total de su propio Rent a Car: configuración de marca, tarifas, empleados, reportes financieros y caja.
-* **👤 Empleado (Agente de Operaciones / Despacho):** Emisión de contratos, recepción de vehículos, registro de pagos y consultas operativas.
+| Rol | Nombre de Usuario | Correo Electrónico | Contraseña por Defecto | Nivel de Acceso / Privilegios |
+| :--- | :--- | :--- | :--- | :--- |
+| 👑 **SUPERADMIN** | SuperAdministrador Global | `superadmin@rentos.do` | `admin123` | **Control Total Global:** Aprobación de nuevas empresas, auditoría de red, centro de respaldos/backups y configuración del SaaS. |
+| 🏢 **ADMIN_RENTCAR** | Administrador Santo Domingo | `admin@rentos.local` | `admin123` | **Administrador de Empresa (Tenant #1):** Gestión de flota, tarifas, clientes, contratos, pagos, reportes y personalización de marca. |
+| 🏖️ **ADMIN_RENTCAR** | Administrador Punta Cana | `puntacana@rentos.do` | `admin123` | **Administrador de Sucursal (Tenant #2):** Control de flota turística y contratos de la zona este. |
+| 👤 **EMPLEADO** | Juan Pérez (Asesor) | `juan@rentos.do` | `admin123` | **Operaciones de Mostrador:** Creación de contratos, check-in de vehículos con fotos y registro de pagos. |
+
+> [!TIP]
+> En la pantalla de inicio de sesión (`/login`), se encuentra disponible el selector rápido de cuentas demo para alternar entre roles con un solo clic.
 
 ---
 
-## 2. Inicio de Sesión, Seguridad & Cierre de Sesión
+## 📑 3. Índice de Módulos y Funcionalidades
+
+1. [Inicio de Sesión, Seguridad & Cierre de Sesión](#4-inicio-de-sesión-seguridad--cierre-de-sesión)
+2. [Personalización de Marca & Logotipo White-Label](#5-personalización-de-marca--logotipo-white-label)
+3. [Catálogo Web Público de Reservas](#6-catálogo-web-público-de-reservas)
+4. [Dashboard Financiero & Operativo](#7-dashboard-financiero--operativo)
+5. [Gestión de Flota de Vehículos](#8-gestión-de-flota-de-vehículos)
+6. [Calendario de Flota & Disponibilidad Timeline / Gantt](#9-calendario-de-flota--disponibilidad-timeline--gantt)
+7. [Directorio de Clientes](#10-directorio-de-clientes)
+8. [Contratos, Firma Digital & Envío por WhatsApp](#11-contratos-firma-digital--envío-por-whatsapp)
+9. [Recepción, Inspección 360° & Fotos de Daños](#12-recepción-inspección-360--fotos-de-daños)
+10. [Facturación, Recibos Fiscales & NCF](#13-facturación-recibos-fiscales--ncf)
+11. [Mantenimiento Preventivo & Alertas de Taller](#14-mantenimiento-preventivo--alertas-de-taller)
+12. [Rastreo GPS Satelital en Tiempo Real](#15-rastreo-gps-satelital-en-tiempo-real)
+13. [Red de Aliados & Transferencias de Flota](#16-red-de-aliados--transferencias-de-flota)
+14. [Panel de SuperAdmin & Aprobación de Empresas](#17-panel-de-superadmin--aprobación-de-empresas)
+15. [Centro de Respaldos & Restauración para SuperAdmin](#18-centro-de-respaldos--restauración-para-superadmin)
+
+---
+
+## 4. Inicio de Sesión, Seguridad & Cierre de Sesión
 
 ### Acceso a la Plataforma (`/login`):
 1. Ingrese su **Correo Electrónico** y **Contraseña**.
