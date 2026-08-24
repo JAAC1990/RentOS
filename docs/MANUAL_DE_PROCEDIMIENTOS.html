@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Manual de Procedimientos Operativos Estándar - RentOS</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --secondary: #0f172a;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+      --bg: #f8fafc;
+      --success: #16a34a;
+      --success-bg: #dcfce7;
+      --warning: #d97706;
+      --warning-bg: #fef3c7;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --purple: #7c3aed;
+      --purple-bg: #ede9fe;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background-color: #ffffff;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    @page {
+      size: letter portrait;
+      margin: 15mm 15mm 15mm 15mm;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px 0;
+    }
+
+    .page-break {
+      page-break-after: always;
+      break-after: page;
+    }
+
+    .no-break {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* PORTADA */
+    .cover-page {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 980px;
+      padding: 60px 40px;
+      background: linear-gradient(145deg, #0f172a 0%, #1e293b 60%, #0369a1 100%);
+      color: white;
+      border-radius: 12px;
+      margin-bottom: 40px;
+    }
+
+    .cover-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .cover-logo {
+      width: 54px;
+      height: 54px;
+      background: #0284c7;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 900;
+      color: white;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    .cover-title-area {
+      margin-top: 140px;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(2, 132, 199, 0.3);
+      border: 1px solid #38bdf8;
+      color: #7dd3fc;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+
+    .cover-title {
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 14px;
+      letter-spacing: -0.5px;
+    }
+
+    .cover-subtitle {
+      font-size: 16px;
+      color: #94a3b8;
+      line-height: 1.5;
+      max-width: 600px;
+    }
+
+    .cover-footer-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      font-size: 11px;
+    }
+
+    .cover-footer-box div span {
+      display: block;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-size: 9px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    /* ENCABEZADOS DE SECCIÓN */
+    .section-header {
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 8px;
+      margin: 28px 0 16px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-code {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    /* TABLAS */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 12px;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: var(--secondary);
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+    }
+
+    td {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+
+    /* TARJETAS DE PROCEDIMIENTO */
+    .proc-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 18px;
+      background: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .proc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .proc-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--secondary);
+    }
+
+    .proc-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .badge-superadmin { background: var(--purple-bg); color: var(--purple); }
+    .badge-admin { background: var(--primary-light); color: var(--primary-dark); }
+    .badge-empleado { background: var(--success-bg); color: var(--success); }
+
+    .proc-objective {
+      background: #f8fafc;
+      border-left: 3px solid var(--primary);
+      padding: 8px 12px;
+      font-size: 11.5px;
+      color: #334155;
+      margin-bottom: 12px;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .step-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-weight: 800;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .callout {
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-top: 10px;
+      font-size: 11px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .callout-info { background: var(--primary-light); color: #0369a1; border: 1px solid #bae6fd; }
+    .callout-warning { background: var(--warning-bg); color: #b45309; border: 1px solid #fde68a; }
+    .callout-success { background: var(--success-bg); color: #15803d; border: 1px solid #bbf7d0; }
+
+    /* CHECKLISTS */
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .checklist-box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      background: #f8fafc;
+    }
+
+    .checklist-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--secondary);
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+
+    .checkbox-box {
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid #64748b;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* CONTROL DE FIRMAS */
+    .signatures-box {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .sig-line {
+      border-top: 1px solid #000;
+      margin-top: 40px;
+      padding-top: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .sig-role {
+      font-size: 9.5px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page">
+    <!-- PORTADA CORPORATIVA -->
+    <div class="cover-page page-break">
+      <div class="cover-header">
+        <div class="cover-logo">R</div>
+        <div>
+          <div style="font-size: 20px; font-weight: 900; letter-spacing: 0.5px;">RentOS Enterprise</div>
+          <div style="font-size: 11px; color: #7dd3fc;">Sistema Operativo para Rent a Cars</div>
+        </div>
+      </div>
+
+      <div class="cover-title-area">
+        <div class="cover-badge">Documento Oficial de Operaciones</div>
+        <h1 class="cover-title">Manual de Procedimientos Operativos Estándar (POE)</h1>
+        <p class="cover-subtitle">
+          Guía integral de protocolos de mostrador, inspección visual 360°, control satelital, emisión de contratos con firma digital, facturación fiscal y continuidad ante desastres.
+        </p>
+      </div>
+
+      <div class="cover-footer-box">
+        <div>
+          <span>Código de Documento</span>
+          <strong>POE-RENTOS-2026-V1</strong>
+        </div>
+        <div>
+          <span>Fecha de Emisión</span>
+          <strong>24 de Agosto, 2026</strong>
+        </div>
+        <div>
+          <span>Aprobado Por</span>
+          <strong>Dirección de Operaciones</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN I: MARCO OPERATIVO Y MATRIZ RACI -->
+    <div class="page-break">
+      <div class="section-header">
+        <div class="section-title">🏛️ Sección I: Marco Operativo & Matriz de Responsabilidades</div>
+        <span class="section-code">CAP-01</span>
+      </div>
+
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+        Este manual establece los lineamientos obligatorios para la estandarización del servicio, minimización de riesgos de fraude, aseguramiento de la flota vehicular y cuadre contable en todas las operaciones gestionadas con RentOS.
+      </p>
+
+      <h3 style="font-size: 13px; font-weight: 800; margin: 16px 0 6px 0;">Matriz de Roles y Responsabilidades (RACI)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Proceso Operativo</th>
+            <th style="text-align: center; width: 90px;">SuperAdmin</th>
+            <th style="text-align: center; width: 100px;">Admin RentCar</th>
+            <th style="text-align: center; width: 110px;">Agente Mostrador</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Aprobación y Onboarding de Empresas</td>
+            <td style="text-align: center; font-weight: 800; color: var(--purple);">R / A</td>
+            <td style="text-align: center; color: var(--text-muted);">I</td>
+            <td style="text-align: center; color: var(--text-muted);">I</td>
+          </tr>
+          <tr>
+            <td>Identidad White-Label & Políticas de Renta</td>
+            <td style="text-align: center; color: var(--text-muted);">I</td>
+            <td style="text-align: center; font-weight: 800; color: var(--primary);">R / A</td>
+            <td style="text-align: center; color: var(--text-muted);">C</td>
+          </tr>
+          <tr>
+            <td>Inventario y Auditoría Legal de Flota</td>
+            <td style="text-align: center; color: var(--text-muted);">I</td>
+            <td style="text-align: center; font-weight: 800; color: var(--primary);">A</td>
+            <td style="text-align: center; font-weight: 800; color: var(--success);">R</td>
+          </tr>
+          <tr>
+            <td>Verificación de Arrendatarios y Licencias</td>
+            <td style="text-align: center; color: var(--text-muted);">I</td>
+            <td style="text-align: center; color: var(--text-muted);">A</td>
+            <td style="text-align: center; font-weight: 800; color: var(--success);">R</td>
+          </tr>
+          <tr>
+            <td>Emisión de Contrato y Firma Táctil Digital</td>
+            <td style="text-align: center; color: var(--text-muted);">I</td>
+            <td style="text-align: center; color: var(--text-muted);">A</td>
+            <td style="text-align: center; font-weight: 800; color: var(--success);">R</td>
+          </tr>
+          <tr>
+            <td>Inspección 360°, Fotos y Liquidación de Depósito</td>
+            <td style="text-align: center; color: var(--text-muted);">I</td>
+            <td style="text-align: center; color: var(--text-muted);">A</td>
+            <td style="text-align: center; font-weight: 800; color: var(--success);">R</td>
+          </tr>
+          <tr>
+            <td>Cobro, Facturación NCF y Cierre de Caja</td>
+            <td style="text-align: center; color: var(--text-muted);">I</td>
+            <td style="text-align: center; font-weight: 800; color: var(--primary);">A</td>
+            <td style="text-align: center; font-weight: 800; color: var(--success);">R</td>
+          </tr>
+          <tr>
+            <td>Inmovilización y Corte de Motor Satelital GPS</td>
+            <td style="text-align: center; font-weight: 800; color: var(--purple);">A</td>
+            <td style="text-align: center; font-weight: 800; color: var(--primary);">R</td>
+            <td style="text-align: center; color: var(--text-muted);">C</td>
+          </tr>
+          <tr>
+            <td>Respaldos y Recuperación de Datos (Backups)</td>
+            <td style="text-align: center; font-weight: 800; color: var(--purple);">R / A</td>
+            <td style="text-align: center; color: var(--text-muted);">C</td>
+            <td style="text-align: center; color: var(--text-muted);">I</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+        * <strong>R:</strong> Responsable de ejecución | <strong>A:</strong> Autoriza / Aprueba | <strong>C:</strong> Consultado | <strong>I:</strong> Informado
+      </div>
+
+      <!-- PR-01 y PR-02 -->
+      <div class="proc-card no-break" style="margin-top: 20px;">
+        <div class="proc-header">
+          <div class="proc-title">PR-01: Alta y Aprobación de Nuevas Empresas (Onboarding)</div>
+          <span class="proc-badge badge-superadmin">SUPERADMIN</span>
+        </div>
+        <div class="proc-objective">
+          <strong>Objetivo:</strong> Validar la autenticidad fiscal y legal de los Rent a Cars que solicitan suscripción en la red.
+        </div>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div>Acceder al módulo <code>👑 Solicitudes de Rent Cars</code> (/solicitudes).</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Verificar RNC, Nombre Comercial, Ciudad, Teléfono y Correo corporativo del negocio.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div>Hacer clic en <strong>✅ Autorizar</strong> para habilitar su base de datos aislada con usuario administrador preconfigurado.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN II: OPERACIÓN DIARIA DE MOSTRADOR -->
+    <div class="page-break">
+      <div class="section-header">
+        <div class="section-title">🚗 Sección II: Protocolos de Mostrador y Flota</div>
+        <span class="section-code">CAP-02</span>
+      </div>
+
+      <!-- PR-03 -->
+      <div class="proc-card no-break">
+        <div class="proc-header">
+          <div class="proc-title">PR-03: Inventario & Auditoría Legal de Flota</div>
+          <span class="proc-badge badge-admin">ADMIN_RENTCAR</span>
+        </div>
+        <div class="proc-objective">
+          <strong>Objetivo:</strong> Mantener el parque vehicular al día con inspección mecánica y pólizas vigentes.
+        </div>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div>Ingresar a <code>Vehículos</code> (/vehiculos) y hacer clic en <strong>+ Nuevo Vehículo</strong>.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Completar: Marca, Modelo, Año, Color, Placa, VIN, Kilometraje inicial y Tarifa diaria.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div>Registrar fechas de vencimiento de: <strong>Póliza de Seguro</strong>, <strong>Marbete</strong> y <strong>Revista Técnica</strong>.</div>
+          </div>
+        </div>
+        <div class="callout callout-warning">
+          ⚠️ <strong>Regla Crítica:</strong> El sistema bloqueará la salida de cualquier unidad cuya póliza de seguro esté vencida.
+        </div>
+      </div>
+
+      <!-- PR-06 -->
+      <div class="proc-card no-break">
+        <div class="proc-header">
+          <div class="proc-title">PR-06: Emisión de Contratos & Firma Digital Táctil</div>
+          <span class="proc-badge badge-empleado">AGENTE MOSTRADOR</span>
+        </div>
+        <div class="proc-objective">
+          <strong>Objetivo:</strong> Formalizar el contrato de alquiler 100% digital con firma en pantalla y respaldo por WhatsApp.
+        </div>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div>Ir a <code>Contratos</code> (/contratos) y pulsar <strong>+ Nuevo Contrato</strong>.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Seleccionar Cliente, Vehículo, Fechas de Salida/Retorno y Depósito de Garantía.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div>Abrir <strong>🖨️ Contrato</strong> y solicitar al cliente que firme en el lienzo táctil con su dedo o mouse.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div>Pulsar <strong>💬 Enviar a WhatsApp</strong> para despachar el contrato digital al cliente y <strong>🖨️ Imprimir</strong> si requiere copia física (1 hoja limpia).</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PR-08 -->
+      <div class="proc-card no-break">
+        <div class="proc-header">
+          <div class="proc-title">PR-08: Recepción, Inspección 360° & Liquidación de Depósito (Check-In)</div>
+          <span class="proc-badge badge-empleado">INSPECTOR PATIO</span>
+        </div>
+        <div class="proc-objective">
+          <strong>Objetivo:</strong> Auditar el estado físico del auto al retornar, fotografiar evidencias y resolver el depósito.
+        </div>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div>Ingresar a <code>Entregas</code> (/entregas) y pulsar <strong>🔑 Nueva Recepción</strong>.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Digitar el odómetro final y marcar el combustible con el selector táctil (Reserva a Full).</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div><strong>Mapeo de Daños:</strong> Tocar la silueta del auto para colocar pines de rayones o abolladuras con su severidad.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div>Pulsar <strong>📷 Tomar / Subir Fotos</strong> y capturar evidencias con la cámara del celular.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">5</div>
+            <div>Seleccionar: <code>✓ Reembolsar Completo</code> o <code>⚠️ Deducir por Daños/Combustible</code> con monto y motivo.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN III: FACTURACIÓN, CONTINUIDAD Y CHECKLISTS -->
+    <div class="page-break">
+      <div class="section-header">
+        <div class="section-title">💳 Sección III: Facturación, Seguridad & Continuidad</div>
+        <span class="section-code">CAP-03</span>
+      </div>
+
+      <!-- PR-09 -->
+      <div class="proc-card no-break">
+        <div class="proc-header">
+          <div class="proc-title">PR-09: Cobro, Facturación NCF y Cuadre de Caja</div>
+          <span class="proc-badge badge-admin">ADMIN_RENTCAR</span>
+        </div>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div>En <code>Pagos</code> (/pagos), presionar <strong>+ Registrar Cobro / Factura</strong>.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>Ingresar monto, forma de pago (Efectivo, Tarjeta, Transferencia) y Número de Comprobante Fiscal (NCF).</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div>Pulsar <strong>💬 Enviar a WhatsApp</strong> para entregar el recibo membretado con logo y NCF al cliente.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div>Al cierre de turno, ingresar a <code>/dashboard</code> y verificar el balance exacto en el panel de <strong>Cierre de Caja</strong>.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PR-13 -->
+      <div class="proc-card no-break">
+        <div class="proc-header">
+          <div class="proc-title">PR-13: Respaldos y Restauración Ante Desastres (Backups)</div>
+          <span class="proc-badge badge-superadmin">SUPERADMIN</span>
+        </div>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div>Ingresar a <code>💾 Centro de Backups</code> (/backups).</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div><strong>Rescate de Empresa Específica:</strong> Seleccionar el Rent a Car, subir su archivo .json de respaldo y pulsar <strong>✓ Restaurar en Empresa</strong> sin afectar a los demás clientes de la red.</div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div><strong>Respaldo Global:</strong> Generar copias .SQL periódicas y descargarlas a almacenamiento seguro fuera de línea.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHECKLISTS ANEXOS -->
+      <h3 style="font-size: 13px; font-weight: 800; margin: 18px 0 8px 0;">📋 Checklists Operativos de Turno</h3>
+      <div class="checklist-grid no-break">
+        <div class="checklist-box">
+          <div class="checklist-title">Apertura y Despacho Diario</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Revisar campana de alertas 🔔 (taller/seguros)</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Consultar /calendario de flota del día</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Validar odómetro y combustible al entregar</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Capturar firma táctil en contrato digital</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Enviar contrato al WhatsApp del cliente</div>
+        </div>
+
+        <div class="checklist-box">
+          <div class="checklist-title">Recepción y Cierre de Turno</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Inspección 360° y fotos de daños en /entregas</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Liquidar depósito de garantía (Reembolso/Deducción)</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Liberar auto a estado DISPONIBLE</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Enviar recordatorio 🔔 a contratos por vencer</div>
+          <div class="checklist-item"><div class="checkbox-box"></div> Cuadre de caja por forma de pago en /dashboard</div>
+        </div>
+      </div>
+
+      <!-- CONTROL DE FIRMAS Y APROBACIÓN -->
+      <div class="signatures-box no-break">
+        <div>
+          <div class="sig-line">Elaborado Por</div>
+          <div class="sig-role">Equipo de Procesos & Calidad</div>
+        </div>
+        <div>
+          <div class="sig-line">Revisado Por</div>
+          <div class="sig-role">Gerencia de Operaciones</div>
+        </div>
+        <div>
+          <div class="sig-line">Aprobado Por</div>
+          <div class="sig-role">Dirección General RentOS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -481,6 +481,18 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación completa de TypeScript (0 errores).
 - **Resultado:** Recuperación ante desastres integral y soporte técnico multi-tenant de nivel empresarial.
 
+### [2026-08-23] - Creación del Manual de Procedimientos Operativos Estándar (POE) en Formato PDF
+- **Problema/Necesidad:** Proporcionar al negocio y al personal de mostrador un manual estructurado de procedimientos paso a paso (SOP / POE) con matriz RACI de responsabilidades y checklists operativos descargables en formato PDF institucional.
+- **Decisión técnica:**
+  - `docs/MANUAL_DE_PROCEDIMIENTOS.md`: Documento oficial en Markdown con los 13 procedimientos operativos estándar (PR-01 al PR-13).
+  - `docs/MANUAL_DE_PROCEDIMIENTOS.html`: Layout corporativo de alta calidad con portada ejecutiva, tipografía Inter, tablas RACI y estilos `@media print` para saltos de página limpios.
+  - `docs/MANUAL_DE_PROCEDIMIENTOS.pdf`: Compilado y renderizado oficial de 322 KB en formato PDF listo para imprimir o distribuir.
+- **Archivos afectados:** `docs/MANUAL_DE_PROCEDIMIENTOS.md`, `docs/MANUAL_DE_PROCEDIMIENTOS.html`, `docs/MANUAL_DE_PROCEDIMIENTOS.pdf`.
+- **Pruebas realizadas:**
+  - Generación del PDF con motor Chromium/Edge Headless (HTTP 200 / 322 KB).
+  - Verificación visual de márgenes, portada, saltos de página y cajas de advertencia.
+- **Resultado:** Documentación corporativa de nivel empresarial para estandarizar la operación de mostrador y despacho de RentOS.
+
 
 
 
