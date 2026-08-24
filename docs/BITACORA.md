@@ -465,6 +465,22 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Compilación limpia de TypeScript (0 errores).
 - **Resultado:** RentOS consolidado como SaaS integral de nivel empresarial para Rent a Cars.
 
+### [2026-08-23] - Centro de Respaldos & Restauración para SuperAdmin (Tenant & Global Restore)
+- **Problema/Necesidad:** Permitir al SuperAdministrador recuperar o restaurar la base de datos de cualquier empresa cliente que haya perdido su información por error o falla, sin afectar a los demás inquilinos de la plataforma.
+- **Decisión técnica:**
+  - `backend/src/routes/backup.routes.ts`:
+    - Endpoints `GET /api/backups/tenant/:id/export` y `POST /api/backups/tenant/:id/restore` para exportar e importar datos aislados por empresa en formato JSON con validación en transacción Prisma.
+    - Endpoints `GET /api/backups/download/:archivo` y `POST /api/backups/upload` para descarga y subida de archivos `.sql` globales.
+  - `frontend/src/pages/SuperAdmin/BackupsSuperAdminPage.tsx`:
+    - Panel exclusivo con dos pestañas: **🏢 Restauración por Empresa** (selector de tenant, descarga y restauración con visor previo de datos) y **🗄️ Respaldos Globales (.SQL)** (generación, descarga, subida y restauración con confirmación de seguridad).
+  - Integración en `Sidebar.tsx` (sección `SUPERADMIN`), `App.tsx` (`/backups`) y acceso directo en `SolicitudesPage.tsx`.
+- **Archivos afectados:** `backend/src/routes/backup.routes.ts`, `frontend/src/pages/SuperAdmin/BackupsSuperAdminPage.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/App.tsx`, `frontend/src/pages/SuperAdmin/SolicitudesPage.tsx`, `docs/MANUAL_DE_USUARIO.md`.
+- **Pruebas realizadas:**
+  - Exportación de paquete JSON de empresa.
+  - Carga y validación de paquete de restauración con recálculo de entidades.
+  - Compilación completa de TypeScript (0 errores).
+- **Resultado:** Recuperación ante desastres integral y soporte técnico multi-tenant de nivel empresarial.
+
 
 
 

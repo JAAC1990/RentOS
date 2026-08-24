@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { API_URLS } from "../../services/api";
 
 type SolicitudRentCar = {
@@ -372,6 +373,16 @@ export default function SolicitudesPage() {
                               ✓ Activa
                             </span>
                           )}
+
+                          {/* Botón de Gestión de Backups */}
+                          <Link
+                            to="/backups"
+                            className="btn-action-edit"
+                            style={{ background: "#ede9fe", color: "#6d28d9", borderColor: "#ddd6fe", textDecoration: "none", fontSize: "11px", padding: "4px 8px" }}
+                            title="Gestionar copias de seguridad y restaurar datos de esta empresa"
+                          >
+                            💾 Backups
+                          </Link>
 
                           {/* Botón Eliminar Empresa Permanente (Excepto Matriz ID #1) */}
                           {s.id !== 1 && (

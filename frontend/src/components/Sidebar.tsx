@@ -94,6 +94,16 @@ function Sidebar() {
               <span className="nav-icon">👑</span>
               <span>Solicitudes de Rent Cars</span>
             </NavLink>
+            <NavLink
+              to="/backups"
+              className={({ isActive }) =>
+                `nav-item ${isActive ? "active" : ""}`
+              }
+              style={{ color: "#c084fc" }}
+            >
+              <span className="nav-icon">💾</span>
+              <span>Centro de Backups</span>
+            </NavLink>
           </>
         )}
 

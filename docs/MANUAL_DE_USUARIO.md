@@ -21,6 +21,7 @@
 13. [Rastreo GPS Satelital en Tiempo Real](#13-rastreo-gps-satelital-en-tiempo-real)
 14. [Red de Aliados & Transferencias de Flota](#14-red-de-aliados--transferencias-de-flota)
 15. [Panel de SuperAdmin & Aprobación de Empresas](#15-panel-de-superadmin--aprobación-de-empresas)
+16. [Centro de Respaldos & Restauración para SuperAdmin](#16-centro-de-respaldos--restauración-para-superadmin)
 
 ---
 
@@ -191,6 +192,28 @@ Exclusivo para el rol `SUPERADMIN`:
 * **Solicitudes Entrantes:** Listado de nuevas empresas de Rent a Car registradas en la plataforma.
 * **Moderación:** Verificación de RNC, ciudad, teléfono y correo del negocio.
 * **Acciones:** `Aprobar Empresa`, `Poner en Revisión`, `Rechazar` o `Eliminar en Cascada` de forma segura.
+
+---
+
+## 16. Centro de Respaldos & Restauración para SuperAdmin (`/backups`)
+
+Herramienta de recuperación ante desastres y soporte técnico exclusivo para el `SUPERADMIN`:
+
+### A. 🔄 Restauración Aislada por Empresa (Tenant Restore):
+* **Propósito:** Si una empresa cliente borró por error sus datos o requiere restablecer su inventario sin tocar ni alterar las demás empresas de RentOS.
+* **Flujo de Uso:**
+  1. Diríjase a **`💾 Centro de Backups`** en el menú de SuperAdmin (o haga clic en el botón `💾 Backups` dentro de `/solicitudes`).
+  2. Seleccione la empresa en el menú desplegable.
+  3. **Exportar:** Presione **`📥 Descargar Respaldo Actual (JSON)`** para guardar un paquete seguro con sus vehículos, clientes, contratos, pagos y mantenimientos.
+  4. **Restaurar:** Arrastre o seleccione el archivo `.json` de respaldo y pulse **`✓ Restaurar en [Empresa]`**. El sistema restablecerá sus registros de forma limpia y transparente.
+
+### B. 🗄️ Respaldos Globales del Servidor (.SQL Snapshots):
+* **Propósito:** Copias completas de la base de datos PostgreSQL de todo el sistema.
+* **Flujo de Uso:**
+  1. Presione **`+ Generar Backup Ahora`** para crear un snapshot instantáneo en el servidor.
+  2. Descargue cualquier respaldo a su computadora con **`📥 Descargar`**.
+  3. Si necesita subir un archivo externo, use **`📁 Subir Archivo .SQL`**.
+  4. Para recuperar todo el servidor, presione **`🔄 Restaurar Servidor`** y confirme en el modal de advertencia de seguridad.
 
 ---
 
