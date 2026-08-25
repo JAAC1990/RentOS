@@ -26,7 +26,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioAuth | null>(() => {
-    const guardado = localStorage.getItem("rentos_auth_user");
+    // Limpiar restos antiguos de localStorage para forzar inicio de sesión limpio
+    localStorage.removeItem("rentos_auth_user");
+    localStorage.removeItem("rentos_auth_token");
+
+    const guardado = sessionStorage.getItem("rentos_auth_user");
     if (guardado) {
       try {
         return JSON.parse(guardado);
@@ -38,41 +42,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem("rentos_auth_token") || null;
+    return sessionStorage.getItem("rentos_auth_token") || null;
   });
 
   const [tenantActivoId, setTenantActivoId] = useState<number>(() => {
-    const guardadoTenant = localStorage.getItem("rentos_active_tenant");
+    const guardadoTenant = sessionStorage.getItem("rentos_active_tenant") || localStorage.getItem("rentos_active_tenant");
     return guardadoTenant ? Number(guardadoTenant) : 1;
   });
 
   const [cargando, setCargando] = useState(false);
 
-  // Mantener sincronizado en localStorage permanentemente
+  // Mantener sincronizado en sessionStorage durante la sesión activa
   useEffect(() => {
     if (usuario) {
-      localStorage.setItem("rentos_auth_user", JSON.stringify(usuario));
+      sessionStorage.setItem("rentos_auth_user", JSON.stringify(usuario));
       if (usuario.rentCarId) {
         setTenantActivoId(usuario.rentCarId);
       }
     } else {
-      localStorage.removeItem("rentos_auth_user");
+      sessionStorage.removeItem("rentos_auth_user");
     }
   }, [usuario]);
 
   useEffect(() => {
     if (token) {
-      localStorage.setItem("rentos_auth_token", token);
+      sessionStorage.setItem("rentos_auth_token", token);
     } else {
-      localStorage.removeItem("rentos_auth_token");
+      sessionStorage.removeItem("rentos_auth_token");
     }
   }, [token]);
 
   // Verificar y refrescar la sesión en segundo plano al iniciar
   useEffect(() => {
     const verificarSesion = async () => {
-      const savedToken = localStorage.getItem("rentos_auth_token");
-      if (!savedToken || savedToken === "token_sesion_permanente_rentos") return;
+      const savedToken = sessionStorage.getItem("rentos_auth_token");
+      if (!savedToken) return;
 
       try {
         const res = await fetch(`${API_URLS.auth}/perfil`, {
@@ -91,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         }
       } catch (err) {
-        console.warn("Sesión mantenida en modo local persistente:", err);
+        console.warn("Error al verificar perfil de sesión:", err);
       }
     };
 
@@ -116,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUsuario(data.usuario);
       if (data.usuario.rentCarId) {
         setTenantActivoId(data.usuario.rentCarId);
-        localStorage.setItem("rentos_active_tenant", String(data.usuario.rentCarId));
+        sessionStorage.setItem("rentos_active_tenant", String(data.usuario.rentCarId));
       }
     } finally {
       setCargando(false);
@@ -126,9 +130,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUsuario(null);
     setToken(null);
+    sessionStorage.removeItem("rentos_auth_user");
+    sessionStorage.removeItem("rentos_auth_token");
+    sessionStorage.removeItem("rentos_active_tenant");
     localStorage.removeItem("rentos_auth_user");
     localStorage.removeItem("rentos_auth_token");
-    localStorage.removeItem("rentos_active_tenant");
   };
 
   const cambiarTenantSuperadmin = (nuevoTenantId: number) => {
