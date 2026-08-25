@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type Vehiculo = {
   id: number;
@@ -496,8 +497,8 @@ export default function DashboardPage() {
                       <td>
                         {c.vehiculo?.marca} {c.vehiculo?.modelo} ({c.vehiculo?.placa})
                       </td>
-                      <td>{new Date(c.fechaInicio).toLocaleDateString("es-DO")}</td>
-                      <td>{new Date(c.fechaFin).toLocaleDateString("es-DO")}</td>
+                      <td>{formatearFecha(c.fechaInicio)}</td>
+                      <td>{formatearFecha(c.fechaFin)}</td>
                       <td>${Number(c.tarifaDiaria).toFixed(2)}</td>
                       <td>
                         <span

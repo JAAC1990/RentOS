@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type Vehiculo = {
   id: number;
@@ -412,7 +413,7 @@ export default function CalendarioFlotaPage() {
                           {st.ocupado ? (
                             <Link
                               to="/contratos"
-                              title={`Contrato #${st.contrato?.id} • Cliente: ${st.contrato?.cliente?.nombre} ${st.contrato?.cliente?.apellido} (Hasta ${new Date(st.contrato?.fechaFin || "").toLocaleDateString("es-DO")})`}
+                              title={`Contrato #${st.contrato?.id} • Cliente: ${st.contrato?.cliente?.nombre} ${st.contrato?.cliente?.apellido} (Hasta ${formatearFecha(st.contrato?.fechaFin)})`}
                               style={{
                                 display: "block",
                                 height: "28px",

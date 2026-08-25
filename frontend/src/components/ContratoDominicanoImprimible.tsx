@@ -17,6 +17,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import QRCode from "qrcode";
+import { formatearFecha } from "../utils/dateUtils";
 
 export type DatosContratoImpresion = {
   id: number;
@@ -324,7 +325,7 @@ export default function ContratoDominicanoImprimible({ contrato, onCerrar }: Pro
               No. <span style={{ fontFamily: "monospace" }}>{codigoValidacion}</span>
             </div>
             <div style={{ fontSize: "8px", color: "#475569" }}>
-              <b>Fecha:</b> {fInicio.toLocaleDateString("es-DO")}
+              <b>Fecha:</b> {formatearFecha(fInicio)}
             </div>
           </div>
 
@@ -418,8 +419,8 @@ export default function ContratoDominicanoImprimible({ contrato, onCerrar }: Pro
 
                 {/* Fechas y Horas de Salida y Entrega */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-                  <div><b>Salida:</b> {fInicio.toLocaleDateString("es-DO")} | {fInicio.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" })}</div>
-                  <div><b>Retorno:</b> {fFin.toLocaleDateString("es-DO")} | {fFin.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" })}</div>
+                  <div><b>Salida:</b> {formatearFecha(fInicio)} | {fInicio.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" })}</div>
+                  <div><b>Retorno:</b> {formatearFecha(fFin)} | {fFin.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" })}</div>
                 </div>
               </div>
             </div>

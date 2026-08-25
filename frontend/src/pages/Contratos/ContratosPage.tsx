@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 import ContratoDominicanoImprimible, { type DatosContratoImpresion } from "../../components/ContratoDominicanoImprimible";
 import ModalFirmaDigital from "../../components/ModalFirmaDigital";
 
@@ -416,8 +417,8 @@ export default function ContratosPage() {
         body: JSON.stringify({
           fechaFin: nuevaFechaFinStr,
           observaciones: contratoExtender.observaciones
-            ? `${contratoExtender.observaciones} | Extensión de ${diasExtra} día(s) aplicada el ${new Date().toLocaleDateString("es-DO")}`
-            : `Extensión de ${diasExtra} día(s) aplicada el ${new Date().toLocaleDateString("es-DO")}`,
+            ? `${contratoExtender.observaciones} | Extensión de ${diasExtra} día(s) aplicada el ${formatearFecha(new Date())}`
+            : `Extensión de ${diasExtra} día(s) aplicada el ${formatearFecha(new Date())}`,
         }),
       });
 
@@ -499,29 +500,31 @@ export default function ContratosPage() {
   const exportarCSV = () => {
     if (contratos.length === 0) return;
 
-    const encabezados = ["ID", "Codigo QR", "Cliente", "Telefono", "Vehiculo", "Placa", "Fecha Inicio", "Fecha Fin", "Tarifa Diaria", "Deposito", "Estado"];
+    const encabezados = ["ID", "Codigo QR", "Cliente", "Telefono", "Vehiculo", "Placa", "Fecha Inicio (DD/MM/AAAA)", "Fecha Fin (DD/MM/AAAA)", "Tarifa Diaria", "Deposito", "Estado"];
     const filas = contratos.map((c) => [
       c.id,
-      c.codigoVerificacion || `CON-${c.id}`,
-      `"${c.cliente?.nombre || ""} ${c.cliente?.apellido || ""}"`,
+      `"${c.codigoVerificacion || `CON-${c.id}`}"`,
+      `"${(c.cliente?.nombre || "")} ${(c.cliente?.apellido || "")}"`,
       `"${c.cliente?.telefono || ""}"`,
-      `"${c.vehiculo?.marca || ""} ${c.vehiculo?.modelo || ""}"`,
+      `"${(c.vehiculo?.marca || "")} ${(c.vehiculo?.modelo || "")}"`,
       `"${c.vehiculo?.placa || ""}"`,
-      new Date(c.fechaInicio).toLocaleDateString("es-DO"),
-      new Date(c.fechaFin).toLocaleDateString("es-DO"),
+      formatearFecha(c.fechaInicio),
+      formatearFecha(c.fechaFin),
       c.tarifaDiaria,
       c.deposito,
       c.estado,
-    ]);
+    ].join(","));
 
-    const csvContent = "data:text/csv;charset=utf-8," + [encabezados.join(","), ...filas.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [encabezados.join(","), ...filas].join("\r\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute("download", `RentOS_Contratos_${new Date().toISOString().split("T")[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const vehiculosDisponibles = useMemo(() => {
@@ -1042,7 +1045,7 @@ export default function ContratosPage() {
                       </td>
                       <td>
                         <div style={{ fontSize: "12px" }}>
-                          {new Date(c.fechaInicio).toLocaleDateString("es-DO")} ➔ {new Date(c.fechaFin).toLocaleDateString("es-DO")}
+                          {formatearFecha(c.fechaInicio)} ➔ {formatearFecha(c.fechaFin)}
                         </div>
                         <small style={{ color: "var(--text-secondary)" }}>
                           ({dias} {dias === 1 ? "día" : "días"})
@@ -1058,61 +1061,44 @@ export default function ContratosPage() {
                       </td>
                       <td>
                         {c.firmaCliente ? (
-                          <span style={{ color: "var(--success)", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span className="badge badge-disponible" style={{ fontSize: "11px" }}>
                             ✍️ Firmado
                           </span>
                         ) : (
-                          <span style={{ color: "var(--warning)", fontSize: "11px" }}>
-                            ⚠️ Sin firma
-                          </span>
+                          <button
+                            type="button"
+                            className="btn-action-edit"
+                            style={{ fontSize: "11px", padding: "3px 6px" }}
+                            onClick={() => setContratoFirma(c)}
+                          >
+                            ✍️ Capturar Firma
+                          </button>
                         )}
-                        <a
-                          href={`/verificar/${codigoQr}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ fontSize: "10px", color: "var(--primary)", textDecoration: "none", display: "block", marginTop: "2px" }}
-                        >
-                          🛡️ Ver Sello QR ↗
-                        </a>
                       </td>
                       <td>
                         <span
                           className={`badge ${
                             c.estado === "ACTIVO"
-                              ? "badge-alquilado"
-                              : c.estado === "FINALIZADO"
                               ? "badge-disponible"
-                              : "badge-mantenimiento"
+                              : c.estado === "FINALIZADO"
+                              ? "badge-alquilado"
+                              : "badge-inactivo"
                           }`}
                         >
                           {c.estado}
                         </span>
                       </td>
                       <td style={{ textAlign: "right" }}>
-                        <div className="actions-cell" style={{ justifyContent: "flex-end", flexWrap: "wrap", gap: "4px" }}>
-                          {/* Ver / Imprimir Contrato Dominicano Oficial */}
+                        <div className="actions-cell" style={{ justifyContent: "flex-end" }}>
                           <button
                             type="button"
                             className="btn-action-edit"
-                            style={{ background: "#1e3a8a", color: "#ffffff", borderColor: "#1e3a8a", fontWeight: 700 }}
-                            title="Ver e Imprimir Contrato Oficial Dominicano"
                             onClick={() => setContratoImprimir(c)}
+                            title="Imprimir Contrato Oficial"
                           >
-                            📄 Contrato QR
+                            🖨️ Imprimir
                           </button>
 
-                          {/* Capturar Firma Digital Táctil */}
-                          <button
-                            type="button"
-                            className="btn-action-edit"
-                            style={{ background: "#e0f2fe", color: "#0369a1", borderColor: "#bae6fd" }}
-                            title="Estampar Firma Digital Táctil del Arrendatario"
-                            onClick={() => setContratoFirma(c)}
-                          >
-                            ✍️ Firmar
-                          </button>
-
-                          {/* Enviar Contrato y Enlace de Autenticidad por WhatsApp */}
                           <button
                             type="button"
                             className="btn-action-edit"
@@ -1121,7 +1107,7 @@ export default function ContratosPage() {
                             onClick={() => {
                               const tel = c.cliente?.telefono ? c.cliente.telefono.replace(/[^0-9]/g, "") : "";
                               const linkVerificacion = `${window.location.origin}/verificar/${codigoQr}`;
-                              const texto = `Hola *${c.cliente?.nombre}*, te adjuntamos los detalles oficiales de tu Contrato de Alquiler No. *${codigoQr}* con *${rentCarInfo?.nombre || "RentOS"}*:\n\n🚗 *Vehículo:* ${c.vehiculo?.marca} ${c.vehiculo?.modelo} (Placa *${c.vehiculo?.placa}*)\n📅 *Período:* ${new Date(c.fechaInicio).toLocaleDateString("es-DO")} al ${new Date(c.fechaFin).toLocaleDateString("es-DO")} (${dias} días)\n💰 *Total:* $${total} ${rentCarInfo?.moneda || "USD"}\n🛡️ *Depósito:* $${Number(c.deposito).toFixed(2)}\n\n🛡️ *Enlace Oficial de Verificación QR de Legitimidad:*\n${linkVerificacion}\n\n¡Gracias por preferirnos!`;
+                              const texto = `Hola *${c.cliente?.nombre}*, te adjuntamos los detalles oficiales de tu Contrato de Alquiler No. *${codigoQr}* con *${rentCarInfo?.nombre || "RentOS"}*:\n\n🚗 *Vehículo:* ${c.vehiculo?.marca} ${c.vehiculo?.modelo} (Placa *${c.vehiculo?.placa}*)\n📅 *Período:* ${formatearFecha(c.fechaInicio)} al ${formatearFecha(c.fechaFin)} (${dias} días)\n💰 *Total:* $${total} ${rentCarInfo?.moneda || "USD"}\n🛡️ *Depósito:* $${Number(c.deposito).toFixed(2)}\n\n🛡️ *Enlace Oficial de Verificación QR de Legitimidad:*\n${linkVerificacion}\n\n¡Gracias por preferirnos!`;
                               window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`, "_blank");
                             }}
                           >
@@ -1203,7 +1189,7 @@ export default function ContratosPage() {
                 />
               </div>
               <div style={{ background: "var(--primary-soft)", padding: "12px", borderRadius: "8px", fontSize: "13px", color: "var(--primary)" }}>
-                Nueva Fecha de Retorno: <b>{new Date(new Date(contratoExtender.fechaFin).getTime() + diasExtra * 86400000).toLocaleDateString("es-DO")}</b>
+                Nueva Fecha de Retorno: <b>{formatearFecha(new Date(new Date(contratoExtender.fechaFin).getTime() + diasExtra * 86400000))}</b>
               </div>
             </div>
             <div className="modal-footer" style={{ padding: "12px 20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>

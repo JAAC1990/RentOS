@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type ResultadoVerificacion = {
   valido: boolean;
@@ -232,11 +233,11 @@ export default function VerificarContratoPage() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "6px", fontSize: "12px" }}>
                 <div style={{ backgroundColor: "#0f172a", padding: "8px 12px", borderRadius: "8px" }}>
                   <span style={{ color: "#94a3b8", display: "block", fontSize: "10px" }}>Fecha Inicio:</span>
-                  <b>{resultado.vigencia?.inicio ? new Date(resultado.vigencia.inicio).toLocaleDateString("es-DO") : ""}</b>
+                  <b>{resultado.vigencia?.inicio ? formatearFecha(resultado.vigencia.inicio) : ""}</b>
                 </div>
                 <div style={{ backgroundColor: "#0f172a", padding: "8px 12px", borderRadius: "8px" }}>
                   <span style={{ color: "#94a3b8", display: "block", fontSize: "10px" }}>Fecha Retorno:</span>
-                  <b>{resultado.vigencia?.fin ? new Date(resultado.vigencia.fin).toLocaleDateString("es-DO") : ""}</b>
+                  <b>{resultado.vigencia?.fin ? formatearFecha(resultado.vigencia.fin) : ""}</b>
                 </div>
               </div>
             </div>

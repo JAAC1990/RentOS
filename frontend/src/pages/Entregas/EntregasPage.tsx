@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
+import { formatearFechaHora } from "../../utils/dateUtils";
 
 type Cliente = {
   id: number;
@@ -849,7 +850,7 @@ export default function EntregasPage() {
                       <span className="badge badge-mantenimiento">REC-{e.id}</span>
                     </td>
                     <td style={{ fontSize: "12px" }}>
-                      {new Date(e.fechaHora).toLocaleDateString("es-DO")} {new Date(e.fechaHora).toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" })}
+                      {formatearFechaHora(e.fechaHora)}
                     </td>
                     <td>
                       <strong>Contrato #{e.contratoId}</strong>
@@ -956,7 +957,7 @@ export default function EntregasPage() {
                   📋 Reporte de Inspección REC-{entregaVerDetalle.id}
                 </h2>
                 <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                  Contrato #{entregaVerDetalle.contratoId} • Recibido el {new Date(entregaVerDetalle.fechaHora).toLocaleDateString("es-DO")} {new Date(entregaVerDetalle.fechaHora).toLocaleTimeString("es-DO")}
+                  Contrato #{entregaVerDetalle.contratoId} • Recibido el {formatearFechaHora(entregaVerDetalle.fechaHora)}
                 </span>
               </div>
               <button className="secondary-button" onClick={() => setEntregaVerDetalle(null)}>

@@ -11,6 +11,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type Vehiculo = {
   id: number;
@@ -518,7 +519,7 @@ export default function MantenimientoPage() {
                 {mantenimientosFiltrados.map((m) => (
                   <tr key={m.id}>
                     <td>
-                      <strong>{new Date(m.fechaServicio).toLocaleDateString("es-DO")}</strong>
+                      <strong>{formatearFecha(m.fechaServicio)}</strong>
                     </td>
                     <td>
                       <strong>{m.vehiculo?.marca} {m.vehiculo?.modelo}</strong>
@@ -540,7 +541,7 @@ export default function MantenimientoPage() {
                       </strong>
                       {m.proximaFechaServicio && (
                         <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-                          Antes de: {new Date(m.proximaFechaServicio).toLocaleDateString("es-DO")}
+                          Antes de: {formatearFecha(m.proximaFechaServicio)}
                         </div>
                       )}
                     </td>

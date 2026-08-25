@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type Usuario = {
   id: number;
@@ -626,7 +627,7 @@ export default function UsuariosPage() {
                     </td>
                     <td>
                       <small style={{ color: "var(--text-secondary)" }}>
-                        {new Date(u.createdAt).toLocaleDateString("es-DO")}
+                        {formatearFecha(u.createdAt)}
                       </small>
                     </td>
                     <td style={{ textAlign: "right" }}>

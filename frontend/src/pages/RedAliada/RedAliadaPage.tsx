@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type RentCarAliado = {
   id: number;
@@ -453,7 +454,7 @@ export default function RedAliadaPage() {
                         <code>{t.vehiculo?.placa}</code>
                       </div>
                     </td>
-                    <td>{new Date(t.fechaSolicitud).toLocaleDateString("es-DO")}</td>
+                    <td>{formatearFecha(t.fechaSolicitud)}</td>
                     <td>
                       <strong>${Number(t.tarifaPactada).toFixed(2)}/día</strong>
                     </td>

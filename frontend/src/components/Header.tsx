@@ -13,6 +13,7 @@ import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { API_URLS } from "../services/api";
+import { formatearFecha } from "../utils/dateUtils";
 
 type RentCar = {
   id: number;
@@ -112,7 +113,7 @@ function Header() {
                 id: `seg-venc-${v.id}`,
                 tipo: "seguro",
                 titulo: `🛡️ Seguro Vencido: ${v.marca} ${v.modelo}`,
-                detalle: `Póliza vencida el ${new Date(v.seguroVencimiento).toLocaleDateString("es-DO")}.`,
+                detalle: `Póliza vencida el ${formatearFecha(v.seguroVencimiento)}.`,
                 link: "/vehiculos",
                 urgencia: "alta",
               });

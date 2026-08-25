@@ -16,6 +16,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type Vehiculo = {
   id: number;
@@ -552,8 +553,8 @@ export default function VehiculosPage() {
         v.pasajeros || 5,
         v.maletas || 2,
         `"${(v.seguroPoliza || "").replace(/"/g, '""')}"`,
-        v.seguroVencimiento ? new Date(v.seguroVencimiento).toLocaleDateString("es-DO") : "",
-        v.marbeteVencimiento ? new Date(v.marbeteVencimiento).toLocaleDateString("es-DO") : "",
+        formatearFecha(v.seguroVencimiento),
+        formatearFecha(v.marbeteVencimiento),
       ].join(",");
     });
 
@@ -1619,7 +1620,7 @@ export default function VehiculosPage() {
                       <td>{rep.seguroPoliza}</td>
                       <td>
                         {rep.seguroVencimiento
-                          ? new Date(rep.seguroVencimiento).toLocaleDateString("es-DO")
+                          ? formatearFecha(rep.seguroVencimiento)
                           : "No registrada"}
                         {rep.diasRestantesSeguro !== null && (
                           <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>

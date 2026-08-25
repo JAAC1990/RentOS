@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import PhoneInput from "../../components/PhoneInput";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type Vehiculo = {
   id: number;
@@ -291,14 +292,14 @@ export default function ReservasPublicasPage() {
 
   const getUrlWhatsApp = (reserva: { contratoId: number; cliente: string; vehiculo: string; total: string; dias: number }) => {
     const telefonoRentCar = rentCarInfo?.whatsapp || rentCarInfo?.telefono ? (rentCarInfo.whatsapp || rentCarInfo.telefono || "").replace(/[^0-9]/g, "") : "18095550199";
-    const texto = `Hola *${rentCarInfo?.nombre || "RentOS"}*, mi nombre es *${reserva.cliente}*. Acabo de solicitar la Reserva *#${reserva.contratoId}* en su catálogo web:\n\n🚗 *Vehículo:* ${reserva.vehiculo}\n📅 *Duración:* ${reserva.dias} días (${fechaInicio} al ${fechaFin})\n💰 *Total Estimado:* $${reserva.total} ${rentCarInfo?.moneda || "USD"}\n\n¿Me confirman disponibilidad para completar la entrega? ¡Muchas gracias!`;
+    const texto = `Hola *${rentCarInfo?.nombre || "RentOS"}*, mi nombre es *${reserva.cliente}*. Acabo de solicitar la Reserva *#${reserva.contratoId}* en su catálogo web:\n\n🚗 *Vehículo:* ${reserva.vehiculo}\n📅 *Duración:* ${reserva.dias} días (${formatearFecha(fechaInicio)} al ${formatearFecha(fechaFin)})\n💰 *Total Estimado:* $${reserva.total} ${rentCarInfo?.moneda || "USD"}\n\n¿Me confirman disponibilidad para completar la entrega? ¡Muchas gracias!`;
     return `https://wa.me/${telefonoRentCar}?text=${encodeURIComponent(texto)}`;
   };
 
   const getUrlWhatsAppConsulta = (v: Vehiculo) => {
     const telefonoRentCar = rentCarInfo?.whatsapp || rentCarInfo?.telefono ? (rentCarInfo.whatsapp || rentCarInfo.telefono || "").replace(/[^0-9]/g, "") : "18095550199";
     const totalEst = (Number(v.tarifaDiaria) * dias).toFixed(2);
-    const texto = `Hola *${rentCarInfo?.nombre || "RentOS"}*, me interesa alquilar el *${v.marca} ${v.modelo} (${v.anio})* por *${dias} día(s)* (del ${fechaInicio} al ${fechaFin}).\n\nTarifa estimada: *$${totalEst} ${rentCarInfo?.moneda || "USD"}*.\n¿Tienen disponibilidad en esas fechas?`;
+    const texto = `Hola *${rentCarInfo?.nombre || "RentOS"}*, me interesa alquilar el *${v.marca} ${v.modelo} (${v.anio})* por *${dias} día(s)* (del ${formatearFecha(fechaInicio)} al ${formatearFecha(fechaFin)}).\n\nTarifa estimada: *$${totalEst} ${rentCarInfo?.moneda || "USD"}*.\n¿Tienen disponibilidad en esas fechas?`;
     return `https://wa.me/${telefonoRentCar}?text=${encodeURIComponent(texto)}`;
   };
 
@@ -849,7 +850,7 @@ export default function ReservasPublicasPage() {
                 <div>
                   <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Período ({dias} {dias === 1 ? "día" : "días"}):</span>
                   <div style={{ fontSize: "14px", fontWeight: 700 }}>
-                    {fechaInicio} ➔ {fechaFin}
+                    {formatearFecha(fechaInicio)} ➔ {formatearFecha(fechaFin)}
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -1028,7 +1029,7 @@ export default function ReservasPublicasPage() {
                 justifyContent: "space-between",
               }}
             >
-              <span>📅 Del <b>{fechaInicio}</b> al <b>{fechaFin}</b></span>
+              <span>📅 Del <b>{formatearFecha(fechaInicio)}</b> al <b>{formatearFecha(fechaFin)}</b></span>
               <strong>{dias} {dias === 1 ? "día" : "días"}</strong>
             </div>
 

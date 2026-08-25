@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type Cliente = {
   id: number;
@@ -475,7 +476,7 @@ export default function PagosPage() {
                     <td>
                       <span className="badge badge-mantenimiento">REC-{String(p.id).padStart(5, "0")}</span>
                     </td>
-                    <td>{new Date(p.fecha).toLocaleDateString("es-DO")}</td>
+                    <td>{formatearFecha(p.fecha)}</td>
                     <td>
                       <strong>Contrato #{p.contratoId}</strong>
                     </td>

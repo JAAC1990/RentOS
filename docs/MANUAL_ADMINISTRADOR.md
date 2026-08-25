@@ -18,7 +18,8 @@
 | **1.0** | 2026-08-20 | Módulos Base | Publicación inicial del manual operativo de agencia. | Depto. Tecnología |
 | **1.5** | 2026-08-23 | Contratos & Facturación | Integración de Comprobantes Fiscales NCF (DGII) y firmas digitales. | Asesoría Legal / IT |
 | **2.0** | 2026-08-24 | Todos los Módulos (1 al 15) | Guía exhaustiva de funcionalidades y llenado campo por campo, fotos clicables, QR inmutable y reservas web. | Dirección RentOS |
-| **2.1** | 2026-08-24 | Flota & Vehículos | Validación estricta de Placa (máx 7 caracteres), Año (exacto 4 dígitos), Switch conversor USD ⇄ DOP con tasa en tiempo real y exportación total a CSV vía Blob UTF-8. | Operaciones RentOS |
+| **2.1** | 2026-08-24 | Flota & Vehículos | Validación estricta de Placa (hasta 8 caracteres con guion), Año (exacto 4 dígitos) y Switch conversor USD ⇄ DOP en tiempo real. | Operaciones RentOS |
+| **2.2** | 2026-08-25 | Global / Todos los Módulos | Estandarización obligatoria del formato de fechas a **Día / Mes / Año (DD/MM/AAAA)** en todas las vistas, tablas, contratos, reportes de inspección, WhatsApp y exportaciones. | Dirección RentOS |
 
 ---
 
@@ -219,8 +220,8 @@ Al hacer clic en **`+ Nuevo Vehículo`** o **`✏️ Editar`**, completar cada c
 | **Tarifa Diaria (USD / DOP)** | **Sí** | `45.00` US$ o `2,700.00` RD$ | Precio base por día. Incluye **Switch Convertidor en vivo** según la tasa de cambio establecida (ej. 1 USD = 60.00 DOP). |
 | **Estado Operativo** | **Sí** | `DISPONIBLE`, `ALQUILADO`, `MANTENIMIENTO`, `INACTIVO` | Estado inicial del auto (por defecto `DISPONIBLE`). |
 | **Póliza de Seguro** | Recomendado | `Seguros Universal #UN-992288` | Aseguradora y número de contrato de seguro. |
-| **Vencimiento Seguro** | Recomendado | `YYYY-MM-DD` | Fecha de expiración de la póliza. Alerta preventiva a 30 días. |
-| **Vencimiento Marbete** | Recomendado | `YYYY-MM-DD` | Fecha límite del impuesto de circulación DGII. |
+| **Vencimiento Seguro** | Recomendado | `DD/MM/AAAA` (ej. 25/08/2027) | Fecha de expiración de la póliza. Alerta preventiva a 30 días. |
+| **Vencimiento Marbete** | Recomendado | `DD/MM/AAAA` (ej. 31/12/2026) | Fecha límite del impuesto de circulación DGII. |
 
 ---
 
@@ -237,7 +238,7 @@ Al hacer clic en **`+ Nuevo Cliente`**, completar:
 | **Dirección Residencial** | Recomendado | `Calle Las Palmas #12, Santo Domingo` | Dirección física donde reside el cliente (o nombre de hotel si es turista). |
 | **No. Cédula / Pasaporte** | **Sí** | `402-1234567-8` o `P8472910` | Documento de identidad oficial y vigente. |
 | **No. Licencia Conducir** | **Sí** | `DO-40212345678` | Licencia de conducir válida para el tipo de vehículo a rentar. |
-| **Vencimiento Licencia** | **Sí** | `YYYY-MM-DD` | No se puede rentar si la licencia vence durante el transcurso del contrato. |
+| **Vencimiento Licencia** | **Sí** | `DD/MM/AAAA` | No se puede rentar si la licencia vence durante el transcurso del contrato. |
 | **Referencia Familiar** | Recomendado | `María Pérez - 809-555-0144` | Contacto de emergencia en caso de demora o accidente. |
 
 ---
@@ -250,8 +251,8 @@ Al hacer clic en **`+ Nuevo Contrato`**, completar:
 | :--- | :---: | :--- | :--- |
 | **Cliente** | **Sí** | Selector | Arrendatario previamente registrado y activo en el sistema. |
 | **Vehículo** | **Sí** | Selector | Unidad en estado `DISPONIBLE`. |
-| **Fecha/Hora de Inicio** | **Sí** | `YYYY-MM-DD HH:MM` | Momento exacto de entrega de la llave al cliente. |
-| **Fecha/Hora de Retorno** | **Sí** | `YYYY-MM-DD HH:MM` | Momento pactado de devolución en base a períodos de 24 horas. |
+| **Fecha/Hora de Inicio** | **Sí** | `DD/MM/AAAA HH:MM` | Momento exacto de entrega de la llave al cliente. |
+| **Fecha/Hora de Retorno** | **Sí** | `DD/MM/AAAA HH:MM` | Momento pactado de devolución en base a períodos de 24 horas. |
 | **Tarifa Diaria** | **Sí** | `50.00` | Monto diario por día de renta. Auto-cargado desde el vehículo. |
 | **Depósito en Garantía** | **Sí** | `200.00`, `500.00` | Monto de fianza reembolsable que se retiene en tarjeta o efectivo. |
 | **Cobros Extra / Servicios** | No | `20.00` | Cargos adicionales (ej. Conductor adicional, GPS portátil, Silla de bebé). |
