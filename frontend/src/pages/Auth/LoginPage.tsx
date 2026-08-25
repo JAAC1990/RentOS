@@ -32,7 +32,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (usuario) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [usuario, navigate]);
 
@@ -75,7 +75,7 @@ export default function LoginPage() {
       }
 
       await login(email, password);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
@@ -91,7 +91,7 @@ export default function LoginPage() {
       setIniciando(true);
       setError("");
       await login(cuenta.email, cuenta.password);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Error con cuenta demo.");

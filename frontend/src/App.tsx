@@ -31,7 +31,7 @@ function RutaProtegida() {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<RegistroRentCarPage />} />
       {/* Catálogo Público de Reservas para Clientes */}

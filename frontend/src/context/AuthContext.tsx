@@ -24,16 +24,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Usuario inicial persistente (Si no hay nada guardado, cargar Administrador para no bloquear el trabajo)
-const usuarioPorDefecto: UsuarioAuth = {
-  id: 1,
-  nombre: "Administrador Santo Domingo",
-  email: "admin@rentos.local",
-  rol: "ADMIN_RENTCAR",
-  rentCarId: 1,
-  rentCarNombre: "RentOS Principal - Santo Domingo",
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioAuth | null>(() => {
     const guardado = localStorage.getItem("rentos_auth_user");
@@ -41,14 +31,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         return JSON.parse(guardado);
       } catch {
-        return usuarioPorDefecto;
+        return null;
       }
     }
-    return usuarioPorDefecto;
+    return null;
   });
 
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem("rentos_auth_token") || "token_sesion_permanente_rentos";
+    return localStorage.getItem("rentos_auth_token") || null;
   });
 
   const [tenantActivoId, setTenantActivoId] = useState<number>(() => {
