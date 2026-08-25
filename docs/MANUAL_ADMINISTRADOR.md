@@ -206,7 +206,7 @@ Al hacer clic en **`+ Nuevo Vehículo`** o **`✏️ Editar`**, completar cada c
 | **Modelo** | **Sí** | `Corolla LE`, `Tucson`, `Sportage` | Versión comercial exacta. |
 | **Año** | **Sí** | `2024` (4 números) | Año de fabricación (Exactamente 4 dígitos, rango permitido: 1990 a Año actual + 2). |
 | **Color** | No | `Blanco Perlado`, `Gris Plata` | Color exterior predominante. |
-| **Placa / Matrícula** | **Sí** | `A123456`, `G771144` | Matrícula oficial dominicana (Máximo 7 caracteres, única en el sistema). |
+| **Placa / Matrícula** | **Sí** | `A-123456`, `G-771144` o `A123456` | Matrícula oficial dominicana (Hasta 8 caracteres incluyendo el guion, única en el sistema). |
 | **No. Chasis / VIN** | No | 17 caracteres | Número grabado en el chasis. Crucial para pólizas y reporte de robo. |
 | **Categoría** | **Sí** | `SEDAN`, `SUV`, `COMPACTO`, `CAMIONETA`, `VAN`, `LUJO` | Segmento vehicular. Filtro principal en la web de reservas. |
 | **Transmisión** | **Sí** | `AUTOMATICA` o `MANUAL` | Tipo de caja de cambios. |

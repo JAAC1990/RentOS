@@ -298,14 +298,14 @@ export default function VehiculosPage() {
       return false;
     }
 
-    // Validación estricta de Placa: Máximo 7 caracteres
+    // Validación estricta de Placa: Máximo 8 caracteres (permite guion, ej. A-123456 o A123456)
     const placaLimpia = formulario.placa.trim().toUpperCase();
     if (!placaLimpia) {
       setErrorFormulario("La placa es obligatoria.");
       return false;
     }
-    if (placaLimpia.length > 7) {
-      setErrorFormulario("La placa no puede tener más de 7 caracteres (ej. A123456 o G771144).");
+    if (placaLimpia.length > 8) {
+      setErrorFormulario("La placa no puede tener más de 8 caracteres (ej. A-123456 o A123456).");
       return false;
     }
 
@@ -362,7 +362,7 @@ export default function VehiculosPage() {
         modelo: formulario.modelo.trim(),
         anio: Number(formulario.anio.slice(0, 4)),
         color: formulario.color.trim() || undefined,
-        placa: formulario.placa.trim().toUpperCase().slice(0, 7),
+        placa: formulario.placa.trim().toUpperCase().slice(0, 8),
         vin: formulario.vin.trim() || undefined,
         kilometraje: Number(formulario.kilometraje),
         tarifaDiaria: tarifaFinalUSD,
@@ -424,7 +424,7 @@ export default function VehiculosPage() {
       modelo: vehiculo.modelo ?? "",
       anio: String(vehiculo.anio ?? "").slice(0, 4),
       color: vehiculo.color ?? "",
-      placa: (vehiculo.placa ?? "").slice(0, 7),
+      placa: (vehiculo.placa ?? "").slice(0, 8),
       vin: vehiculo.vin ?? "",
       kilometraje: String(vehiculo.kilometraje ?? 0),
       tarifaDiaria: String(vehiculo.tarifaDiaria ?? ""),
@@ -879,17 +879,17 @@ export default function VehiculosPage() {
                 />
               </div>
 
-              {/* PLACA: Máximo 7 dígitos/caracteres */}
+              {/* PLACA: Máximo 8 caracteres (con guion, ej. A-123456 o A123456) */}
               <div className="form-field">
-                <label htmlFor="placa">Placa / Matrícula * (Máximo 7 caracteres)</label>
+                <label htmlFor="placa">Placa / Matrícula * (Máx. 8 caracteres, ej. A-123456)</label>
                 <input
                   id="placa"
                   type="text"
-                  maxLength={7}
-                  placeholder="Ej. A123456"
+                  maxLength={8}
+                  placeholder="Ej. A-123456"
                   value={formulario.placa}
                   onChange={(e) => {
-                    const val = e.target.value.toUpperCase().slice(0, 7);
+                    const val = e.target.value.toUpperCase().slice(0, 8);
                     setFormulario((prev) => ({ ...prev, placa: val }));
                   }}
                   required
