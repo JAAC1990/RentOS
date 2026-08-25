@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * RentOS - Mantenimiento Preventivo y Taller Mecánico (MantenimientoPage)
+ * ============================================================================
+ * Monitoreo del estado mecánico y costos de mantenimiento:
+ * - Registro de órdenes de servicio (cambio de aceite, frenos, amortiguación).
+ * - Cálculo automático del próximo servicio por odómetro (+5,000 km) y tiempo (+90 días).
+ * - Semáforo de alertas (AL DÍA 🟢, PRÓXIMO 🟡, VENCIDO 🔴).
+ * - Integración de auditoría mecánica con notificaciones hacia Telegram.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
 

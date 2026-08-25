@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Portal Público de Reservas para Clientes y Turistas (ReservasPublicasPage)
+ * ============================================================================
+ * Catálogo público en línea:
+ * - Explorador de flota con filtros por marca, ciudad y categoría.
+ * - Cotizador instantáneo por días de renta.
+ * - Formulario de reserva directa y botón de confirmación con mensaje precargado hacia WhatsApp.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import PhoneInput from "../../components/PhoneInput";

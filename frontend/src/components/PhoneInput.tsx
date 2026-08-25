@@ -1,3 +1,11 @@
+/**
+ * ============================================================================
+ * RentOS - Componente de Entrada Telefónica Internacional (PhoneInput)
+ * ============================================================================
+ * Proporciona un selector visual de prefijos de país con banderas (RD 🇩🇴, USA 🇺🇸,
+ * España 🇪🇸, etc.) y campo de número con formateo automático para WhatsApp y SMS.
+ */
+
 import { useEffect, useState } from "react";
 
 export const PAISES_PREFIJOS = [

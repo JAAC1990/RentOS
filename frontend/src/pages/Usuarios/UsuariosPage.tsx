@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Gestión de Equipo, Empleados y Permisos (UsuariosPage)
+ * ============================================================================
+ * Administración de cuentas de acceso a la plataforma:
+ * - Creación de operadores de recepción, mecánicos y administradores de sucursal.
+ * - Restablecimiento de contraseñas y desactivación inmediata de usuarios salientes.
+ * - Pestaña de SuperAdmin para autorizar solicitudes pendientes de nuevos RentCars.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";

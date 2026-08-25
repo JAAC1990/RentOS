@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * RentOS - Recepción, Inspección 360° y Check-in de Flota (EntregasPage)
+ * ============================================================================
+ * Módulo de recepción y control de daños:
+ * - Mapa visual interactivo de daños de carrocería (rayones, abolladuras, roturas).
+ * - Carga de fotografías de evidencia en tiempo real.
+ * - Registro de odómetro de retorno y nivel de combustible.
+ * - Cierre de contrato y restitución del auto al catálogo de disponibles.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";

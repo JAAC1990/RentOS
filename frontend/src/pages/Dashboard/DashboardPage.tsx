@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Panel de Control Ejecutivo (DashboardPage)
+ * ============================================================================
+ * Muestra el resumen operativo en tiempo real:
+ * - Indicadores clave (KPIs): Flota activa, ocupación %, ingresos acumulados y clientes.
+ * - Accesos rápidos para crear contratos, registrar clientes y consultar alertas.
+ * - Gráficos visuales de ocupación y desglose de vehículos disponibles vs rentados.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";

@@ -1,9 +1,18 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Telemetría GPS Satelital y Corte de Motor Remoto
+ * ============================================================================
+ * Maneja el monitoreo de vehículos en tiempo real: coordenadas geográficas,
+ * velocidad, ignición, geocercas, nivel de batería, historial de recorridos
+ * y comando de inmovilización remota de motor para seguridad anti-robo.
+ */
+
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-// Coordenadas de prueba en República Dominicana (Santo Domingo, Santiago, Bávaro, etc.)
+// Coordenadas de prueba en República Dominicana para inicializar flota sin telemetría física
 const UBICACIONES_DEFAULT = [
   { lat: 18.47186, lng: -69.93922, direccion: "Av. Winston Churchill, Piantini, Santo Domingo", geocerca: "Zona Central DN", vel: 42.5, ign: true },
   { lat: 18.46824, lng: -69.91032, direccion: "Av. Máximo Gómez / Gazcue, Santo Domingo", geocerca: "Zona Central DN", vel: 0.0, ign: false },
@@ -15,10 +24,10 @@ const UBICACIONES_DEFAULT = [
   { lat: 18.47641, lng: -69.88562, direccion: "Zona Colonial, Santo Domingo", geocerca: "Zona Colonial", vel: 0.0, ign: false },
 ];
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/gps
-// Obtener última telemetría GPS de todos los vehículos
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna la última posición satelital y estado de ignición de todos los vehículos de la empresa
 router.get("/", async (req, res) => {
   try {
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
@@ -38,7 +47,7 @@ router.get("/", async (req, res) => {
       vehiculos.map(async (v, index) => {
         let ultimaUbicacion = v.ubicacionesGPS[0];
 
-        // Si no tiene registro previo, inicializar una posición representativa en RD
+        // Si el vehículo aún no tiene ping GPS, inicializar una posición representativa
         if (!ultimaUbicacion) {
           const sample = UBICACIONES_DEFAULT[index % UBICACIONES_DEFAULT.length];
           ultimaUbicacion = await prisma.ubicacionGPS.create({
@@ -80,10 +89,10 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/gps/historial/:vehiculoId
-// Historial de recorrido / ruta de un vehículo
-// ======================================================
+// ----------------------------------------------------------------------------
+// Obtiene los últimos 50 puntos geográficos para trazar la ruta recorrida en el mapa
 router.get("/historial/:vehiculoId", async (req, res) => {
   try {
     const vehiculoId = Number(req.params.vehiculoId);
@@ -104,10 +113,10 @@ router.get("/historial/:vehiculoId", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/gps/telemetria
-// Recibir ping de telemetría GPS (dispositivo físico o simulador)
-// ======================================================
+// ----------------------------------------------------------------------------
+// Endpoint para recibir pings automáticos de rastreadores GPS físicos (Teltonika, Coban, Sinotrack)
 router.post("/telemetria", async (req, res) => {
   try {
     const {
@@ -150,10 +159,10 @@ router.post("/telemetria", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/gps/inmovilizar/:vehiculoId
-// Inmovilizar o desbloquear motor de forma remota (anti-robo)
-// ======================================================
+// ----------------------------------------------------------------------------
+// Envía el comando de corte o restablecimiento de ignición remota del motor
 router.post("/inmovilizar/:vehiculoId", async (req, res) => {
   try {
     const vehiculoId = Number(req.params.vehiculoId);

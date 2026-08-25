@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Calendario Interactivo y Diagrama de Gantt de Flota (CalendarioFlotaPage)
+ * ============================================================================
+ * Visualización cronológica de alquileres y reservas:
+ * - Vista Gantt por días de la semana y meses con barras de tiempo codificadas por color.
+ * - Detección visual de solapamientos, días de retorno y disponibilidad futura.
+ * - Accesos directos para extender o consultar contratos desde la línea de tiempo.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";

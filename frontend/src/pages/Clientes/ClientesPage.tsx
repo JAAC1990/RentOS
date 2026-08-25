@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Directorio de Clientes y Buró de Crédito (ClientesPage)
+ * ============================================================================
+ * Gestión de la base de datos de arrendatarios:
+ * - Registro con validación de teléfono internacional (PhoneInput) y correo.
+ * - Módulo de Verificación Crediticia (Scoring de Riesgo y Buró de Renta).
+ * - Control de listas negras y bloqueo preventivo de usuarios morosos o con historial de siniestros.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import PhoneInput from "../../components/PhoneInput";
 import { API_URLS } from "../../services/api";

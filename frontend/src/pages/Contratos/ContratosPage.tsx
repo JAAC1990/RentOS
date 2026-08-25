@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * RentOS - Contratos de Alquiler y Formalización Legal (ContratosPage)
+ * ============================================================================
+ * Manejo de contratos de arrendamiento vehicular:
+ * - Selección de cliente y vehículo disponible con cálculo automático de días e importes.
+ * - Registro de depósito en garantía, tarifas y cláusulas de responsabilidad.
+ * - Impresión de contrato legal con firma digital y marca blanca de la empresa.
+ * - Extensiones de renta y finalización anticipada de contratos.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";

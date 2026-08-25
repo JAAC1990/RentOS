@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * RentOS - Monitoreo GPS Satelital y Control Anti-Robo (GpsPage)
+ * ============================================================================
+ * Centro de control y telemetría de vehículos en vivo:
+ * - Mapa interactivo con Leaflet y OpenStreetMap centrado en República Dominicana.
+ * - Marcadores en tiempo real con estado de ignición, velocidad y geocerca.
+ * - Comando remoto de inmovilización y corte de corriente de motor.
+ * - Historial de ruta y trazo de recorridos sobre el mapa.
+ */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";

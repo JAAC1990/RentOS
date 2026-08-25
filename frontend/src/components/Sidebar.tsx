@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Barra de Navegación Lateral (Sidebar)
+ * ============================================================================
+ * Renderiza el menú de navegación principal agrupado por secciones:
+ * - SUPERADMIN: Solicitudes de nuevas empresas y Centro de Backups / Restauración.
+ * - GESTIÓN: Dashboard, Vehículos, Calendario Gantt, Clientes, Contratos, etc.
+ * - CONFIGURACIÓN: Marca blanca, logotipos, eslogan y políticas.
+ */
+
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 

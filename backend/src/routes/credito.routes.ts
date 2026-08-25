@@ -1,12 +1,21 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Evaluación de Riesgo y Score Crediticio de Arrendatarios
+ * ============================================================================
+ * Proporciona un motor de scoring para evaluar a clientes antes de entregar
+ * un vehículo: análisis de historial de alquileres finalizados, detección de
+ * clientes bloqueados (morosidad/daños) y cálculo de nivel de riesgo (BAJO, MEDIO, ALTO).
+ */
+
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/credito
-// Listar historial de consultas de crédito
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna el historial de todas las evaluaciones crediticias realizadas
 router.get("/", async (_req, res) => {
   try {
     const consultas = await prisma.consultaCredito.findMany({
@@ -40,10 +49,10 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/credito/cliente/:clienteId
-// Obtener historial de crédito de un cliente específico
-// ======================================================
+// ----------------------------------------------------------------------------
+// Obtiene el historial de consultas de riesgo de un cliente en específico
 router.get("/cliente/:clienteId", async (req, res) => {
   try {
     const clienteId = Number(req.params.clienteId);
@@ -68,10 +77,10 @@ router.get("/cliente/:clienteId", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/credito/evaluar
-// Evaluar score y riesgo crediticio de un cliente
-// ======================================================
+// ----------------------------------------------------------------------------
+// Ejecuta el algoritmo de scoring y emite recomendación de fianza o alquiler
 router.post("/evaluar", async (req, res) => {
   try {
     const { clienteId, usuarioId } = req.body;
@@ -95,7 +104,6 @@ router.post("/evaluar", async (req, res) => {
       return res.status(404).json({ error: "Cliente no encontrado." });
     }
 
-    // Obtener usuario que realiza la consulta
     let targetUserId = usuarioId ? Number(usuarioId) : null;
     if (!targetUserId) {
       const u = await prisma.usuario.findFirst({ where: { activo: true } });
@@ -106,27 +114,27 @@ router.post("/evaluar", async (req, res) => {
     let score = 720;
     let factores = [];
 
-    // Factor 1: Si el cliente está bloqueado
+    // Factor 1: Si el cliente está en lista de restricción
     if (cliente.estado === "BLOQUEADO") {
       score = 420;
       factores.push("Cliente reportado en lista de restricción / morosidad.");
     }
 
-    // Factor 2: Historial de contratos cumplidos
+    // Factor 2: Bonificación por contratos finalizados con éxito
     const contratosFinalizados = cliente.contratos.filter((c) => c.estado === "FINALIZADO").length;
     if (contratosFinalizados > 0) {
       score += Math.min(60, contratosFinalizados * 15);
       factores.push(`${contratosFinalizados} alquileres finalizados con éxito en la plataforma.`);
     }
 
-    // Factor 3: Calificación aleatoria ponderada de buró externo (DataCrédito / TransUnion simulation)
+    // Factor 3: Variabilidad determinística según perfil
     const factorAleatorio = Math.floor((Math.sin(clienteIdNum * 997) + 1) * 40) - 20;
     score += factorAleatorio;
 
-    // Normalizar entre 300 y 850
+    // Normalizar rango oficial de score (300 a 850)
     score = Math.max(320, Math.min(850, score));
 
-    // Determinar resultado y recomendación
+    // Determinar resultado y recomendación operativa
     let resultado = "APROBADO (Excelente perfil)";
     let recomendacion = "Renta autorizada con tarifa estándar y depósito regular.";
     let nivelRiesgo = "BAJO";

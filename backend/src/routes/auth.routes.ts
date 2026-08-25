@@ -1,3 +1,11 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Autenticación, Usuarios y Control de Sesión (JWT)
+ * ============================================================================
+ * Maneja el inicio de sesión, generación y verificación de tokens JWT,
+ * cuentas demo para pruebas de interfaz y obtención del perfil activo.
+ */
+
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -5,13 +13,18 @@ import { RolUsuario } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
+
+// Clave secreta para firmar tokens JWT
 const JWT_SECRET = process.env.JWT_SECRET || "rentos_super_secret_jwt_key_2026";
 
-// Asegurar usuarios iniciales para pruebas de roles
+/**
+ * Función auxiliar para asegurar la existencia de los usuarios base de demostración
+ * con contraseñas encriptadas mediante bcrypt.
+ */
 async function asegurarUsuariosIniciales() {
   const hash = await bcrypt.hash("admin123", 10);
 
-  // 1. SuperAdmin Global (Acceso a todas las empresas)
+  // 1. SuperAdmin Global (Acceso administrativo a toda la red SaaS)
   await prisma.usuario.upsert({
     where: { email: "superadmin@rentos.do" },
     update: {},
@@ -25,7 +38,7 @@ async function asegurarUsuariosIniciales() {
     },
   });
 
-  // 2. Administrador RentCar Santo Domingo (Tenant #1)
+  // 2. Administrador RentCar Santo Domingo (Tenant Principal #1)
   await prisma.usuario.upsert({
     where: { email: "admin@rentos.local" },
     update: { password: hash, rol: RolUsuario.ADMIN_RENTCAR, rentCarId: 1 },
@@ -39,7 +52,7 @@ async function asegurarUsuariosIniciales() {
     },
   });
 
-  // 3. Administrador RentCar Punta Cana (Tenant #2)
+  // 3. Administrador RentCar Punta Cana (Tenant Secundario #2)
   const rentCarPuntaCana = await prisma.rentCar.findFirst({ where: { id: 2 } });
   if (rentCarPuntaCana) {
     await prisma.usuario.upsert({
@@ -56,7 +69,7 @@ async function asegurarUsuariosIniciales() {
     });
   }
 
-  // 4. Empleado Mostrador
+  // 4. Empleado / Asesor de Mostrador (Operaciones de contrato y entregas)
   await prisma.usuario.upsert({
     where: { email: "juan@rentos.do" },
     update: { password: hash },
@@ -71,10 +84,10 @@ async function asegurarUsuariosIniciales() {
   });
 }
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/auth/cuentas-demo
-// Cuentas de prueba para el panel de login
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna la lista de credenciales demo preconfiguradas para acceso rápido en login
 router.get("/cuentas-demo", async (_req, res) => {
   try {
     await asegurarUsuariosIniciales();
@@ -115,10 +128,10 @@ router.get("/cuentas-demo", async (_req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/auth/login
-// Iniciar sesión y generar JWT
-// ======================================================
+// ----------------------------------------------------------------------------
+// Autentica credenciales de usuario, valida contraseña y retorna token JWT firmado
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -143,6 +156,7 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ error: "Esta cuenta de usuario ha sido desactivada." });
     }
 
+    // Comparar contraseña con hash bcrypt o texto plano con migración automática a hash
     let passwordValida = false;
     if (usuario.password.startsWith("$2a$") || usuario.password.startsWith("$2b$")) {
       passwordValida = await bcrypt.compare(String(password), usuario.password);
@@ -161,6 +175,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Credenciales inválidas. Contraseña incorrecta." });
     }
 
+    // Datos incluidos dentro del token JWT
     const payload = {
       id: usuario.id,
       nombre: usuario.nombre,
@@ -169,6 +184,7 @@ router.post("/login", async (req, res) => {
       rentCarId: usuario.rentCarId,
     };
 
+    // Generar token JWT con vigencia de 7 días
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 
     res.json({
@@ -188,9 +204,10 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/auth/perfil
-// ======================================================
+// ----------------------------------------------------------------------------
+// Valida el token Bearer en cabecera y devuelve los datos actualizados del usuario
 router.get("/perfil", async (req, res) => {
   try {
     const authHeader = req.headers.authorization;

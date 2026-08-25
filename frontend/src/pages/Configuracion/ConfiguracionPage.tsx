@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Configuración de Empresa y Marca Blanca (ConfiguracionPage)
+ * ============================================================================
+ * Personalización integral del negocio:
+ * - Subida de logotipo de la empresa y paleta de color primario corporativo.
+ * - Políticas de arrendamiento, límite de kilometraje diario y cargo por km extra.
+ * - Parámetros de WhatsApp para clientes y Chat ID de Telegram para alertas operativas.
+ */
+
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";

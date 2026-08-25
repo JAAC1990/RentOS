@@ -1,3 +1,12 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Flota de Vehículos y Auditoría de Documentos Legales
+ * ============================================================================
+ * Maneja el inventario de automóviles: marcas, modelos, placas, tarifas diarias,
+ * odómetros, y el monitoreo de vencimiento de seguros, marbetes y revistas técnicas
+ * con alertas preventivas a 30 días y notificaciones a Telegram.
+ */
+
 import { Router } from "express";
 import { EstadoVehiculo } from "@prisma/client";
 import prisma from "../lib/prisma.js";
@@ -5,6 +14,9 @@ import { enviarAlerta } from "../services/alert.service.js";
 
 const router = Router();
 
+/**
+ * Valida y convierte un string a su correspondiente enum EstadoVehiculo.
+ */
 function convertirEstado(estado: unknown): EstadoVehiculo | null {
   if (typeof estado !== "string") {
     return null;
@@ -19,15 +31,15 @@ function convertirEstado(estado: unknown): EstadoVehiculo | null {
   return null;
 }
 
-// Inicializar fechas de prueba si están vacías
+/**
+ * Función auxiliar para asignar pólizas y fechas de seguro de prueba
+ * a los vehículos que carezcan de ellas.
+ */
 async function inicializarFechasDocumentos() {
   const hoy = new Date();
 
-  // Fecha hace 5 días (Vencido)
   const fechaVencida = new Date(hoy.getTime() - 5 * 24 * 60 * 60 * 1000);
-  // Fecha en 12 días (Por vencer)
   const fechaPorVencer = new Date(hoy.getTime() + 12 * 24 * 60 * 60 * 1000);
-  // Fecha en 180 días (Al día)
   const fechaAlDia = new Date(hoy.getTime() + 180 * 24 * 60 * 60 * 1000);
 
   const vehiculosSinSeguro = await prisma.vehiculo.findMany({
@@ -42,11 +54,9 @@ async function inicializarFechasDocumentos() {
     let poliza = `Seguros Universal #UN-${v.id}092`;
 
     if (i === 0) {
-      // Primer vehículo: Vencido
       vSeguro = fechaVencida;
       poliza = `Seguros Banreservas #BR-VENC-${v.id}`;
     } else if (i === 1 || i === 2) {
-      // Segundo y tercer vehículo: Por vencer (<15 días)
       vSeguro = fechaPorVencer;
       vMarbete = fechaPorVencer;
       poliza = `Mapfre BHD #MAP-${v.id}88`;
@@ -64,10 +74,10 @@ async function inicializarFechasDocumentos() {
   }
 }
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/vehiculos/vencimientos
-// Obtiene el estado de vencimiento de documentos de toda la flota
-// ======================================================
+// ----------------------------------------------------------------------------
+// Reporte de auditoría legal: días restantes de seguros, marbetes y revistas
 router.get("/vencimientos", async (_req, res) => {
   try {
     await inicializarFechasDocumentos();
@@ -82,7 +92,6 @@ router.get("/vencimientos", async (_req, res) => {
     });
 
     const hoy = new Date();
-    const en30Dias = new Date(hoy.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const reporte = vehiculos.map((v) => {
       let estadoSeguro: "VENCIDO" | "POR_VENCER" | "AL_DIA" = "AL_DIA";
@@ -147,10 +156,10 @@ router.get("/vencimientos", async (_req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/vehiculos/notificar-vencimientos-telegram
-// Enviar resumen de alertas de seguro/marbete a Telegram
-// ======================================================
+// ----------------------------------------------------------------------------
+// Envía un resumen de pólizas y marbetes por vencer a Telegram
 router.post("/notificar-vencimientos-telegram", async (_req, res) => {
   try {
     const vehiculos = await prisma.vehiculo.findMany({
@@ -190,7 +199,10 @@ router.post("/notificar-vencimientos-telegram", async (_req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // GET /api/vehiculos
+// ----------------------------------------------------------------------------
+// Retorna todo el parque vehicular
 router.get("/", async (_req, res) => {
   try {
     const vehiculos = await prisma.vehiculo.findMany({
@@ -209,7 +221,10 @@ router.get("/", async (_req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // GET /api/vehiculos/:id
+// ----------------------------------------------------------------------------
+// Retorna el detalle de una unidad específica
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -242,7 +257,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // POST /api/vehiculos
+// ----------------------------------------------------------------------------
+// Registra un nuevo vehículo con su placa, odómetro inicial y pólizas
 router.post("/", async (req, res) => {
   try {
     const {
@@ -314,7 +332,10 @@ router.post("/", async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // PUT /api/vehiculos/:id
+// ----------------------------------------------------------------------------
+// Actualiza la ficha técnica, tarifas, estado (DISPONIBLE, MANTENIMIENTO, etc.) o seguros
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -379,7 +400,10 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // DELETE /api/vehiculos/:id
+// ----------------------------------------------------------------------------
+// Elimina un vehículo del inventario
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);

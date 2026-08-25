@@ -1,12 +1,20 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Clientes / Arrendatarios (CRUD & Expediente)
+ * ============================================================================
+ * Maneja el registro, edición, consulta de expediente (documentos, historial de
+ * contratos y consultas de crédito) y baja controlada para cada empresa RentCar.
+ */
+
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/clientes
-// Obtener todos los clientes (filtrados opcionalmente por rentCarId)
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna todos los clientes registrados para una empresa (filtrado por rentCarId)
 router.get("/", async (req, res) => {
   try {
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
@@ -38,10 +46,10 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/clientes/:id
-// Obtener un cliente específico con su expediente completo
-// ======================================================
+// ----------------------------------------------------------------------------
+// Obtiene el perfil detallado del cliente con sus contratos, pagos y score de crédito
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -80,10 +88,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/clientes
-// Registrar un nuevo cliente
-// ======================================================
+// ----------------------------------------------------------------------------
+// Crea un nuevo cliente validando nombre, apellido y teléfono internacional
 router.post("/", async (req, res) => {
   try {
     const {
@@ -126,10 +134,10 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // PUT /api/clientes/:id
-// Actualizar información del cliente
-// ======================================================
+// ----------------------------------------------------------------------------
+// Actualiza la información personal, estado (ACTIVO, BLOQUEADO) o contacto del cliente
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -173,10 +181,10 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // DELETE /api/clientes/:id
-// Eliminar o desactivar un cliente
-// ======================================================
+// ----------------------------------------------------------------------------
+// Elimina el cliente o lo marca como INACTIVO si posee contratos históricos para integridad
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -185,13 +193,13 @@ router.delete("/:id", async (req, res) => {
       return res.status(400).json({ error: "El ID del cliente no es válido." });
     }
 
-    // Comprobar si tiene contratos activos
+    // Comprobar si tiene contratos asociados en el sistema
     const contratos = await prisma.contrato.count({
       where: { clienteId: id },
     });
 
     if (contratos > 0) {
-      // Si tiene historial de contratos, se desactiva para no romper historial
+      // Si tiene contratos, se desactiva para preservar la integridad contable y legal
       const cliente = await prisma.cliente.update({
         where: { id },
         data: { estado: "INACTIVO" },
@@ -202,7 +210,7 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
-    // Si no tiene contratos, se puede eliminar completamente
+    // Si no posee contratos, se eliminan sus registros dependientes en cascada
     await prisma.documentoCliente.deleteMany({ where: { clienteId: id } });
     await prisma.usuarioCliente.deleteMany({ where: { clienteId: id } });
     await prisma.consultaCredito.deleteMany({ where: { clienteId: id } });

@@ -1,9 +1,21 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Configuración de Empresa y Marca Blanca (White-Label)
+ * ============================================================================
+ * Maneja la parametrización de cada empresa RentCar: logotipo oficial, color primario,
+ * eslogan, políticas de renta, tarifas de kilometraje extra, WhatsApp y eliminación
+ * segura en cascada (excluyendo la matriz principal ID #1).
+ */
+
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
+// ----------------------------------------------------------------------------
 // GET /api/rentcars
+// ----------------------------------------------------------------------------
+// Obtiene todas las empresas registradas con el conteo de flota, clientes y contratos
 router.get("/", async (_req, res) => {
   try {
     const rentcars = await prisma.rentCar.findMany({
@@ -31,7 +43,10 @@ router.get("/", async (_req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // GET /api/rentcars/:id
+// ----------------------------------------------------------------------------
+// Obtiene el perfil y la configuración de marca de un RentCar específico
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -68,7 +83,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // POST /api/rentcars
+// ----------------------------------------------------------------------------
+// Crea un nuevo registro de empresa con sus parámetros iniciales
 router.post("/", async (req, res) => {
   try {
     const {
@@ -117,7 +135,10 @@ router.post("/", async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // PUT /api/rentcars/:id
+// ----------------------------------------------------------------------------
+// Actualiza la marca blanca, logotipo, color primario, eslogan y políticas del RentCar
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -180,8 +201,10 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // DELETE /api/rentcars/:id
-// Eliminar permanentemente una empresa / Rent a Car y sus registros asociados
+// ----------------------------------------------------------------------------
+// Elimina en cascada una empresa, sus vehículos, contratos, pagos y usuarios (Protegiendo ID #1)
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -213,7 +236,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ error: "Rent Car no encontrado." });
     }
 
-    // Eliminación en cascada segura dentro de una transacción
+    // Eliminación atómica en cascada dentro de una transacción
     await prisma.$transaction(async (tx) => {
       // 1. Obtener contratos del RentCar
       const contratos = await tx.contrato.findMany({
@@ -231,7 +254,7 @@ router.delete("/:id", async (req, res) => {
         const entregaIds = entregas.map((e) => e.id);
 
         if (entregaIds.length > 0) {
-          // Eliminar defectos y evidencias
+          // Eliminar defectos y fotos
           await tx.defectoVehiculo.deleteMany({
             where: { entregaId: { in: entregaIds } },
           });
@@ -243,7 +266,7 @@ router.delete("/:id", async (req, res) => {
           });
         }
 
-        // Eliminar pagos asociados a contratos
+        // Eliminar pagos asociados
         await tx.pago.deleteMany({
           where: { contratoId: { in: contratoIds } },
         });
@@ -262,7 +285,6 @@ router.delete("/:id", async (req, res) => {
       const vehiculoIds = vehiculos.map((v) => v.id);
 
       if (vehiculoIds.length > 0) {
-        // Eliminar mantenimientos y GPS
         await tx.mantenimiento.deleteMany({
           where: { vehiculoId: { in: vehiculoIds } },
         });
@@ -283,7 +305,7 @@ router.delete("/:id", async (req, res) => {
         });
       }
 
-      // 4. Eliminar mantenimientos directos si quedara alguno
+      // 4. Eliminar mantenimientos directos
       await tx.mantenimiento.deleteMany({
         where: { rentCarId: id },
       });

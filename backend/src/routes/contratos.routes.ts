@@ -1,13 +1,22 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Contratos de Alquiler y Transacciones de Flota
+ * ============================================================================
+ * Maneja la formalización de contratos de arrendamiento, verificación de
+ * disponibilidad, transición atómica de estados del vehículo (DISPONIBLE -> ALQUILADO)
+ * y cálculo de extensiones, kilometrajes y pagos asociados.
+ */
+
 import { Router } from "express";
 import { EstadoContrato, EstadoVehiculo } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/contratos
-// Obtener todos los contratos (filtrados por rentCarId)
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna todos los contratos registrados de una empresa con datos de cliente y auto
 router.get("/", async (req, res) => {
   try {
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
@@ -57,10 +66,10 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/contratos/:id
-// Obtener un contrato específico
-// ======================================================
+// ----------------------------------------------------------------------------
+// Obtiene el expediente completo del contrato (pagos, inspección 360, daños y evidencias)
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -98,10 +107,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/contratos
-// Crear y formalizar un nuevo contrato de alquiler
-// ======================================================
+// ----------------------------------------------------------------------------
+// Crea un contrato de arrendamiento en una transacción atómica y bloquea el vehículo a ALQUILADO
 router.post("/", async (req, res) => {
   try {
     const {
@@ -146,6 +155,7 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "La fecha de fin debe ser posterior a la fecha de inicio." });
     }
 
+    // Validar existencia y estado del cliente
     const cliente = await prisma.cliente.findUnique({ where: { id: clienteIdNum } });
     if (!cliente) {
       return res.status(404).json({ error: "El cliente seleccionado no existe." });
@@ -157,6 +167,7 @@ router.post("/", async (req, res) => {
       });
     }
 
+    // Validar disponibilidad del vehículo
     const vehiculo = await prisma.vehiculo.findUnique({ where: { id: vehiculoIdNum } });
     if (!vehiculo) {
       return res.status(404).json({ error: "El vehículo seleccionado no existe." });
@@ -179,6 +190,7 @@ router.post("/", async (req, res) => {
         ? Number(kilometrajeInicial)
         : vehiculo.kilometraje;
 
+    // Transacción atómica: Crear contrato y actualizar vehículo
     const contrato = await prisma.$transaction(async (tx) => {
       const nuevo = await tx.contrato.create({
         data: {
@@ -199,7 +211,7 @@ router.post("/", async (req, res) => {
         },
       });
 
-      // Si el contrato es ACTIVO, actualizar vehículo a ALQUILADO
+      // Si el contrato es ACTIVO, cambiar estado del vehículo a ALQUILADO
       if (estadoContratoFinal === EstadoContrato.ACTIVO) {
         await tx.vehiculo.update({
           where: { id: vehiculoIdNum },
@@ -220,10 +232,10 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // PUT /api/contratos/:id
-// Actualizar contrato o finalizar renta
-// ======================================================
+// ----------------------------------------------------------------------------
+// Actualiza datos del contrato, procesa extensiones o finaliza la renta liberando el vehículo
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -276,7 +288,7 @@ router.put("/:id", async (req, res) => {
 
       // Reglas de negocio para el vehículo según el estado del contrato:
       if (nuevoEstado === EstadoContrato.FINALIZADO || nuevoEstado === EstadoContrato.CANCELADO) {
-        // Liberar el vehículo a DISPONIBLE y actualizar kilometraje si se proveyó
+        // Liberar el vehículo a DISPONIBLE y actualizar kilometraje
         const kmActualizado =
           kilometrajeFinal && Number(kilometrajeFinal) > existente.vehiculo.kilometraje
             ? Number(kilometrajeFinal)
@@ -309,10 +321,10 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // DELETE /api/contratos/:id
-// Cancelar o eliminar contrato
-// ======================================================
+// ----------------------------------------------------------------------------
+// Elimina el contrato en cascada y restituye el vehículo a estado DISPONIBLE
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -323,7 +335,7 @@ router.delete("/:id", async (req, res) => {
     }
 
     await prisma.$transaction(async (tx) => {
-      // Liberar vehículo
+      // Liberar vehículo a disponible
       await tx.vehiculo.update({
         where: { id: existente.vehiculoId },
         data: { estado: EstadoVehiculo.DISPONIBLE },

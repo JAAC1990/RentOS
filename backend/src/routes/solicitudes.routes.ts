@@ -1,3 +1,12 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Solicitudes y Aprobación de Empresas (SuperAdmin Onboarding)
+ * ============================================================================
+ * Maneja el registro público de nuevos Rent a Cars, generación de cuentas inactivas
+ * pendientes de revisión, alertas instantáneas a Telegram y aprobación/rechazo
+ * por parte del SuperAdministrador global.
+ */
+
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { RolUsuario } from "@prisma/client";
@@ -6,10 +15,10 @@ import { enviarAlerta } from "../services/alert.service.js";
 
 const router = Router();
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/solicitudes/registro
-// Solicitud pública de registro de nuevo Rent a Car
-// ======================================================
+// ----------------------------------------------------------------------------
+// Formulario público para que un nuevo negocio solicite unirse a RentOS
 router.post("/registro", async (req, res) => {
   try {
     const {
@@ -31,7 +40,7 @@ router.post("/registro", async (req, res) => {
 
     const emailTrim = String(email).trim().toLowerCase();
 
-    // Validar si el email ya existe
+    // Validar si el correo electrónico ya se encuentra registrado en la plataforma
     const usuarioExistente = await prisma.usuario.findUnique({
       where: { email: emailTrim },
     });
@@ -101,10 +110,10 @@ router.post("/registro", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/solicitudes
-// Listar todas las solicitudes (Para SuperAdmin)
-// ======================================================
+// ----------------------------------------------------------------------------
+// Lista todas las solicitudes de empresas registradas (para el panel SuperAdmin)
 router.get("/", async (_req, res) => {
   try {
     const solicitudes = await prisma.rentCar.findMany({
@@ -135,10 +144,10 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/solicitudes/:id/aprobar
-// Autorizar y Activar una empresa de Rent a Car
-// ======================================================
+// ----------------------------------------------------------------------------
+// Autoriza y activa la empresa y a sus usuarios administradores
 router.post("/:id/aprobar", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -186,10 +195,10 @@ router.post("/:id/aprobar", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/solicitudes/:id/rechazar
-// Rechazar solicitud de Rent a Car
-// ======================================================
+// ----------------------------------------------------------------------------
+// Marca la solicitud como RECHAZADA y mantiene los accesos desactivados
 router.post("/:id/rechazar", async (req, res) => {
   try {
     const id = Number(req.params.id);

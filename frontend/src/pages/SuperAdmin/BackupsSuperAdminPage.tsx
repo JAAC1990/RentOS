@@ -1,3 +1,12 @@
+/**
+ * ============================================================================
+ * RentOS - Centro de Respaldos y Restauración SuperAdmin (BackupsSuperAdminPage)
+ * ============================================================================
+ * Herramienta de alta seguridad para el SuperAdministrador:
+ * - Pestaña 1: Restauración Aislada por Empresa (Exportación e importación segura de JSON sin tocar otras agencias).
+ * - Pestaña 2: Respaldos Globales de Base de Datos PostgreSQL (.SQL, descarga, subida manual y restauración con confirmación 'RESTAURAR').
+ */
+
 import { useEffect, useState } from "react";
 import { API_URLS } from "../../services/api";
 

@@ -493,6 +493,14 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Verificación visual de márgenes, portada, saltos de página y cajas de advertencia.
 - **Resultado:** Documentación corporativa de nivel empresarial para estandarizar la operación de mostrador y despacho de RentOS.
 
+### [2026-08-24] - Documentación Exhaustiva en Español de Toda la Aplicación y Regla de Comentarios Permanentes
+- **Problema/Necesidad:** Documentar de forma integral cada componente, servicio, utilidad, ruta de API y modelo de base de datos de RentOS, explicando el propósito y funcionamiento de cada elemento, y estableciendo la directriz obligatoria de comentar cualquier adición futura de código.
+- **Decisión técnica:**
+  - Comentarios JSDoc y explicativos detallados en español en la totalidad de los archivos de backend: `index.ts`, `prisma.ts`, `backup.ts`, `telegram.ts`, `alert.service.ts`, `auth.routes.ts`, `clientes.routes.ts`, `contratos.routes.ts`, `credito.routes.ts`, `entregas.routes.ts`, `gps.routes.ts`, `health.routes.ts`, `mantenimiento.routes.ts`, `pagos.routes.ts`, `red.routes.ts`, `rentcars.routes.ts`, `solicitudes.routes.ts`, `users.routes.ts`, `vehiculos.routes.ts`, `backup.routes.ts`.
+  - Comentarios JSDoc y de arquitectura en todos los módulos de frontend: `App.tsx`, `main.tsx`, `api.ts`, `AuthContext.tsx`, `MainLayout.tsx`, `Header.tsx`, `Sidebar.tsx`, `PhoneInput.tsx` y las 17 páginas operativas (`DashboardPage.tsx`, `VehiculosPage.tsx`, `CalendarioFlotaPage.tsx`, `ClientesPage.tsx`, `ContratosPage.tsx`, `EntregasPage.tsx`, `PagosPage.tsx`, `MantenimientoPage.tsx`, `GpsPage.tsx`, `UsuariosPage.tsx`, `ConfiguracionPage.tsx`, `RedAliadaPage.tsx`, `ReservasPublicasPage.tsx`, `SolicitudesPage.tsx`, `BackupsSuperAdminPage.tsx`, `LoginPage.tsx`, `RegistroRentCarPage.tsx`).
+  - Validación de cero errores de compilación (`tsc` en backend y `vite build` en frontend).
+- **Resultado:** Código 100% autodocumentado, altamente legible y preparado para mantenimiento y escalabilidad a largo plazo.
+
 
 
 

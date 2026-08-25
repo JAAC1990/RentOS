@@ -1,8 +1,19 @@
+/**
+ * ============================================================================
+ * RentOS - Contexto Global de Autenticación y Control Multi-Tenant
+ * ============================================================================
+ * Maneja el estado global del usuario logueado, roles (SUPERADMIN, ADMIN_RENTCAR,
+ * EMPLEADO), tokens JWT en sessionStorage para garantizar inicio de sesión en
+ * cada arranque y cambio dinámico de tenant activo para el SuperAdministrador.
+ */
+
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { API_URLS } from "../services/api";
 
+// Roles del sistema
 export type Rol = "SUPERADMIN" | "ADMIN_RENTCAR" | "EMPLEADO";
 
+// Estructura del usuario autenticado
 export type UsuarioAuth = {
   id: number;
   nombre: string;
@@ -12,6 +23,7 @@ export type UsuarioAuth = {
   rentCarNombre?: string;
 };
 
+// Métodos y propiedades expuestas por el contexto
 type AuthContextType = {
   usuario: UsuarioAuth | null;
   token: string | null;
@@ -24,6 +36,11 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Proveedor de Autenticación:
+ * Almacena el usuario y el token exclusivamente en sessionStorage para exigir
+ * login cada vez que el usuario inicia la aplicación o abre una nueva ventana.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioAuth | null>(() => {
     // Limpiar restos antiguos de localStorage para forzar inicio de sesión limpio
@@ -102,6 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     verificarSesion();
   }, []);
 
+  /**
+   * Realiza la petición de login al backend y almacena credenciales activas.
+   */
   const login = async (email: string, pass: string) => {
     setCargando(true);
     try {
@@ -127,6 +147,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  /**
+   * Cierra la sesión activa y purga cualquier dato de autenticación.
+   */
   const logout = () => {
     setUsuario(null);
     setToken(null);
@@ -137,6 +160,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("rentos_auth_token");
   };
 
+  /**
+   * Permite al SuperAdmin cambiar la vista operativa a cualquier empresa de la red.
+   */
   const cambiarTenantSuperadmin = (nuevoTenantId: number) => {
     setTenantActivoId(nuevoTenantId);
     localStorage.setItem("rentos_active_tenant", String(nuevoTenantId));
@@ -159,10 +185,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Hook personalizado para consumir el contexto de autenticación en componentes.
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth debe usarse dentro de AuthProvider");
+    throw new Error("useAuth debe usarse dentro de un AuthProvider");
   }
   return context;
 }

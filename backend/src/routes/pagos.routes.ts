@@ -1,16 +1,25 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Pagos, Facturación con NCF y Arqueo Financiero
+ * ============================================================================
+ * Maneja el registro de cobros por contrato, métodos de pago (Efectivo, Tarjeta,
+ * Transferencia, PayPal), comprobantes fiscales NCF y cierre de caja.
+ */
+
 import { Router } from "express";
 import { EstadoPago, TipoPago } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
+// Listas de validación de enums admitidos por la base de datos
 const tiposPagoPermitidos = Object.values(TipoPago);
 const estadosPagoPermitidos = Object.values(EstadoPago);
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/pagos
-// Obtener todos los pagos registrados
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna todos los cobros registrados con datos de contrato, cliente y vehículo
 router.get("/", async (_req, res) => {
   try {
     const pagos = await prisma.pago.findMany({
@@ -51,10 +60,10 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/pagos/:id
-// Obtener un pago específico
-// ======================================================
+// ----------------------------------------------------------------------------
+// Obtiene el detalle de un pago específico para impresión o envío de recibo
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -89,10 +98,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/pagos
-// Registrar un cobro / pago
-// ======================================================
+// ----------------------------------------------------------------------------
+// Registra un cobro asociado a un contrato con método de pago y NCF / comprobante
 router.post("/", async (req, res) => {
   try {
     const {
@@ -188,10 +197,10 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // PUT /api/pagos/:id
-// Actualizar estado de un pago (ej. anular o marcar pagado)
-// ======================================================
+// ----------------------------------------------------------------------------
+// Actualiza la referencia (NCF), monto o estado de un pago (ej. marcar REEMBOLSADO / ANULADO)
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -225,10 +234,10 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // DELETE /api/pagos/:id
-// Eliminar registro de pago
-// ======================================================
+// ----------------------------------------------------------------------------
+// Elimina un cobro registrado
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);

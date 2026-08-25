@@ -1,10 +1,15 @@
 /**
- * Servicio centralizado de API para RentOS Frontend.
- * Utiliza variables de entorno (VITE_API_URL) con fallback a localhost:3000/api.
+ * ============================================================================
+ * RentOS - Servicio Centralizado de Endpoints API (Frontend)
+ * ============================================================================
+ * Centraliza las URLs base de conexión al backend REST y provee funciones
+ * tipadas para consultar vehículos, clientes, contratos, entregas y pagos.
  */
 
+// URL base dinámica con soporte para variables de entorno de producción
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
+// Diccionario de endpoints de todos los micro-módulos del sistema
 export const API_URLS = {
   vehiculos: `${API_BASE_URL}/vehiculos`,
   clientes: `${API_BASE_URL}/clientes`,
@@ -19,9 +24,12 @@ export const API_URLS = {
   red: `${API_BASE_URL}/red`,
   rentcars: `${API_BASE_URL}/rentcars`,
   solicitudes: `${API_BASE_URL}/solicitudes`,
-  backup: `${API_BASE_URL}/backup`,
+  backup: `${API_BASE_URL}/backups`,
 };
 
+/**
+ * Consulta la lista de vehículos disponibles en el backend.
+ */
 export async function getVehiculos() {
   const response = await fetch(API_URLS.vehiculos);
   if (!response.ok) {
@@ -30,6 +38,9 @@ export async function getVehiculos() {
   return response.json();
 }
 
+/**
+ * Consulta la lista de clientes registrados.
+ */
 export async function getClientes() {
   const response = await fetch(API_URLS.clientes);
   if (!response.ok) {
@@ -38,6 +49,9 @@ export async function getClientes() {
   return response.json();
 }
 
+/**
+ * Consulta la lista de contratos de alquiler.
+ */
 export async function getContratos() {
   const response = await fetch(API_URLS.contratos);
   if (!response.ok) {
@@ -46,6 +60,9 @@ export async function getContratos() {
   return response.json();
 }
 
+/**
+ * Consulta el historial de recepciones e inspecciones 360°.
+ */
 export async function getEntregas() {
   const response = await fetch(API_URLS.entregas);
   if (!response.ok) {
@@ -54,6 +71,9 @@ export async function getEntregas() {
   return response.json();
 }
 
+/**
+ * Consulta los pagos y cobros registrados.
+ */
 export async function getPagos() {
   const response = await fetch(API_URLS.pagos);
   if (!response.ok) {

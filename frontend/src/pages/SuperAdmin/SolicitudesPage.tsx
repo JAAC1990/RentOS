@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Panel de Moderación de Solicitudes SuperAdmin (SolicitudesPage)
+ * ============================================================================
+ * Módulo de incorporación de clientes corporativos:
+ * - Listado y filtrado de solicitudes de nuevos Rent a Cars.
+ * - Autorización o rechazo con actualización atómica de cuenta de usuario.
+ * - Atajos de acceso directo a respaldos y datos de cada tenant.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { API_URLS } from "../../services/api";

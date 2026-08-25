@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * RentOS - Gestión de Flota de Vehículos (VehiculosPage)
+ * ============================================================================
+ * Permite la administración integral del parque vehicular:
+ * - Alta, edición y baja de vehículos con validación de placa dominicana y VIN.
+ * - Monitoreo de estados (DISPONIBLE, ALQUILADO, MANTENIMIENTO, INACTIVO).
+ * - Pestaña de Auditoría Legal con vencimientos de seguros y marbetes.
+ * - Disparo manual de alertas preventivas vía Telegram.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
 

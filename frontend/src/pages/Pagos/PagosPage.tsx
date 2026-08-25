@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * RentOS - Facturación, Recibos NCF y Control de Pagos (PagosPage)
+ * ============================================================================
+ * Módulo de tesorería y cobros:
+ * - Emisión de recibos de pago con numeración de comprobante fiscal NCF.
+ * - Registro por método de pago (Efectivo, Tarjeta, Transferencia, PayPal).
+ * - Generación de recibo imprimible para el cliente.
+ * - Resumen financiero de ingresos cobrados vs saldos pendientes.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";

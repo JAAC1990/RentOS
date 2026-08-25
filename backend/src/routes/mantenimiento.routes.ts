@@ -1,3 +1,12 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Mantenimiento Preventivo, Odómetros y Alertas de Taller
+ * ============================================================================
+ * Maneja el registro de servicios mecánicos (cambio de aceite, frenos, llantas),
+ * cálculo predictivo del próximo servicio (+5,000 km / 90 días), alertas de odómetro
+ * y notificaciones automáticas hacia Telegram.
+ */
+
 import { Router } from "express";
 import { EstadoMantenimiento, EstadoVehiculo } from "@prisma/client";
 import prisma from "../lib/prisma.js";
@@ -5,10 +14,10 @@ import { enviarAlerta } from "../services/alert.service.js";
 
 const router = Router();
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/mantenimientos/alertas
-// Obtener alertas de vehículos con mantenimiento por vencer
-// ======================================================
+// ----------------------------------------------------------------------------
+// Calcula en tiempo real el estado de mantenimiento de cada vehículo (AL_DIA, PROXIMO, VENCIDO)
 router.get("/alertas", async (req, res) => {
   try {
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
@@ -30,7 +39,7 @@ router.get("/alertas", async (req, res) => {
       let proximoKm = v.proximoMantenimientoKm;
       let proximaFecha = v.proximoMantenimientoFecha;
 
-      // Si no tiene configurado, sugerir basado en su odómetro
+      // Si no tiene configurado, sugerir umbral estándar basado en su odómetro actual
       if (!proximoKm) {
         proximoKm = v.kilometraje + 4500;
       }
@@ -87,10 +96,10 @@ router.get("/alertas", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/mantenimientos/notificar-telegram
-// Enviar resumen de alertas de cambio de aceite y taller a Telegram
-// ======================================================
+// ----------------------------------------------------------------------------
+// Envía un resumen de las alertas de taller y cambio de aceite al canal de Telegram
 router.post("/notificar-telegram", async (req, res) => {
   try {
     const rentCarId = req.body.rentCarId ? Number(req.body.rentCarId) : 1;
@@ -100,7 +109,6 @@ router.post("/notificar-telegram", async (req, res) => {
       include: { rentCar: true },
     });
 
-    const hoy = new Date();
     const lineasAlerta = [];
 
     for (const v of vehiculos) {
@@ -133,9 +141,10 @@ router.post("/notificar-telegram", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/mantenimientos
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna la lista histórica de órdenes de servicio y facturas de taller
 router.get("/", async (req, res) => {
   try {
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
@@ -168,9 +177,10 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/mantenimientos
-// ======================================================
+// ----------------------------------------------------------------------------
+// Registra una orden de servicio, actualiza el estado del auto y proyecta el próximo mantenimiento
 router.post("/", async (req, res) => {
   try {
     const {
@@ -209,7 +219,7 @@ router.post("/", async (req, res) => {
       ? Number(kilometrajeServicio)
       : vehiculo.kilometraje;
 
-    // Calcular próximo servicio automático si no se especifica (+5,000 km y +90 días)
+    // Calcular próximo servicio automático (+5,000 km y +90 días) si no fue provisto
     const proximoKmCalculado = proximoKilometraje ? Number(proximoKilometraje) : (kmServicio + 5000);
     const proximaFechaCalculada = proximaFechaServicio
       ? new Date(proximaFechaServicio)
@@ -268,9 +278,10 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // PUT /api/mantenimientos/:id
-// ======================================================
+// ----------------------------------------------------------------------------
+// Actualiza los datos o el estado de una orden de taller
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -302,9 +313,10 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // DELETE /api/mantenimientos/:id
-// ======================================================
+// ----------------------------------------------------------------------------
+// Elimina un registro de mantenimiento
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);

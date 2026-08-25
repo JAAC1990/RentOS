@@ -1,6 +1,17 @@
+/**
+ * ============================================================================
+ * RentOS - Enrutador Principal y Protección de Rutas (Frontend)
+ * ============================================================================
+ * Define la estructura de navegación de React Router: rutas públicas (/login,
+ * /registro, /reservar) y rutas administrativas protegidas por sesión dentro
+ * del diseño maestro MainLayout.
+ */
+
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import MainLayout from "./layouts/MainLayout";
+
+// Importación de Páginas Operativas
 import DashboardPage from "./pages/Dashboard/DashboardPage";
 import VehiculosPage from "./pages/Vehiculos/VehiculosPage";
 import CalendarioFlotaPage from "./pages/Calendario/CalendarioFlotaPage";
@@ -20,6 +31,11 @@ import LoginPage from "./pages/Auth/LoginPage";
 import RegistroRentCarPage from "./pages/Auth/RegistroRentCarPage";
 import "./App.css";
 
+/**
+ * Componente Guardián de Rutas Protegidas:
+ * Si no existe una sesión activa de usuario, redirige automáticamente a /login.
+ * Si el usuario está autenticado, renderiza el MainLayout con barra lateral y cabecera.
+ */
 function RutaProtegida() {
   const { usuario } = useAuth();
   if (!usuario) {
@@ -28,16 +44,21 @@ function RutaProtegida() {
   return <MainLayout />;
 }
 
+/**
+ * Mapeo de Rutas de la Aplicación
+ */
 function AppRoutes() {
   return (
     <Routes>
+      {/* Redirección inicial obligatoria al Login */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<RegistroRentCarPage />} />
-      {/* Catálogo Público de Reservas para Clientes */}
+
+      {/* Catálogo Público de Reservas para Arrendatarios y Turistas */}
       <Route path="/reservar" element={<ReservasPublicasPage />} />
 
-      {/* Rutas Administrativas Protegidas */}
+      {/* Módulos Administrativos Protegidos por Autenticación */}
       <Route element={<RutaProtegida />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/solicitudes" element={<SolicitudesPage />} />
@@ -58,6 +79,9 @@ function AppRoutes() {
   );
 }
 
+/**
+ * Punto de Entrada de la Aplicación con Proveedor Global de Autenticación
+ */
 function App() {
   return (
     <AuthProvider>

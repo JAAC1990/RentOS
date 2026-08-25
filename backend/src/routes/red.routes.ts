@@ -1,9 +1,21 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Red de Aliados y Transferencia Inter-Empresarial de Flota
+ * ============================================================================
+ * Permite la colaboración B2B entre diferentes empresas de Rent a Car:
+ * búsqueda cruzada de vehículos en otras ciudades, solicitud de préstamo de autos
+ * con tarifa pactada y trazabilidad de transferencias de flota.
+ */
+
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-// Asegurar la existencia de al menos 3 empresas aliadas en la red
+/**
+ * Garantiza que existan al menos 3 empresas aliadas en la base de datos
+ * (Santo Domingo, Punta Cana y Santiago) para permitir pruebas de transferencias inter-ciudad.
+ */
 async function inicializarRedAliada() {
   const conteo = await prisma.rentCar.count();
   if (conteo < 3) {
@@ -31,7 +43,7 @@ async function inicializarRedAliada() {
       },
     });
 
-    // Agregar vehículos en las empresas aliadas
+    // Agregar inventario vehicular a las sucursales aliadas
     await prisma.vehiculo.createMany({
       data: [
         {
@@ -88,10 +100,10 @@ async function inicializarRedAliada() {
   }
 }
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/red/flota
-// Búsqueda cruzada de vehículos en toda la red SaaS
-// ======================================================
+// ----------------------------------------------------------------------------
+// Búsqueda global de vehículos disponibles en toda la red SaaS con filtros de ciudad y marca
 router.get("/flota", async (req, res) => {
   try {
     await inicializarRedAliada();
@@ -140,10 +152,10 @@ router.get("/flota", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/red/rentcars
-// Listado de empresas aliadas
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna la lista de todas las empresas aliadas y el total de autos y contratos que poseen
 router.get("/rentcars", async (_req, res) => {
   try {
     await inicializarRedAliada();
@@ -170,10 +182,10 @@ router.get("/rentcars", async (_req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/red/transferencias
-// Listado de solicitudes de transferencia de vehículos
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna las solicitudes de transferencia y préstamo de vehículos entre empresas
 router.get("/transferencias", async (_req, res) => {
   try {
     const transferencias = await prisma.transferenciaFlota.findMany({
@@ -197,10 +209,10 @@ router.get("/transferencias", async (_req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/red/transferencias
-// Solicitar préstamo / transferencia de vehículo a aliado
-// ======================================================
+// ----------------------------------------------------------------------------
+// Registra una nueva solicitud de préstamo de flota entre un RentCar origen y destino
 router.post("/transferencias", async (req, res) => {
   try {
     const { vehiculoId, origenRentCarId, destinoRentCarId, tarifaPactada, notas } = req.body;
@@ -235,10 +247,10 @@ router.post("/transferencias", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // PUT /api/red/transferencias/:id/estado
-// Cambiar estado de transferencia (APROBADA, EN_TRANSITO, COMPLETADA)
-// ======================================================
+// ----------------------------------------------------------------------------
+// Actualiza el estado de la transferencia (APROBADA, EN_TRANSITO, COMPLETADA, RECHAZADA)
 router.put("/transferencias/:id/estado", async (req, res) => {
   try {
     const id = Number(req.params.id);

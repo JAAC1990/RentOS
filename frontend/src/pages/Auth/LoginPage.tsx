@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Portal de Inicio de Sesión y Autenticación (LoginPage)
+ * ============================================================================
+ * Pantalla de acceso seguro:
+ * - Validación de credenciales con redirección al panel tras autenticarse.
+ * - Tarjetas de Cuentas Demo preconfiguradas para acceso rápido de prueba.
+ * - Soporte para recordar credenciales en el navegador y recuperación de contraseña vía Telegram/WhatsApp.
+ */
+
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";

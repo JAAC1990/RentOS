@@ -1,3 +1,11 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Administración de Usuarios, Empleados y Permisos
+ * ============================================================================
+ * Maneja la creación de cuentas de equipo (ADMIN_RENTCAR, EMPLEADO), asignación
+ * a sucursales, encriptación segura de contraseñas con bcrypt y activación/desactivación.
+ */
+
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { RolUsuario } from "@prisma/client";
@@ -5,10 +13,10 @@ import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // GET /api/users
-// Listar todos los usuarios de la empresa
-// ======================================================
+// ----------------------------------------------------------------------------
+// Retorna todos los usuarios pertenecientes a la empresa seleccionada o globales
 router.get("/", async (req, res) => {
   try {
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
@@ -39,10 +47,10 @@ router.get("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // POST /api/users
-// Crear nuevo usuario / empleado con contraseña encriptada
-// ======================================================
+// ----------------------------------------------------------------------------
+// Crea un nuevo usuario o empleado con contraseña encriptada y rol definido
 router.post("/", async (req, res) => {
   try {
     const { nombre, email, password, rol, rentCarId, activo } = req.body;
@@ -99,10 +107,10 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // PUT /api/users/:id
-// Actualizar datos de usuario, rol o restablecer contraseña
-// ======================================================
+// ----------------------------------------------------------------------------
+// Actualiza datos de perfil, cambia de rol o restablece la contraseña con nuevo hash
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -147,10 +155,10 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// ======================================================
+// ----------------------------------------------------------------------------
 // DELETE /api/users/:id
-// Eliminar o desactivar usuario
-// ======================================================
+// ----------------------------------------------------------------------------
+// Elimina la cuenta de usuario
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);

@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Formulario Público de Registro de Rent a Car (RegistroRentCarPage)
+ * ============================================================================
+ * Proceso de incorporación para nuevos clientes de la plataforma SaaS:
+ * - Captura de datos fiscales (RNC, razón social, ciudad y representante legal).
+ * - Creación de solicitud en estado PENDIENTE.
+ * - Despacho automático de alerta al Telegram del SuperAdministrador.
+ */
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import PhoneInput from "../../components/PhoneInput";

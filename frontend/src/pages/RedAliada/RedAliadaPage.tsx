@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ * RentOS - Red de Aliados y Transferencias Inter-Empresariales (RedAliadaPage)
+ * ============================================================================
+ * Colaboración B2B entre empresas de renta de autos:
+ * - Búsqueda de vehículos disponibles en otras ciudades (Punta Cana, Santiago, Sto. Dgo.).
+ * - Generación de solicitudes de préstamo o cesión de flota con tarifa pactada.
+ * - Directorio de contactos de agencias aliadas.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
 

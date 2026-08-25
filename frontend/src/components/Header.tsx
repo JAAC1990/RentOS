@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * RentOS - Componente de Cabecera Principal (Header)
+ * ============================================================================
+ * Proporciona la barra superior de control:
+ * 1. Switch dinámico de empresa (Tenant Selector) para SuperAdmin.
+ * 2. Campana de Notificaciones en vivo (alertas de cambio de aceite, seguros vencidos y solicitudes).
+ * 3. Selector de Tema Visual (Modo Oscuro / Claro).
+ * 4. Ficha del usuario activo y Modal de Confirmación de Cierre de Sesión Seguro.
+ */
+
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";

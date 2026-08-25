@@ -1,9 +1,19 @@
+/**
+ * ============================================================================
+ * RentOS - Rutas de Recepción, Inspección 360° y Check-in de Flota
+ * ============================================================================
+ * Maneja el protocolo de retorno de vehículos: registro de odómetro final,
+ * marcador de combustible, mapeo interactivo de puntos de daño (DefectoVehiculo),
+ * almacenamiento de fotos de evidencia (Evidencia) y liberación a DISPONIBLE.
+ */
+
 import { Router } from "express";
 import { EstadoContrato } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
+// Campos seleccionados para los usuarios responsables de la inspección
 const usuarioSelect = {
   id: true,
   nombre: true,
@@ -11,7 +21,10 @@ const usuarioSelect = {
   activo: true,
 };
 
+// ----------------------------------------------------------------------------
 // GET /api/entregas
+// ----------------------------------------------------------------------------
+// Obtiene el historial de todas las inspecciones realizadas con clientes y vehículos
 router.get("/", async (_req, res) => {
   try {
     const entregas = await prisma.entrega.findMany({
@@ -58,7 +71,10 @@ router.get("/", async (_req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // GET /api/entregas/:id
+// ----------------------------------------------------------------------------
+// Obtiene el reporte individual de una inspección con fotos y mapa de daños
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -96,7 +112,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// ----------------------------------------------------------------------------
 // POST /api/entregas
+// ----------------------------------------------------------------------------
+// Procesa el Check-in: registra daños 360°, fotos, finaliza contrato y libera auto
 router.post("/", async (req, res) => {
   try {
     const {
@@ -106,7 +125,7 @@ router.post("/", async (req, res) => {
       nivelCombustible,
       tieneDefectos,
       descripcionDefectos,
-      defectosDetalle, // Array de puntos de daño interactivos [{ descripcion, ubicacion, tipoDano, severidad, coordX, coordY }]
+      defectosDetalle, // Puntos de daño del mapa interactivo: [{ descripcion, ubicacion, tipoDano, severidad, coordX, coordY }]
       observaciones,
     } = req.body;
 
@@ -128,7 +147,7 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ error: "El contrato seleccionado no existe." });
     }
 
-    // Buscar usuario responsable
+    // Determinar o asignar el usuario inspector
     let targetUserId = usuarioId ? Number(usuarioId) : null;
     if (!targetUserId) {
       let u = await prisma.usuario.findFirst({ where: { activo: true } });
@@ -145,7 +164,9 @@ router.post("/", async (req, res) => {
       targetUserId = u.id;
     }
 
+    // Transacción atómica de Check-in
     const entrega = await prisma.$transaction(async (tx) => {
+      // 1. Crear el registro maestro de la entrega
       const nuevaEntrega = await tx.entrega.create({
         data: {
           contratoId: contratoIdNum,
@@ -157,7 +178,7 @@ router.post("/", async (req, res) => {
         },
       });
 
-      // Registrar puntos de daño del mapa interactivo
+      // 2. Guardar los pines de daño del mapa 360°
       if (Array.isArray(defectosDetalle) && defectosDetalle.length > 0) {
         for (const def of defectosDetalle) {
           await tx.defectoVehiculo.create({
@@ -173,7 +194,6 @@ router.post("/", async (req, res) => {
           });
         }
       } else if (tieneDefectos && descripcionDefectos) {
-        // Fallback para descripción simple
         await tx.defectoVehiculo.create({
           data: {
             entregaId: nuevaEntrega.id,
@@ -185,7 +205,7 @@ router.post("/", async (req, res) => {
         });
       }
 
-      // Registrar fotos y evidencias de inspección
+      // 3. Guardar las fotografías de evidencia en base64 / URL
       if (Array.isArray(req.body.fotosEvidencias) && req.body.fotosEvidencias.length > 0) {
         for (const foto of req.body.fotosEvidencias) {
           if (foto.archivoUrl) {
@@ -202,7 +222,7 @@ router.post("/", async (req, res) => {
         }
       }
 
-      // Finalizar el contrato
+      // 4. Actualizar contrato a FINALIZADO
       await tx.contrato.update({
         where: { id: contratoIdNum },
         data: {
@@ -211,7 +231,7 @@ router.post("/", async (req, res) => {
         },
       });
 
-      // Liberar vehículo a DISPONIBLE con el nuevo odómetro
+      // 5. Liberar el vehículo a DISPONIBLE con su nuevo odómetro actualizado
       await tx.vehiculo.update({
         where: { id: contrato.vehiculoId },
         data: {
