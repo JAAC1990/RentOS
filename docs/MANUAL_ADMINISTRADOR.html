@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual del Administrador - RentOS</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #eff6ff;
+      --secondary: #0f172a;
+      --text: #1e293b;
+      --border: #cbd5e1;
+      --bg: #f8fafc;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+    }
+    .header-bar {
+      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header-bar h1 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+    }
+    .header-bar p {
+      margin: 0;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+    .btn-print {
+      display: inline-block;
+      margin-top: 15px;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+    .container {
+      max-width: 1050px;
+      margin: 30px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    h2 {
+      color: var(--primary);
+      border-bottom: 2px solid var(--primary-light);
+      padding-bottom: 8px;
+      margin-top: 36px;
+      font-size: 19px;
+    }
+    h3 {
+      color: var(--secondary);
+      font-size: 15px;
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 12.5px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      background: #e2e8f0;
+    }
+    .badge-si {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .alert-box {
+      background: #fefce8;
+      border-left: 4px solid #eab308;
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    @media print {
+      .header-bar .btn-print, .no-print {
+        display: none !important;
+      }
+      body {
+        background: white;
+      }
+      .container {
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+      }
+      @page {
+        margin: 12mm 15mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar no-print">
+    <h1>📘 Manual del Administrador de Rent a Car</h1>
+    <p>Funcionalidades & Procedimiento de Llenado Campo por Campo • RentOS v2.0</p>
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar en PDF</button>
+  </div>
+
+  <div class="container">
+    <div style="text-align: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px;">
+      <h1 style="color: #1e3a8a; margin: 0 0 6px 0;">MANUAL INTEGRAL DEL ADMINISTRADOR</h1>
+      <strong style="color: #475569; font-size: 14px;">Guía Completa de Funcionalidades & Procedimientos Operativos (SOP)</strong>
+      <div style="font-size: 12px; color: #64748b; margin-top: 6px;">Código: <code>MAN-ADM-RENTOS-V2</code> | Versión: 2.0 | Estado: Activo & Ajustable</div>
+    </div>
+
+    <h2>📑 Control de Versiones & Registro de Cambios</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Versión</th>
+          <th>Fecha</th>
+          <th>Sección Modificada</th>
+          <th>Descripción del Cambio</th>
+          <th>Responsable</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>v1.0</b></td>
+          <td>Agosto 2026</td>
+          <td>Módulos Base</td>
+          <td>Emisión inicial del manual operativo de agencia.</td>
+          <td>Operaciones IT</td>
+        </tr>
+        <tr>
+          <td><b>v2.0</b></td>
+          <td>Agosto 2026</td>
+          <td>Todos los Módulos (1 al 15)</td>
+          <td>Guía de funcionalidades, fotos clicables, QR inmutable y diccionario campo por campo.</td>
+          <td>Dirección RentOS</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- PARTE I: FUNCIONALIDADES -->
+    <h2>🌟 PARTE I: Resumen de Funcionalidades por Módulo</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Módulo</th>
+          <th>¿Para qué sirve?</th>
+          <th>¿Cómo funciona?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Dashboard</b></td>
+          <td>Panel de métricas y KPI en tiempo real.</td>
+          <td>Calcula tasa de ocupación, ingresos brutos mensuales y emite alertas de seguros a 30 días vía Telegram.</td>
+        </tr>
+        <tr>
+          <td><b>Flota & Fichas</b></td>
+          <td>Gestión integral del parque vehicular.</td>
+          <td>Fichas técnicas con fotos clicables, especificaciones mecánicas (*pasajeros, maletas, A/C, transmisión*) y auditoría legal de seguros y marbetes DGII.</td>
+        </tr>
+        <tr>
+          <td><b>Calendario Gantt</b></td>
+          <td>Planificación visual de ocupación.</td>
+          <td>Línea de tiempo con barras de color (🔵 Alquilado, 🟡 Reserva, 🛠️ Taller, ⚪ Libre) para evitar sobreventas.</td>
+        </tr>
+        <tr>
+          <td><b>Clientes & Buró</b></td>
+          <td>Registro y calificación de arrendatarios.</td>
+          <td>Almacenamiento de cédulas/pasaportes, licencias, referencias familiares y consulta de riesgo crediticio.</td>
+        </tr>
+        <tr>
+          <td><b>Contratos & QR</b></td>
+          <td>Formalización legal bajo Ley 483 / 63-17.</td>
+          <td>Checklist de 24 accesorios, medidor de gasolina, firma digital en pantalla, código QR SHA-256 inmutable e impresión a 1 hoja limpia.</td>
+        </tr>
+        <tr>
+          <td><b>Entregas Check-In/Out</b></td>
+          <td>Inspección de salida y retorno.</td>
+          <td>Control de odómetros, diagrama 360° de daños y liquidación de combustible faltante o demoras (>3h).</td>
+        </tr>
+        <tr>
+          <td><b>Caja & NCF DGII</b></td>
+          <td>Cobro y facturación fiscal dominicana.</td>
+          <td>Soporta Efectivo, Tarjetas, Transferencia y Stripe con comprobantes B01, B02, B14 y B15.</td>
+        </tr>
+        <tr>
+          <td><b>GPS & Inmovilizador</b></td>
+          <td>Rastreo satelital y seguridad.</td>
+          <td>Telemetría en vivo y botón de corte de motor remoto ante robo o mora (autorización exclusiva del administrador).</td>
+        </tr>
+        <tr>
+          <td><b>Catálogo Web</b></td>
+          <td>Portal público de reservas online.</td>
+          <td>Turistas y clientes cotizan por fechas, ven fotos ampliadas y reservan directo a WhatsApp.</td>
+        </tr>
+        <tr>
+          <td><b>Verificación QR</b></td>
+          <td>Portal público de legitimidad.</td>
+          <td>Permite a la Policía/DIGESETT escanear el QR del contrato y certificar con sello verde que no ha sido alterado.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- PARTE II: GUÍA DE LLENADO -->
+    <h2>📋 PARTE II: Guía de Llenado Campo por Campo</h2>
+
+    <h3>🚗 Vehículos (`/vehiculos`)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Campo</th>
+          <th>Obligatorio</th>
+          <th>Ejemplo / Formato</th>
+          <th>Instrucción de Llenado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Fotografía Principal</b></td>
+          <td><span class="badge">Recomendado</span></td>
+          <td>PNG/JPG o URL</td>
+          <td>Foto real que se muestra en el catálogo web público y en la ficha interactiva al dar clic.</td>
+        </tr>
+        <tr>
+          <td><b>Marca & Modelo</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>Toyota Corolla LE</code></td>
+          <td>Fabricante y versión comercial exacta según matrícula oficial.</td>
+        </tr>
+        <tr>
+          <td><b>Año</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>2024</code></td>
+          <td>Año de fabricación del vehículo (1990 a Año actual + 2).</td>
+        </tr>
+        <tr>
+          <td><b>Placa / Matrícula</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>A123456</code></td>
+          <td>Placa oficial dominicana registrada en la DGII (Única en el sistema).</td>
+        </tr>
+        <tr>
+          <td><b>No. Chasis / VIN</b></td>
+          <td><span class="badge">Opcional</span></td>
+          <td>17 caracteres</td>
+          <td>Número grabado en el chasis. Crucial para reclamos de seguro y reporte de robo.</td>
+        </tr>
+        <tr>
+          <td><b>Categoría & Transmisión</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>SEDAN</code> / <code>AUTOMATICA</code></td>
+          <td>Segmento vehicular y tipo de caja de cambios.</td>
+        </tr>
+        <tr>
+          <td><b>Pasajeros & Maletas</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>5 Asientos</code> / <code>2 Maletas</code></td>
+          <td>Capacidad física de personas y equipaje en el maletero.</td>
+        </tr>
+        <tr>
+          <td><b>Odómetro Inicial & Tarifa</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>15,420 km</code> / <code>$45.00 USD/día</code></td>
+          <td>Kilometraje real y precio base por día de 24 horas.</td>
+        </tr>
+        <tr>
+          <td><b>Póliza & Vencimiento</b></td>
+          <td><span class="badge">Recomendado</span></td>
+          <td><code>Seguros Universal</code> / <code>2027-02-15</code></td>
+          <td>El sistema alertará con insignias amarillas a los 30 días previos a la expiración.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>👤 Clientes (`/clientes`)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Campo</th>
+          <th>Obligatorio</th>
+          <th>Ejemplo / Formato</th>
+          <th>Instrucción de Llenado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Nombre & Apellido</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>Juan Carlos Pérez</code></td>
+          <td>Nombre legal completo idéntico al documento de identidad.</td>
+        </tr>
+        <tr>
+          <td><b>Teléfono / WhatsApp</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>+1 (809) 555-0199</code></td>
+          <td>Teléfono directo con código de país para envío del contrato QR vía WhatsApp.</td>
+        </tr>
+        <tr>
+          <td><b>Cédula / Pasaporte</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>402-1234567-8</code> o <code>P8472910</code></td>
+          <td>Documento de identidad oficial. En extranjeros se registra el pasaporte.</td>
+        </tr>
+        <tr>
+          <td><b>Licencia & Vencimiento</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>DO-40212345678</code> / <code>2028-05-10</code></td>
+          <td>Debe verificarse que no venza durante el transcurso del alquiler.</td>
+        </tr>
+        <tr>
+          <td><b>Referencia Familiar</b></td>
+          <td><span class="badge">Recomendado</span></td>
+          <td><code>María Pérez - 809-555-0144</code></td>
+          <td>Contacto de emergencia en caso de demora no reportada o accidente.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>📄 Contratos (`/contratos`)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Campo</th>
+          <th>Obligatorio</th>
+          <th>Ejemplo / Formato</th>
+          <th>Instrucción de Llenado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Cliente & Auto</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td>Selectores</td>
+          <td>Vinculación de cliente registrado con auto en estado Disponible.</td>
+        </tr>
+        <tr>
+          <td><b>Fechas Salida & Retorno</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>YYYY-MM-DD HH:MM</code></td>
+          <td>Período exacto pactado (en bloques de 24 horas).</td>
+        </tr>
+        <tr>
+          <td><b>Depósito en Garantía</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>$200.00 USD</code></td>
+          <td>Fianza reembolsable retenida en tarjeta o efectivo.</td>
+        </tr>
+        <tr>
+          <td><b>Tipo de Seguro</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>Full Cover</code>, <code>Full</code>, <code>De Ley</code></td>
+          <td>Nivel de cobertura del contrato pactado con el cliente.</td>
+        </tr>
+        <tr>
+          <td><b>Combustible de Salida</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>100% (Lleno)</code></td>
+          <td>Nivel registrado al salir. El cliente debe devolver con el mismo nivel.</td>
+        </tr>
+        <tr>
+          <td><b>Checklist 24 Accesorios</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td>24 Casillas</td>
+          <td>Verificación física de herramientas, repuesto, micas y documentos.</td>
+        </tr>
+        <tr>
+          <td><b>Firma Digital Táctil</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td>Trazo en Pantalla</td>
+          <td>Captura manuscrita del arrendatario y del inspector con valor legal.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>🔧 Procedimiento para Actualizar el Manual ante Mejoras</h2>
+    <ol>
+      <li>Editar el archivo markdown <code>docs/MANUAL_ADMINISTRADOR.md</code>.</li>
+      <li>Localizar el módulo y agregar o modificar las instrucciones de los campos nuevos.</li>
+      <li>Actualizar la tabla de <b>Control de Versiones</b> con la nueva versión y fecha.</li>
+      <li>Exportar la versión PDF actualizada con el botón superior.</li>
+    </ol>
+  </div>
+
+</body>
+</html>
