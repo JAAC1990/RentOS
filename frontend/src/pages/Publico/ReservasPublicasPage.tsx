@@ -2,10 +2,12 @@
  * ============================================================================
  * RentOS - Portal Público de Reservas para Clientes y Turistas (ReservasPublicasPage)
  * ============================================================================
- * Catálogo público en línea:
- * - Explorador de flota con filtros por marca, ciudad y categoría.
- * - Cotizador instantáneo por días de renta.
- * - Formulario de reserva directa y botón de confirmación con mensaje precargado hacia WhatsApp.
+ * Catálogo público interactivo en línea:
+ * - Explorador visual de flota con fotos en alta resolución e insignias técnicas (Pasajeros, Maletas, Transmisión, Combustible, A/C).
+ * - Modal Interactivo de Ficha Técnica y Galería de Fotos al hacer clic en cualquier vehículo.
+ * - Cotizador instantáneo por rango de fechas de renta.
+ * - Formulario de reserva directa con servicios opcionales (Seguro Full Cover, Silla para bebé, Conductor extra).
+ * - Confirmación inmediata con despacho a WhatsApp del Rent a Car.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -23,6 +25,15 @@ type Vehiculo = {
   placa: string;
   kilometraje: number;
   tarifaDiaria: string | number;
+  fotoUrl?: string | null;
+  imagenes?: string[] | null;
+  categoria?: string | null;
+  transmision?: string | null;
+  combustible?: string | null;
+  pasajeros?: number | null;
+  maletas?: number | null;
+  puertas?: number | null;
+  aireAcondicionado?: boolean | null;
   estado: string;
 };
 
@@ -44,6 +55,30 @@ type RentCarInfo = {
 const hoy = new Date().toISOString().split("T")[0];
 const enTresDias = new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0];
 
+/**
+ * Retorna una imagen de vehículo representativa y atractiva según marca y modelo
+ * en caso de que el Rent a Car aún no haya subido una foto personalizada.
+ */
+function obtenerFotoVehiculo(v: Vehiculo): string {
+  if (v.fotoUrl && v.fotoUrl.trim() !== "") {
+    return v.fotoUrl;
+  }
+
+  const mm = `${v.marca} ${v.modelo}`.toLowerCase();
+
+  if (mm.includes("corolla")) {
+    return "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&auto=format&fit=crop&q=80";
+  } else if (mm.includes("sportage") || mm.includes("tucson") || mm.includes("suv") || mm.includes("seltos")) {
+    return "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format&fit=crop&q=80";
+  } else if (mm.includes("explorer") || mm.includes("jeep") || mm.includes("wrangler") || mm.includes("4x4")) {
+    return "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&auto=format&fit=crop&q=80";
+  } else if (mm.includes("accord") || mm.includes("civic") || mm.includes("rio") || mm.includes("sedan")) {
+    return "https://images.unsplash.com/photo-1590362891991-f776e747a588?w=800&auto=format&fit=crop&q=80";
+  }
+
+  return "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80";
+}
+
 export default function ReservasPublicasPage() {
   const location = useLocation();
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
@@ -57,9 +92,13 @@ export default function ReservasPublicasPage() {
   const [fechaInicio, setFechaInicio] = useState(hoy);
   const [fechaFin, setFechaFin] = useState(enTresDias);
   const [filtroMarca, setFiltroMarca] = useState("TODAS");
+  const [filtroCategoria, setFiltroCategoria] = useState("TODAS");
   const [busqueda, setBusqueda] = useState("");
 
-  // Vehículo seleccionado
+  // Modal de Detalle & Fotos del Vehículo (Al hacer clic en el auto)
+  const [vehiculoDetalle, setVehiculoDetalle] = useState<Vehiculo | null>(null);
+
+  // Modal de Formulario de Reserva
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<Vehiculo | null>(null);
 
   // Extras seleccionados
@@ -140,27 +179,28 @@ export default function ReservasPublicasPage() {
   const vehiculosFiltrados = useMemo(() => {
     return vehiculos.filter((v) => {
       const cumpleMarca = filtroMarca === "TODAS" || v.marca === filtroMarca;
-      const texto = `${v.marca} ${v.modelo}`.toLowerCase();
+      const cumpleCat = filtroCategoria === "TODAS" || (v.categoria || "SEDAN") === filtroCategoria;
+      const texto = `${v.marca} ${v.modelo} ${v.anio} ${v.color || ""}`.toLowerCase();
       const cumpleBusqueda = texto.includes(busqueda.toLowerCase());
-      return cumpleMarca && cumpleBusqueda;
+      return cumpleMarca && cumpleCat && cumpleBusqueda;
     });
-  }, [vehiculos, filtroMarca, busqueda]);
+  }, [vehiculos, filtroMarca, filtroCategoria, busqueda]);
 
   // Cálculo de precios con extras
   const calcularTotal = (tarifaDiaria: number) => {
-    let costoPorDia = tarifaDiaria;
-    if (incluirSeguro) costoPorDia += 20;
-    if (incluirSillaBebe) costoPorDia += 10;
-    if (incluirConductorExtra) costoPorDia += 15;
-    return (costoPorDia * dias).toFixed(2);
+    let base = tarifaDiaria * dias;
+    if (incluirSeguro) base += 20 * dias;
+    if (incluirSillaBebe) base += 10 * dias;
+    if (incluirConductorExtra) base += 15 * dias;
+    return base.toFixed(2);
   };
 
-  const procesarReserva = async (e: React.FormEvent) => {
+  const handleConfirmarReserva = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vehiculoSeleccionado) return;
 
     if (!nombre.trim() || !apellido.trim() || !telefono.trim()) {
-      setError("Por favor completa tu nombre, apellido y teléfono.");
+      setError("Por favor completa tu nombre, apellido y teléfono para confirmar la reserva.");
       return;
     }
 
@@ -168,90 +208,97 @@ export default function ReservasPublicasPage() {
       setEnviando(true);
       setError("");
 
-      // 1. Crear o buscar cliente
-      const resCliente = await fetch(API_URLS.clientes, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre: nombre.trim(),
-          apellido: apellido.trim(),
-          telefono: telefono.trim(),
-          email: email.trim() || undefined,
-          rentCarId: Number(tenantId),
-          estado: "ACTIVO",
-        }),
-      });
+      // 1. Crear o buscar cliente por teléfono
+      const resClientes = await fetch(API_URLS.clientes);
+      const listaClientes = await resClientes.json();
+      const clienteExistente = Array.isArray(listaClientes)
+        ? listaClientes.find((c: { telefono: string }) => c.telefono.replace(/[^0-9]/g, "") === telefono.replace(/[^0-9]/g, ""))
+        : null;
 
-      let clienteId = 1;
-      if (resCliente.ok) {
-        const nuevoCliente = await resCliente.json();
-        clienteId = nuevoCliente.id;
-      } else {
-        const resClientesList = await fetch(API_URLS.clientes);
-        if (resClientesList.ok) {
-          const list = await resClientesList.json();
-          const match = list.find((c: { telefono: string }) => c.telefono === telefono.trim());
-          if (match) clienteId = match.id;
+      let clienteId = clienteExistente?.id;
+
+      if (!clienteId) {
+        const resNuevoCliente = await fetch(API_URLS.clientes, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nombre: nombre.trim(),
+            apellido: apellido.trim(),
+            telefono: telefono.trim(),
+            email: email.trim() || null,
+            rentCarId: Number(tenantId),
+            estado: "ACTIVO",
+          }),
+        });
+
+        if (!resNuevoCliente.ok) {
+          throw new Error("No fue posible registrar tus datos de cliente.");
         }
+
+        const nuevoCliente = await resNuevoCliente.json();
+        clienteId = nuevoCliente.id;
       }
 
-      // 2. Crear contrato en estado BORRADOR / RESERVA
-      const tarifaTotalDia =
-        Number(vehiculoSeleccionado.tarifaDiaria) +
-        (incluirSeguro ? 20 : 0) +
-        (incluirSillaBebe ? 10 : 0) +
-        (incluirConductorExtra ? 15 : 0);
-
-      const notasExtras = [
-        incluirSeguro ? "Seguro Cero Deducible" : "",
-        incluirSillaBebe ? "Silla para Bebé" : "",
-        incluirConductorExtra ? "Conductor Adicional" : "",
-      ]
-        .filter(Boolean)
-        .join(", ");
+      // 2. Crear contrato en estado BORRADOR / RESERVADO
+      const totalEstimado = calcularTotal(Number(vehiculoSeleccionado.tarifaDiaria));
+      const extrasDesc = [
+        incluirSeguro ? "Seguro Full Cover (+$20/d)" : "",
+        incluirSillaBebe ? "Silla de Bebé (+$10/d)" : "",
+        incluirConductorExtra ? "Conductor Extra (+$15/d)" : "",
+      ].filter(Boolean).join(", ");
 
       const resContrato = await fetch(API_URLS.contratos, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          rentCarId: Number(tenantId),
           clienteId,
           vehiculoId: vehiculoSeleccionado.id,
           fechaInicio: new Date(fechaInicio).toISOString(),
           fechaFin: new Date(fechaFin).toISOString(),
-          tarifaDiaria: tarifaTotalDia,
+          tarifaDiaria: Number(vehiculoSeleccionado.tarifaDiaria),
           deposito: 200,
           kilometrajeInicial: vehiculoSeleccionado.kilometraje,
+          tipoSeguro: incluirSeguro ? "FULL_COVER" : "FULL",
           estado: "BORRADOR",
-          observaciones: `Reserva Web Online. Extras: ${notasExtras || "Ninguno"}`,
+          observaciones: `Reserva web pública por ${dias} día(s). Extras: ${extrasDesc || "Ninguno"}. Total estimado: $${totalEstimado} USD.`,
         }),
       });
 
       if (!resContrato.ok) {
-        throw new Error("No fue posible registrar la solicitud de reserva.");
+        const errData = await resContrato.json().catch(() => null);
+        throw new Error(errData?.error || "No fue posible procesar la reserva.");
       }
 
-      const contratoCreado = await resContrato.json();
+      const nuevoContrato = await resContrato.json();
 
       setReservaConfirmada({
-        contratoId: contratoCreado.id,
+        contratoId: nuevoContrato.id,
         cliente: `${nombre} ${apellido}`,
         vehiculo: `${vehiculoSeleccionado.marca} ${vehiculoSeleccionado.modelo} (${vehiculoSeleccionado.anio})`,
-        total: calcularTotal(Number(vehiculoSeleccionado.tarifaDiaria)),
+        total: totalEstimado,
         dias,
       });
 
       setVehiculoSeleccionado(null);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Error al procesar reserva.");
+      setError(err instanceof Error ? err.message : "Error al procesar la reserva.");
     } finally {
       setEnviando(false);
     }
   };
 
   const getUrlWhatsApp = (reserva: { contratoId: number; cliente: string; vehiculo: string; total: string; dias: number }) => {
-    const telefonoRentCar = rentCarInfo?.telefono ? rentCarInfo.telefono.replace(/[^0-9]/g, "") : "18095550199";
-    const texto = `Hola *${rentCarInfo?.nombre || "RentOS"}*, mi nombre es *${reserva.cliente}*. Acabo de solicitar la Reserva *#${reserva.contratoId}* en su catálogo web:\n\n🚗 *Vehículo:* ${reserva.vehiculo}\n📅 *Duración:* ${reserva.dias} días (${fechaInicio} al ${fechaFin})\n💰 *Total Estimado:* $${reserva.total} USD\n\n¿Me confirman disponibilidad para completar la entrega? ¡Muchas gracias!`;
+    const telefonoRentCar = rentCarInfo?.whatsapp || rentCarInfo?.telefono ? (rentCarInfo.whatsapp || rentCarInfo.telefono || "").replace(/[^0-9]/g, "") : "18095550199";
+    const texto = `Hola *${rentCarInfo?.nombre || "RentOS"}*, mi nombre es *${reserva.cliente}*. Acabo de solicitar la Reserva *#${reserva.contratoId}* en su catálogo web:\n\n🚗 *Vehículo:* ${reserva.vehiculo}\n📅 *Duración:* ${reserva.dias} días (${fechaInicio} al ${fechaFin})\n💰 *Total Estimado:* $${reserva.total} ${rentCarInfo?.moneda || "USD"}\n\n¿Me confirman disponibilidad para completar la entrega? ¡Muchas gracias!`;
+    return `https://wa.me/${telefonoRentCar}?text=${encodeURIComponent(texto)}`;
+  };
+
+  const getUrlWhatsAppConsulta = (v: Vehiculo) => {
+    const telefonoRentCar = rentCarInfo?.whatsapp || rentCarInfo?.telefono ? (rentCarInfo.whatsapp || rentCarInfo.telefono || "").replace(/[^0-9]/g, "") : "18095550199";
+    const totalEst = (Number(v.tarifaDiaria) * dias).toFixed(2);
+    const texto = `Hola *${rentCarInfo?.nombre || "RentOS"}*, me interesa alquilar el *${v.marca} ${v.modelo} (${v.anio})* por *${dias} día(s)* (del ${fechaInicio} al ${fechaFin}).\n\nTarifa estimada: *$${totalEst} ${rentCarInfo?.moneda || "USD"}*.\n¿Tienen disponibilidad en esas fechas?`;
     return `https://wa.me/${telefonoRentCar}?text=${encodeURIComponent(texto)}`;
   };
 
@@ -261,7 +308,7 @@ export default function ReservasPublicasPage() {
         minHeight: "100vh",
         backgroundColor: "var(--background)",
         color: "var(--text)",
-        fontFamily: "Inter, sans-serif",
+        fontFamily: "'Segoe UI', Roboto, sans-serif",
       }}
     >
       {/* Barra de Navegación Pública */}
@@ -281,14 +328,14 @@ export default function ReservasPublicasPage() {
             <img
               src={rentCarInfo.logoUrl}
               alt="Logo"
-              style={{ maxHeight: "40px", maxWidth: "120px", objectFit: "contain" }}
+              style={{ maxHeight: "45px", maxWidth: "130px", objectFit: "contain" }}
               onError={(e) => (e.currentTarget.style.display = "none")}
             />
           ) : (
             <div
               style={{
-                width: "38px",
-                height: "38px",
+                width: "42px",
+                height: "42px",
                 background: colorMarca,
                 color: "white",
                 borderRadius: "10px",
@@ -296,14 +343,14 @@ export default function ReservasPublicasPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: "900",
-                fontSize: "18px",
+                fontSize: "20px",
               }}
             >
               {rentCarInfo ? rentCarInfo.nombre.charAt(0).toUpperCase() : "R"}
             </div>
           )}
           <div>
-            <strong style={{ fontSize: "16px", display: "block" }}>
+            <strong style={{ fontSize: "17px", display: "block" }}>
               {rentCarInfo?.nombre || "RentOS Principal"}
             </strong>
             <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
@@ -314,7 +361,7 @@ export default function ReservasPublicasPage() {
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-            📞 Asistencia 24/7: <b>{rentCarInfo?.telefono || "(809) 555-0199"}</b>
+            📞 Asistencia: <b>{rentCarInfo?.telefono || "(809) 555-0199"}</b>
           </span>
           <a
             href={`https://wa.me/${(rentCarInfo?.whatsapp || rentCarInfo?.telefono || "18095550199").replace(/[^0-9]/g, "")}`}
@@ -323,14 +370,15 @@ export default function ReservasPublicasPage() {
             style={{
               backgroundColor: "#22c55e",
               color: "#ffffff",
-              padding: "8px 14px",
+              padding: "8px 16px",
               borderRadius: "8px",
               textDecoration: "none",
               fontSize: "13px",
-              fontWeight: 600,
+              fontWeight: 700,
               display: "flex",
               alignItems: "center",
               gap: "6px",
+              boxShadow: "0 2px 8px rgba(34, 197, 94, 0.3)",
             }}
           >
             💬 WhatsApp
@@ -338,34 +386,34 @@ export default function ReservasPublicasPage() {
         </div>
       </nav>
 
-      {/* Hero Banner */}
+      {/* Hero Banner y Selector de Fechas */}
       <div
         style={{
           background: `linear-gradient(135deg, ${colorMarca} 0%, #0f172a 100%)`,
           color: "#ffffff",
-          padding: "48px 24px",
+          padding: "40px 24px 48px 24px",
           textAlign: "center",
         }}
       >
-        <h1 style={{ fontSize: "32px", margin: "0 0 10px 0", fontWeight: 800 }}>
+        <h1 style={{ fontSize: "30px", margin: "0 0 8px 0", fontWeight: 800 }}>
           {rentCarInfo ? rentCarInfo.nombre : "Encuentra tu Vehículo Ideal"}
         </h1>
-        <p style={{ fontSize: "16px", color: "#e2e8f0", maxWidth: "600px", margin: "0 auto 28px auto" }}>
+        <p style={{ fontSize: "15px", color: "#e2e8f0", maxWidth: "600px", margin: "0 auto 24px auto" }}>
           {rentCarInfo?.eslogan || `Flota moderna en ${rentCarInfo?.ciudad || "República Dominicana"}, tarifas transparentes, seguro incluido y confirmación instantánea.`}
         </p>
 
         {/* Buscador de Fechas */}
         <div
           style={{
-            maxWidth: "780px",
+            maxWidth: "860px",
             margin: "0 auto",
             backgroundColor: "var(--surface)",
             padding: "18px 24px",
             borderRadius: "14px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: "14px",
+            gridTemplateColumns: "1fr 1fr 1fr 1.2fr",
+            gap: "12px",
             textAlign: "left",
             color: "var(--text)",
           }}
@@ -414,7 +462,7 @@ export default function ReservasPublicasPage() {
 
           <div>
             <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}>
-              🚗 MARCA / TIPO
+              🚗 MARCA
             </label>
             <select
               value={filtroMarca}
@@ -437,21 +485,53 @@ export default function ReservasPublicasPage() {
               ))}
             </select>
           </div>
+
+          <div>
+            <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}>
+              🚙 TIPO / CATEGORÍA
+            </label>
+            <select
+              value={filtroCategoria}
+              onChange={(e) => setFiltroCategoria(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px 10px",
+                borderRadius: "6px",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                color: "var(--text)",
+                boxSizing: "border-box",
+              }}
+            >
+              <option value="TODAS">Todas las categorías</option>
+              <option value="SEDAN">Sedán / Ejecutivo</option>
+              <option value="SUV">SUV / Jeepeta</option>
+              <option value="COMPACTO">Compacto / Urbano</option>
+              <option value="CAMIONETA">Camioneta / 4x4</option>
+              <option value="VAN">Van / Pasajeros</option>
+              <option value="LUJO">Lujo / Premium</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Contenedor de Flota */}
-      <div style={{ maxWidth: "1100px", margin: "36px auto", padding: "0 20px" }}>
+      <div style={{ maxWidth: "1160px", margin: "36px auto", padding: "0 20px" }}>
         {error && <div className="alert-box error" style={{ marginBottom: "20px" }}>{error}</div>}
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <h2 style={{ fontSize: "20px", margin: 0 }}>
-            Vehículos Disponibles ({dias} {dias === 1 ? "día" : "días"} de renta)
-          </h2>
+          <div>
+            <h2 style={{ fontSize: "22px", margin: 0, fontWeight: 800 }}>
+              Vehículos Disponibles ({dias} {dias === 1 ? "día" : "días"} de renta)
+            </h2>
+            <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+              👉 <b>Haz clic en cualquier vehículo</b> para ver su galería de fotos y ficha técnica detallada.
+            </span>
+          </div>
           <div style={{ width: "260px" }}>
             <input
               type="text"
-              placeholder="Buscar por modelo..."
+              placeholder="Buscar por modelo o color..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               style={{
@@ -481,51 +561,143 @@ export default function ReservasPublicasPage() {
             </p>
           </div>
         ) : (
+          /* Malla de Tarjetas de Vehículos con Imágenes Clicables */
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-              gap: "20px",
+              gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+              gap: "24px",
             }}
           >
             {vehiculosFiltrados.map((v) => {
               const totalEst = (Number(v.tarifaDiaria) * dias).toFixed(2);
+              const foto = obtenerFotoVehiculo(v);
+
               return (
                 <div
                   key={v.id}
                   style={{
                     backgroundColor: "var(--surface)",
-                    borderRadius: "14px",
+                    borderRadius: "16px",
                     border: "1px solid var(--border)",
-                    padding: "20px",
-                    boxShadow: "var(--shadow)",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    cursor: "pointer",
                   }}
+                  onClick={() => setVehiculoDetalle(v)}
                 >
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                  {/* Imagen del Vehículo (Clicable) */}
+                  <div style={{ position: "relative", height: "190px", backgroundColor: "#f1f5f9", overflow: "hidden" }}>
+                    <img
+                      src={foto}
+                      alt={`${v.marca} ${v.modelo}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        transition: "transform 0.3s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "12px",
+                        left: "12px",
+                        backgroundColor: "rgba(15, 23, 42, 0.75)",
+                        backdropFilter: "blur(4px)",
+                        color: "white",
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {v.categoria || "SEDAN"}
+                    </div>
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "12px",
+                        right: "12px",
+                        backgroundColor: "#10b981",
+                        color: "#0f172a",
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: 800,
+                      }}
+                    >
+                      ✓ Disponible
+                    </div>
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: "8px",
+                        right: "8px",
+                        backgroundColor: "rgba(0,0,0,0.65)",
+                        color: "white",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                      }}
+                    >
+                      👁️ Clic para ver fotos
+                    </div>
+                  </div>
+
+                  {/* Datos del Auto */}
+                  <div style={{ padding: "18px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
                       <div>
-                        <h3 style={{ margin: "0 0 4px 0", fontSize: "18px" }}>
+                        <h3 style={{ margin: "0 0 2px 0", fontSize: "18px", fontWeight: 800 }}>
                           {v.marca} {v.modelo}
                         </h3>
                         <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                          Año {v.anio} • Color {v.color || "Estándar"}
+                          Año {v.anio} • Color {v.color || "Blanco"}
                         </span>
                       </div>
-                      <span className="badge badge-disponible">Disponible</span>
                     </div>
 
+                    {/* Insignias de Especificaciones Rápidas */}
                     <div
                       style={{
-                        margin: "14px 0",
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "6px",
+                        margin: "10px 0 14px 0",
+                        fontSize: "11px",
+                      }}
+                    >
+                      <span style={{ backgroundColor: "var(--primary-soft)", color: "var(--primary)", padding: "3px 8px", borderRadius: "6px", fontWeight: 600 }}>
+                        👥 {v.pasajeros || 5} Asientos
+                      </span>
+                      <span style={{ backgroundColor: "var(--primary-soft)", color: "var(--primary)", padding: "3px 8px", borderRadius: "6px", fontWeight: 600 }}>
+                        🧳 {v.maletas || 2} Maletas
+                      </span>
+                      <span style={{ backgroundColor: "var(--primary-soft)", color: "var(--primary)", padding: "3px 8px", borderRadius: "6px", fontWeight: 600 }}>
+                        ⚙️ {v.transmision || "Automática"}
+                      </span>
+                      <span style={{ backgroundColor: "var(--primary-soft)", color: "var(--primary)", padding: "3px 8px", borderRadius: "6px", fontWeight: 600 }}>
+                        ❄️ A/C
+                      </span>
+                    </div>
+
+                    {/* Tarifa y Total Estimado */}
+                    <div
+                      style={{
                         padding: "10px 14px",
                         background: "var(--primary-soft)",
-                        borderRadius: "8px",
+                        borderRadius: "10px",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
+                        marginBottom: "14px",
                       }}
                     >
                       <div>
@@ -537,26 +709,38 @@ export default function ReservasPublicasPage() {
                       <div style={{ textAlign: "right" }}>
                         <span style={{ fontSize: "11px", color: "var(--text-secondary)", display: "block" }}>Total ({dias}d):</span>
                         <strong style={{ fontSize: "18px", color: "var(--primary)" }}>
-                          ${totalEst}
+                          ${totalEst} {rentCarInfo?.moneda || "USD"}
                         </strong>
                       </div>
                     </div>
 
-                    <div style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: "1.6", marginBottom: "16px" }}>
-                      ✓ Kilometraje ilimitado en ciudad<br />
-                      ✓ Asistencia en carretera 24h<br />
-                      ✓ Limpieza y desinfección certificada
+                    {/* Botonera de Acción */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        style={{ padding: "9px 6px", fontSize: "12px", fontWeight: 700 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setVehiculoDetalle(v);
+                        }}
+                      >
+                        👁️ Ver Ficha & Fotos
+                      </button>
+
+                      <button
+                        type="button"
+                        className="primary-button"
+                        style={{ padding: "9px 6px", fontSize: "12px", fontWeight: 700 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setVehiculoSeleccionado(v);
+                        }}
+                      >
+                        ⚡ Reservar
+                      </button>
                     </div>
                   </div>
-
-                  <button
-                    type="button"
-                    className="primary-button"
-                    style={{ width: "100%", padding: "12px" }}
-                    onClick={() => setVehiculoSeleccionado(v)}
-                  >
-                    ⚡ Reservar Este Auto
-                  </button>
                 </div>
               );
             })}
@@ -564,7 +748,232 @@ export default function ReservasPublicasPage() {
         )}
       </div>
 
-      {/* Modal de Configuración y Solicitud de Reserva */}
+      {/* ================================================================= */}
+      {/* MODAL 1: FICHA TÉCNICA DETALLADA & GALERÍA DE FOTOS (AL DAR CLIC) */}
+      {/* ================================================================= */}
+      {vehiculoDetalle && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.8)",
+            backdropFilter: "blur(6px)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+          onClick={() => setVehiculoDetalle(null)}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "20px",
+              maxWidth: "680px",
+              width: "100%",
+              maxHeight: "92vh",
+              overflowY: "auto",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
+              color: "var(--text)",
+              border: "1px solid var(--border)",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Imagen Principal en Gran Formato */}
+            <div style={{ position: "relative", height: "260px", backgroundColor: "#0f172a" }}>
+              <img
+                src={obtenerFotoVehiculo(vehiculoDetalle)}
+                alt={`${vehiculoDetalle.marca} ${vehiculoDetalle.modelo}`}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+              <button
+                type="button"
+                onClick={() => setVehiculoDetalle(null)}
+                style={{
+                  position: "absolute",
+                  top: "14px",
+                  right: "14px",
+                  backgroundColor: "rgba(15, 23, 42, 0.75)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                ✕
+              </button>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "14px",
+                  left: "16px",
+                  backgroundColor: "rgba(15, 23, 42, 0.85)",
+                  backdropFilter: "blur(4px)",
+                  padding: "6px 14px",
+                  borderRadius: "8px",
+                  color: "white",
+                }}
+              >
+                <span style={{ fontSize: "12px", color: "#94a3b8" }}>{vehiculoDetalle.categoria || "SEDAN"}</span>
+                <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800 }}>
+                  {vehiculoDetalle.marca} {vehiculoDetalle.modelo} ({vehiculoDetalle.anio})
+                </h2>
+              </div>
+            </div>
+
+            {/* Contenido de la Ficha Técnica */}
+            <div style={{ padding: "24px" }}>
+              {/* Tarifa y Duración */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  backgroundColor: "var(--primary-soft)",
+                  padding: "12px 18px",
+                  borderRadius: "12px",
+                  marginBottom: "20px",
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Período ({dias} {dias === 1 ? "día" : "días"}):</span>
+                  <div style={{ fontSize: "14px", fontWeight: 700 }}>
+                    {fechaInicio} ➔ {fechaFin}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Tarifa Total Estimada:</span>
+                  <div style={{ fontSize: "22px", fontWeight: 900, color: "var(--primary)" }}>
+                    ${(Number(vehiculoDetalle.tarifaDiaria) * dias).toFixed(2)} {rentCarInfo?.moneda || "USD"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Malla de Especificaciones Físicas y Mecánicas */}
+              <h3 style={{ fontSize: "15px", margin: "0 0 12px 0", fontWeight: 800 }}>
+                📋 Especificaciones del Vehículo
+              </h3>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "10px",
+                  marginBottom: "20px",
+                }}
+              >
+                <div style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", padding: "10px", borderRadius: "10px", textAlign: "center" }}>
+                  <span style={{ fontSize: "20px", display: "block" }}>👥</span>
+                  <strong style={{ fontSize: "12px", display: "block" }}>{vehiculoDetalle.pasajeros || 5} Pasajeros</strong>
+                  <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Capacidad</span>
+                </div>
+
+                <div style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", padding: "10px", borderRadius: "10px", textAlign: "center" }}>
+                  <span style={{ fontSize: "20px", display: "block" }}>🧳</span>
+                  <strong style={{ fontSize: "12px", display: "block" }}>{vehiculoDetalle.maletas || 2} Maletas</strong>
+                  <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Maletero</span>
+                </div>
+
+                <div style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", padding: "10px", borderRadius: "10px", textAlign: "center" }}>
+                  <span style={{ fontSize: "20px", display: "block" }}>⚙️</span>
+                  <strong style={{ fontSize: "12px", display: "block" }}>{vehiculoDetalle.transmision || "Automática"}</strong>
+                  <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Transmisión</span>
+                </div>
+
+                <div style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", padding: "10px", borderRadius: "10px", textAlign: "center" }}>
+                  <span style={{ fontSize: "20px", display: "block" }}>⛽</span>
+                  <strong style={{ fontSize: "12px", display: "block" }}>{vehiculoDetalle.combustible || "Gasolina"}</strong>
+                  <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Combustible</span>
+                </div>
+
+                <div style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", padding: "10px", borderRadius: "10px", textAlign: "center" }}>
+                  <span style={{ fontSize: "20px", display: "block" }}>❄️</span>
+                  <strong style={{ fontSize: "12px", display: "block" }}>A/C Climatizador</strong>
+                  <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Aire Acondicionado</span>
+                </div>
+
+                <div style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)", padding: "10px", borderRadius: "10px", textAlign: "center" }}>
+                  <span style={{ fontSize: "20px", display: "block" }}>🚪</span>
+                  <strong style={{ fontSize: "12px", display: "block" }}>{vehiculoDetalle.puertas || 4} Puertas</strong>
+                  <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Carrocería</span>
+                </div>
+              </div>
+
+              {/* Beneficios Incluidos */}
+              <h3 style={{ fontSize: "15px", margin: "0 0 10px 0", fontWeight: 800 }}>
+                ✨ Comodidades & Seguridad Incluidas
+              </h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "24px" }}>
+                <div>✓ Conectividad Bluetooth & Pantalla</div>
+                <div>✓ Frenos ABS y Bolsas de Aire (Airbags)</div>
+                <div>✓ Cámara de Reversa para Parqueo</div>
+                <div>✓ Asistencia en Carretera 24/7 en RD</div>
+                <div>✓ Limpieza y Desinfección Certificada</div>
+                <div>✓ Cancelación Gratuita hasta 24h antes</div>
+              </div>
+
+              {/* Botonera de Acción del Modal de Detalle */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: "18px" }}>
+                <a
+                  href={getUrlWhatsAppConsulta(vehiculoDetalle)}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    backgroundColor: "#22c55e",
+                    color: "white",
+                    textDecoration: "none",
+                    padding: "10px 18px",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  💬 Consultar por WhatsApp
+                </a>
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setVehiculoDetalle(null)}
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    style={{ padding: "10px 22px", fontSize: "14px", fontWeight: 800 }}
+                    onClick={() => {
+                      const sel = vehiculoDetalle;
+                      setVehiculoDetalle(null);
+                      setVehiculoSeleccionado(sel);
+                    }}
+                  >
+                    ⚡ Reservar Este Auto
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* MODAL 2: FORMULARIO DE RESERVA DIRECTA */}
+      {/* ================================================================= */}
       {vehiculoSeleccionado && (
         <div
           style={{
@@ -658,26 +1067,26 @@ export default function ReservasPublicasPage() {
               </div>
             </div>
 
-            {/* Formulario de Datos del Conductor */}
-            <form onSubmit={procesarReserva}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+            {/* Formulario Datos del Cliente */}
+            <form onSubmit={handleConfirmarReserva}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                 <div className="form-field">
-                  <label htmlFor="resNombre">Nombre *</label>
+                  <label htmlFor="nombreReserva">Nombre *</label>
                   <input
-                    id="resNombre"
+                    id="nombreReserva"
                     type="text"
-                    placeholder="Carlos"
+                    placeholder="Ej. Juan"
                     value={nombre}
                     onChange={(e) => setNombre(e.target.value)}
                     required
                   />
                 </div>
                 <div className="form-field">
-                  <label htmlFor="resApellido">Apellido *</label>
+                  <label htmlFor="apellidoReserva">Apellido *</label>
                   <input
-                    id="resApellido"
+                    id="apellidoReserva"
                     type="text"
-                    placeholder="García"
+                    placeholder="Ej. Pérez"
                     value={apellido}
                     onChange={(e) => setApellido(e.target.value)}
                     required
@@ -685,42 +1094,46 @@ export default function ReservasPublicasPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" }}>
-                <div className="form-field">
-                  <label htmlFor="resTelefono">WhatsApp / Teléfono *</label>
-                  <PhoneInput
-                    id="resTelefono"
-                    value={telefono}
-                    onChange={(val) => setTelefono(val)}
-                    required
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="resEmail">Correo Electrónico</label>
-                  <input
-                    id="resEmail"
-                    type="email"
-                    placeholder="carlos@correo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
+              <div className="form-field" style={{ marginBottom: "12px" }}>
+                <label htmlFor="telefonoReserva">Teléfono / WhatsApp *</label>
+                <PhoneInput
+                  id="telefonoReserva"
+                  value={telefono}
+                  onChange={(val) => setTelefono(val)}
+                  required
+                />
+              </div>
+
+              <div className="form-field" style={{ marginBottom: "16px" }}>
+                <label htmlFor="emailReserva">Correo Electrónico (Opcional)</label>
+                <input
+                  id="emailReserva"
+                  type="email"
+                  placeholder="juan.perez@ejemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
 
               {/* Total Final */}
               <div
                 style={{
                   borderTop: "1px solid var(--border)",
-                  paddingTop: "12px",
+                  paddingTop: "14px",
+                  marginBottom: "20px",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: "20px",
                 }}
               >
-                <span style={{ fontSize: "14px" }}>Total Estimado de la Renta:</span>
-                <strong style={{ fontSize: "22px", color: "var(--primary)" }}>
-                  ${calcularTotal(Number(vehiculoSeleccionado.tarifaDiaria))} USD
+                <div>
+                  <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block" }}>Total a Pagar al Retirar:</span>
+                  <small style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                    Depósito reembolsable de $200 USD requerido
+                  </small>
+                </div>
+                <strong style={{ fontSize: "24px", color: "var(--primary)" }}>
+                  ${calcularTotal(Number(vehiculoSeleccionado.tarifaDiaria))} {rentCarInfo?.moneda || "USD"}
                 </strong>
               </div>
 
@@ -733,8 +1146,13 @@ export default function ReservasPublicasPage() {
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="primary-button" disabled={enviando}>
-                  {enviando ? "Confirmando..." : "Confirmar Solicitud"}
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={enviando}
+                  style={{ minWidth: "180px" }}
+                >
+                  {enviando ? "Confirmando..." : "✓ Confirmar Reserva"}
                 </button>
               </div>
             </form>
@@ -742,7 +1160,9 @@ export default function ReservasPublicasPage() {
         </div>
       )}
 
-      {/* Modal de Éxito / Confirmación con Botón WhatsApp */}
+      {/* ================================================================= */}
+      {/* MODAL 3: CONFIRMACIÓN EXITOSA CON BOTÓN DE WHATSAPP */}
+      {/* ================================================================= */}
       {reservaConfirmada && (
         <div
           style={{
@@ -751,8 +1171,8 @@ export default function ReservasPublicasPage() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.7)",
-            zIndex: 9999,
+            backgroundColor: "rgba(15, 23, 42, 0.8)",
+            zIndex: 99999,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -762,61 +1182,62 @@ export default function ReservasPublicasPage() {
           <div
             style={{
               backgroundColor: "var(--surface)",
-              borderRadius: "14px",
-              maxWidth: "500px",
+              borderRadius: "16px",
+              maxWidth: "480px",
               width: "100%",
-              padding: "32px",
-              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)",
+              padding: "32px 28px",
               textAlign: "center",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
               color: "var(--text)",
             }}
           >
-            <div style={{ fontSize: "48px", marginBottom: "10px" }}>🎉</div>
-            <h2 style={{ margin: "0 0 8px 0", fontSize: "20px", color: "var(--success)" }}>
-              ¡Solicitud de Reserva Recibida!
+            <div style={{ fontSize: "48px", marginBottom: "12px" }}>🎉</div>
+            <h2 style={{ fontSize: "22px", margin: "0 0 8px 0", color: "var(--success)" }}>
+              ¡Solicitud de Reserva Registrada!
             </h2>
-            <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 20px 0" }}>
-              Hemos registrado tu solicitud con el <b>No. #{reservaConfirmada.contratoId}</b>. El equipo de{" "}
-              <b>{rentCarInfo?.nombre || "RentOS"}</b> se comunicará contigo para formalizar la entrega.
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "0 0 20px 0" }}>
+              Número de Folio: <b>#CT-{String(reservaConfirmada.contratoId).padStart(5, "0")}</b>
             </p>
 
             <div
               style={{
-                background: "var(--primary-soft)",
+                backgroundColor: "var(--primary-soft)",
                 padding: "16px",
                 borderRadius: "10px",
+                marginBottom: "24px",
                 textAlign: "left",
                 fontSize: "13px",
-                lineHeight: "1.8",
-                marginBottom: "24px",
               }}
             >
-              <div>👤 <b>Cliente:</b> {reservaConfirmada.cliente}</div>
-              <div>🚗 <b>Vehículo:</b> {reservaConfirmada.vehiculo}</div>
-              <div>📅 <b>Duración:</b> {reservaConfirmada.dias} días</div>
-              <div>💰 <b>Total Estimado:</b> ${reservaConfirmada.total} USD</div>
+              <div style={{ marginBottom: "6px" }}>👤 Cliente: <b>{reservaConfirmada.cliente}</b></div>
+              <div style={{ marginBottom: "6px" }}>🚗 Vehículo: <b>{reservaConfirmada.vehiculo}</b></div>
+              <div style={{ marginBottom: "6px" }}>📅 Duración: <b>{reservaConfirmada.dias} días</b></div>
+              <div>💰 Total Estimado: <b>${reservaConfirmada.total} {rentCarInfo?.moneda || "USD"}</b></div>
             </div>
+
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "20px" }}>
+              Para asegurar tu vehículo de inmediato, pulsa el botón de abajo y envíanos un mensaje directo por WhatsApp:
+            </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <a
                 href={getUrlWhatsApp(reservaConfirmada)}
                 target="_blank"
                 rel="noreferrer"
+                className="primary-button"
                 style={{
                   backgroundColor: "#22c55e",
-                  color: "#ffffff",
                   padding: "12px",
-                  borderRadius: "8px",
-                  textDecoration: "none",
-                  fontWeight: 700,
                   fontSize: "14px",
+                  fontWeight: 700,
+                  textDecoration: "none",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
                 }}
               >
-                💬 Enviar Confirmación por WhatsApp al Rent Car
+                💬 Enviar Reserva por WhatsApp
               </a>
 
               <button
@@ -824,7 +1245,7 @@ export default function ReservasPublicasPage() {
                 className="secondary-button"
                 onClick={() => setReservaConfirmada(null)}
               >
-                Cerrar y Volver al Catálogo
+                Volver al Catálogo
               </button>
             </div>
           </div>

@@ -184,6 +184,15 @@ model Vehiculo {
   kilometraje  Int            @default(0)
   estado       EstadoVehiculo @default(DISPONIBLE)
   tarifaDiaria          Decimal        @db.Decimal(10, 2)
+  fotoUrl               String?        @db.Text // Foto principal o miniatura del vehículo
+  imagenes              Json?          // Galería fotográfica adicional (exterior, interior, etc.)
+  categoria             String?        @default("SEDAN") // SEDAN, SUV, COMPACTO, CAMIONETA, LUJO, VAN
+  transmision           String?        @default("AUTOMATICA") // AUTOMATICA, MANUAL
+  combustible           String?        @default("GASOLINA") // GASOLINA, DIESEL, HIBRIDO, ELECTRICO
+  pasajeros             Int?           @default(5)
+  maletas               Int?           @default(2)
+  puertas               Int?           @default(4)
+  aireAcondicionado     Boolean        @default(true)
   seguroPoliza          String?        // Póliza de seguro (ej. "Seguros Universal #UN-9922")
   seguroVencimiento     DateTime?      // Fecha de expiración de póliza
   marbeteVencimiento    DateTime?      // Vencimiento del impuesto de circulación

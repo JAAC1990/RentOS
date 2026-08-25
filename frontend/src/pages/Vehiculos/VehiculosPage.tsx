@@ -1,10 +1,12 @@
 /**
  * ============================================================================
- * RentOS - Gestión de Flota de Vehículos (VehiculosPage)
+ * RentOS - Gestión de Flota de Vehículos y Auditoría Legal (VehiculosPage)
  * ============================================================================
  * Permite la administración integral del parque vehicular:
- * - Alta, edición y baja de vehículos con validación de placa dominicana y VIN.
+ * - Alta, edición y baja de vehículos con fotografía, ficha técnica (pasajeros, maletas,
+ *   transmisión, combustible, A/C) y validación de placa dominicana y VIN.
  * - Monitoreo de estados (DISPONIBLE, ALQUILADO, MANTENIMIENTO, INACTIVO).
+ * - Modal interactivo de Ficha Técnica y Fotos en alta resolución.
  * - Pestaña de Auditoría Legal con vencimientos de seguros y marbetes.
  * - Disparo manual de alertas preventivas vía Telegram.
  */
@@ -22,6 +24,14 @@ type Vehiculo = {
   placa: string;
   vin: string | null;
   kilometraje: number;
+  fotoUrl?: string | null;
+  categoria?: string | null;
+  transmision?: string | null;
+  combustible?: string | null;
+  pasajeros?: number | null;
+  maletas?: number | null;
+  puertas?: number | null;
+  aireAcondicionado?: boolean | null;
   estado: "DISPONIBLE" | "ALQUILADO" | "MANTENIMIENTO" | "INACTIVO";
   tarifaDiaria: string | number;
   seguroPoliza?: string | null;
@@ -37,8 +47,16 @@ type FormularioVehiculo = {
   placa: string;
   vin: string;
   kilometraje: string;
-  estado: string;
   tarifaDiaria: string;
+  fotoUrl: string;
+  categoria: string;
+  transmision: string;
+  combustible: string;
+  pasajeros: string;
+  maletas: string;
+  puertas: string;
+  aireAcondicionado: boolean;
+  estado: string;
   seguroPoliza: string;
   seguroVencimiento: string;
   marbeteVencimiento: string;
@@ -73,12 +91,35 @@ const formularioInicial: FormularioVehiculo = {
   placa: "",
   vin: "",
   kilometraje: "0",
-  estado: "DISPONIBLE",
   tarifaDiaria: "",
+  fotoUrl: "",
+  categoria: "SEDAN",
+  transmision: "AUTOMATICA",
+  combustible: "GASOLINA",
+  pasajeros: "5",
+  maletas: "2",
+  puertas: "4",
+  aireAcondicionado: true,
+  estado: "DISPONIBLE",
   seguroPoliza: "Seguros Universal #UN-2026",
   seguroVencimiento: "",
   marbeteVencimiento: "",
 };
+
+function obtenerFotoDefault(v: Vehiculo): string {
+  if (v.fotoUrl && v.fotoUrl.trim() !== "") {
+    return v.fotoUrl;
+  }
+  const mm = `${v.marca} ${v.modelo}`.toLowerCase();
+  if (mm.includes("corolla")) {
+    return "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&auto=format&fit=crop&q=80";
+  } else if (mm.includes("sportage") || mm.includes("tucson") || mm.includes("suv") || mm.includes("seltos")) {
+    return "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format&fit=crop&q=80";
+  } else if (mm.includes("explorer") || mm.includes("jeep") || mm.includes("wrangler") || mm.includes("4x4")) {
+    return "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&auto=format&fit=crop&q=80";
+  }
+  return "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80";
+}
 
 export default function VehiculosPage() {
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
@@ -88,6 +129,9 @@ export default function VehiculosPage() {
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+
+  // Modal para ver fotos y ficha técnica al dar clic
+  const [vehiculoVerDetalle, setVehiculoVerDetalle] = useState<Vehiculo | null>(null);
 
   // Monitor de Vencimientos Legales
   const [mostrarMonitorVencimientos, setMostrarMonitorVencimientos] = useState(false);
@@ -161,6 +205,55 @@ export default function VehiculosPage() {
     });
   }, [vehiculos, busqueda, filtroEstado]);
 
+  const handleSubirFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setErrorFormulario("Selecciona un archivo de imagen válido (PNG, JPG, WEBP).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const src = event.target?.result as string;
+      if (!src) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          setFormulario((prev) => ({
+            ...prev,
+            fotoUrl: canvas.toDataURL("image/jpeg", 0.85),
+          }));
+        } else {
+          setFormulario((prev) => ({ ...prev, fotoUrl: src }));
+        }
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const validarFormulario = () => {
     setErrorFormulario("");
 
@@ -222,6 +315,14 @@ export default function VehiculosPage() {
         vin: formulario.vin.trim() || undefined,
         kilometraje: Number(formulario.kilometraje),
         tarifaDiaria: Number(formulario.tarifaDiaria),
+        fotoUrl: formulario.fotoUrl.trim() || undefined,
+        categoria: formulario.categoria,
+        transmision: formulario.transmision,
+        combustible: formulario.combustible,
+        pasajeros: Number(formulario.pasajeros || 5),
+        maletas: Number(formulario.maletas || 2),
+        puertas: Number(formulario.puertas || 4),
+        aireAcondicionado: formulario.aireAcondicionado,
         estado: formulario.estado,
         seguroPoliza: formulario.seguroPoliza.trim() || undefined,
         seguroVencimiento: formulario.seguroVencimiento || undefined,
@@ -249,7 +350,7 @@ export default function VehiculosPage() {
 
       setMensaje(
         editandoId === null
-          ? "✅ Vehículo registrado exitosamente."
+          ? "✅ Vehículo registrado exitosamente con fotos y ficha técnica."
           : "✅ Vehículo actualizado correctamente."
       );
 
@@ -275,8 +376,16 @@ export default function VehiculosPage() {
       placa: vehiculo.placa ?? "",
       vin: vehiculo.vin ?? "",
       kilometraje: String(vehiculo.kilometraje ?? 0),
-      estado: vehiculo.estado ?? "DISPONIBLE",
       tarifaDiaria: String(vehiculo.tarifaDiaria ?? ""),
+      fotoUrl: vehiculo.fotoUrl ?? "",
+      categoria: vehiculo.categoria ?? "SEDAN",
+      transmision: vehiculo.transmision ?? "AUTOMATICA",
+      combustible: vehiculo.combustible ?? "GASOLINA",
+      pasajeros: String(vehiculo.pasajeros ?? 5),
+      maletas: String(vehiculo.maletas ?? 2),
+      puertas: String(vehiculo.puertas ?? 4),
+      aireAcondicionado: vehiculo.aireAcondicionado ?? true,
+      estado: vehiculo.estado ?? "DISPONIBLE",
       seguroPoliza: vehiculo.seguroPoliza ?? "Seguros Universal #UN-2026",
       seguroVencimiento: vehiculo.seguroVencimiento
         ? vehiculo.seguroVencimiento.split("T")[0]
@@ -354,6 +463,9 @@ export default function VehiculosPage() {
       "Kilometraje",
       "Estado",
       "Tarifa Diaria",
+      "Categoria",
+      "Transmision",
+      "Combustible",
       "Seguro Poliza",
       "Vencimiento Seguro",
     ];
@@ -368,6 +480,9 @@ export default function VehiculosPage() {
       v.kilometraje,
       v.estado,
       v.tarifaDiaria,
+      v.categoria || "SEDAN",
+      v.transmision || "AUTOMATICA",
+      v.combustible || "GASOLINA",
       `"${v.seguroPoliza || ""}"`,
       v.seguroVencimiento ? new Date(v.seguroVencimiento).toLocaleDateString("es-DO") : "",
     ]);
@@ -393,7 +508,7 @@ export default function VehiculosPage() {
       <div className="page-heading">
         <div>
           <h1>Gestión de Flota & Vehículos</h1>
-          <p>Administra la flota, tarifas, estados, pólizas de seguros y vencimientos legales.</p>
+          <p>Administra la flota, fotografías, fichas técnicas, pólizas de seguros y vencimientos legales.</p>
         </div>
 
         <div style={{ display: "flex", gap: "10px" }}>
@@ -475,11 +590,11 @@ export default function VehiculosPage() {
       {mensaje && <div className="alert-box success">{mensaje}</div>}
       {error && <div className="alert-box error">{error}</div>}
 
-      {/* Formulario de Vehículo */}
+      {/* Formulario de Vehículo con Foto y Ficha Técnica */}
       {mostrarFormulario && (
         <section className="content-panel" id="formulario-vehiculo">
           <div className="panel-header">
-            <h2>{editandoId === null ? "Registrar Nuevo Vehículo" : "Editar Vehículo"}</h2>
+            <h2>{editandoId === null ? "Registrar Nuevo Vehículo con Ficha Técnica" : "Editar Vehículo"}</h2>
             <button className="secondary-button" onClick={limpiarFormulario}>
               Cancelar
             </button>
@@ -498,6 +613,57 @@ export default function VehiculosPage() {
             }}
           >
             <div className="form-grid">
+              {/* Foto del Auto */}
+              <div className="form-field" style={{ gridColumn: "span 3", backgroundColor: "var(--primary-soft)", padding: "16px", borderRadius: "10px" }}>
+                <label style={{ fontSize: "13px", fontWeight: 700, display: "block", marginBottom: "6px" }}>
+                  📸 Fotografía Principal del Vehículo (Visible para el Cliente)
+                </label>
+                <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                  <div style={{ width: "120px", height: "80px", backgroundColor: "var(--surface)", border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {formulario.fotoUrl ? (
+                      <img src={formulario.fotoUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: "24px" }}>🚗</span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                      <input
+                        type="file"
+                        id="fotoFileInput"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={handleSubirFoto}
+                      />
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => document.getElementById("fotoFileInput")?.click()}
+                      >
+                        📁 Subir Imagen desde Dispositivo
+                      </button>
+                      {formulario.fotoUrl && (
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          style={{ color: "var(--danger)" }}
+                          onClick={() => setFormulario((prev) => ({ ...prev, fotoUrl: "" }))}
+                        >
+                          ✕ Quitar Foto
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="url"
+                      placeholder="O pega una URL web directa de la foto (https://...)"
+                      value={formulario.fotoUrl}
+                      onChange={(e) => setFormulario((prev) => ({ ...prev, fotoUrl: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Datos Básicos */}
               <div className="form-field">
                 <label htmlFor="marca">Marca *</label>
                 <input
@@ -582,6 +748,85 @@ export default function VehiculosPage() {
                 />
               </div>
 
+              {/* Ficha Técnica */}
+              <div className="form-field">
+                <label htmlFor="categoria">Categoría</label>
+                <select
+                  id="categoria"
+                  value={formulario.categoria}
+                  onChange={(e) => setFormulario((prev) => ({ ...prev, categoria: e.target.value }))}
+                >
+                  <option value="SEDAN">Sedán / Ejecutivo</option>
+                  <option value="SUV">SUV / Jeepeta</option>
+                  <option value="COMPACTO">Compacto / Urbano</option>
+                  <option value="CAMIONETA">Camioneta / 4x4</option>
+                  <option value="VAN">Van / Pasajeros</option>
+                  <option value="LUJO">Lujo / Premium</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="transmision">Transmisión</label>
+                <select
+                  id="transmision"
+                  value={formulario.transmision}
+                  onChange={(e) => setFormulario((prev) => ({ ...prev, transmision: e.target.value }))}
+                >
+                  <option value="AUTOMATICA">Automática</option>
+                  <option value="MANUAL">Manual / Mecánica</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="combustible">Combustible</label>
+                <select
+                  id="combustible"
+                  value={formulario.combustible}
+                  onChange={(e) => setFormulario((prev) => ({ ...prev, combustible: e.target.value }))}
+                >
+                  <option value="GASOLINA">Gasolina</option>
+                  <option value="DIESEL">Diésel</option>
+                  <option value="HIBRIDO">Híbrido</option>
+                  <option value="ELECTRICO">Eléctrico</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="pasajeros">Pasajeros</label>
+                <input
+                  id="pasajeros"
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={formulario.pasajeros}
+                  onChange={(e) => setFormulario((prev) => ({ ...prev, pasajeros: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="maletas">Capacidad Maletas</label>
+                <input
+                  id="maletas"
+                  type="number"
+                  min="0"
+                  max="15"
+                  value={formulario.maletas}
+                  onChange={(e) => setFormulario((prev) => ({ ...prev, maletas: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="aireAcondicionado">Aire Acondicionado</label>
+                <select
+                  id="aireAcondicionado"
+                  value={formulario.aireAcondicionado ? "true" : "false"}
+                  onChange={(e) => setFormulario((prev) => ({ ...prev, aireAcondicionado: e.target.value === "true" }))}
+                >
+                  <option value="true">Sí (Con Climatizador A/C)</option>
+                  <option value="false">No</option>
+                </select>
+              </div>
+
               <div className="form-field">
                 <label htmlFor="kilometraje">Odómetro Inicial (km) *</label>
                 <input
@@ -636,7 +881,7 @@ export default function VehiculosPage() {
                 </select>
               </div>
 
-              {/* SECCIÓN DOCUMENTOS LEGALES */}
+              {/* Documentos Legales */}
               <div className="form-field">
                 <label htmlFor="seguroPoliza">Póliza de Seguro</label>
                 <input
@@ -674,7 +919,7 @@ export default function VehiculosPage() {
                 />
               </div>
 
-              <div className="form-actions">
+              <div className="form-actions" style={{ gridColumn: "span 3" }}>
                 <button type="submit" className="primary-button" disabled={guardando}>
                   {guardando
                     ? "Guardando..."
@@ -741,7 +986,7 @@ export default function VehiculosPage() {
         </div>
       </div>
 
-      {/* Tabla de Vehículos */}
+      {/* Tabla de Vehículos con Miniaturas y Ficha Clicable */}
       <div className="content-panel">
         <div className="panel-header">
           <h2>
@@ -772,8 +1017,9 @@ export default function VehiculosPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Vehículo</th>
+                  <th>Vehículo & Foto</th>
                   <th>Placa / Chasis</th>
+                  <th>Ficha Técnica</th>
                   <th>Odómetro</th>
                   <th>Tarifa Diaria</th>
                   <th>Seguro / Póliza</th>
@@ -784,13 +1030,23 @@ export default function VehiculosPage() {
               <tbody>
                 {vehiculosFiltrados.map((vehiculo) => {
                   const rep = reporteVencimientos.find((r) => r.id === vehiculo.id);
+                  const foto = obtenerFotoDefault(vehiculo);
 
                   return (
-                    <tr key={vehiculo.id}>
+                    <tr
+                      key={vehiculo.id}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setVehiculoVerDetalle(vehiculo)}
+                    >
                       <td>
-                        <div className="vehicle-info-cell">
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <img
+                            src={foto}
+                            alt={`${vehiculo.marca} ${vehiculo.modelo}`}
+                            style={{ width: "54px", height: "38px", objectFit: "cover", borderRadius: "6px", border: "1px solid var(--border)" }}
+                          />
                           <div>
-                            <strong>
+                            <strong style={{ display: "block" }}>
                               {vehiculo.marca} {vehiculo.modelo}
                             </strong>
                             <div style={{ color: "var(--text-secondary)", fontSize: "11px" }}>
@@ -805,6 +1061,14 @@ export default function VehiculosPage() {
                         </div>
                         <small style={{ color: "var(--text-secondary)", fontSize: "11px" }}>
                           {vehiculo.vin ? `VIN: ${vehiculo.vin}` : "Sin VIN"}
+                        </small>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                          👥 {vehiculo.pasajeros || 5} • ⚙️ {vehiculo.transmision || "Auto"}
+                        </div>
+                        <small style={{ color: "var(--text-secondary)", fontSize: "10px" }}>
+                          {vehiculo.categoria || "SEDAN"} • {vehiculo.combustible || "Gasolina"}
                         </small>
                       </td>
                       <td>
@@ -860,14 +1124,20 @@ export default function VehiculosPage() {
                           <button
                             type="button"
                             className="btn-action-edit"
-                            onClick={() => editarVehiculo(vehiculo)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              editarVehiculo(vehiculo);
+                            }}
                           >
                             ✏️ Editar
                           </button>
                           <button
                             type="button"
                             className="btn-action-delete"
-                            onClick={() => eliminarVehiculo(vehiculo.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              eliminarVehiculo(vehiculo.id);
+                            }}
                           >
                             🗑️
                           </button>
@@ -881,6 +1151,137 @@ export default function VehiculosPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Ficha Técnica & Foto en Gran Formato (Al dar clic en cualquier auto) */}
+      {vehiculoVerDetalle && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.8)",
+            backdropFilter: "blur(6px)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+          onClick={() => setVehiculoVerDetalle(null)}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "20px",
+              maxWidth: "600px",
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
+              border: "1px solid var(--border)",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ position: "relative", height: "240px", backgroundColor: "#0f172a" }}>
+              <img
+                src={obtenerFotoDefault(vehiculoVerDetalle)}
+                alt={`${vehiculoVerDetalle.marca} ${vehiculoVerDetalle.modelo}`}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+              <button
+                type="button"
+                onClick={() => setVehiculoVerDetalle(null)}
+                style={{
+                  position: "absolute",
+                  top: "12px",
+                  right: "12px",
+                  backgroundColor: "rgba(15, 23, 42, 0.75)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "34px",
+                  height: "34px",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                }}
+              >
+                ✕
+              </button>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "12px",
+                  left: "14px",
+                  backgroundColor: "rgba(15, 23, 42, 0.85)",
+                  padding: "4px 12px",
+                  borderRadius: "6px",
+                  color: "white",
+                }}
+              >
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 800 }}>
+                  {vehiculoVerDetalle.marca} {vehiculoVerDetalle.modelo} ({vehiculoVerDetalle.anio})
+                </h3>
+                <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                  Placa: {vehiculoVerDetalle.placa} • Color: {vehiculoVerDetalle.color || "Blanco"}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ padding: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "16px" }}>
+                <div style={{ backgroundColor: "var(--primary-soft)", padding: "8px", borderRadius: "8px", textAlign: "center" }}>
+                  <span style={{ fontSize: "18px", display: "block" }}>👥</span>
+                  <strong style={{ fontSize: "11px" }}>{vehiculoVerDetalle.pasajeros || 5} Pasajeros</strong>
+                </div>
+                <div style={{ backgroundColor: "var(--primary-soft)", padding: "8px", borderRadius: "8px", textAlign: "center" }}>
+                  <span style={{ fontSize: "18px", display: "block" }}>🧳</span>
+                  <strong style={{ fontSize: "11px" }}>{vehiculoVerDetalle.maletas || 2} Maletas</strong>
+                </div>
+                <div style={{ backgroundColor: "var(--primary-soft)", padding: "8px", borderRadius: "8px", textAlign: "center" }}>
+                  <span style={{ fontSize: "18px", display: "block" }}>⚙️</span>
+                  <strong style={{ fontSize: "11px" }}>{vehiculoVerDetalle.transmision || "Automática"}</strong>
+                </div>
+                <div style={{ backgroundColor: "var(--primary-soft)", padding: "8px", borderRadius: "8px", textAlign: "center" }}>
+                  <span style={{ fontSize: "18px", display: "block" }}>⛽</span>
+                  <strong style={{ fontSize: "11px" }}>{vehiculoVerDetalle.combustible || "Gasolina"}</strong>
+                </div>
+                <div style={{ backgroundColor: "var(--primary-soft)", padding: "8px", borderRadius: "8px", textAlign: "center" }}>
+                  <span style={{ fontSize: "18px", display: "block" }}>❄️</span>
+                  <strong style={{ fontSize: "11px" }}>A/C Climatizador</strong>
+                </div>
+                <div style={{ backgroundColor: "var(--primary-soft)", padding: "8px", borderRadius: "8px", textAlign: "center" }}>
+                  <span style={{ fontSize: "18px", display: "block" }}>💰</span>
+                  <strong style={{ fontSize: "11px" }}>${Number(vehiculoVerDetalle.tarifaDiaria).toFixed(2)}/día</strong>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", borderTop: "1px solid var(--border)", paddingTop: "14px" }}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setVehiculoVerDetalle(null)}
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => {
+                    const sel = vehiculoVerDetalle;
+                    setVehiculoVerDetalle(null);
+                    editarVehiculo(sel);
+                  }}
+                >
+                  ✏️ Modificar Ficha
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Monitor de Vencimientos Legales */}
       {mostrarMonitorVencimientos && (
@@ -903,96 +1304,121 @@ export default function VehiculosPage() {
             style={{
               backgroundColor: "var(--surface)",
               borderRadius: "14px",
-              maxWidth: "750px",
+              maxWidth: "850px",
               width: "100%",
               maxHeight: "90vh",
               overflowY: "auto",
               padding: "28px",
-              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.3)",
               color: "var(--text)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <div>
-                <h2 style={{ margin: "0 0 2px 0", fontSize: "18px" }}>
-                  🛡️ Monitor de Seguros & Vencimientos de Flota
-                </h2>
-                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                  Auditoría legal de pólizas de seguro, marbetes e inspecciones técnicas.
-                </span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "24px" }}>🛡️</span>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "18px" }}>
+                    Auditoría de Seguros, Marbetes & Documentos Legales
+                  </h2>
+                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                    Control de pólizas y alertas preventivas a 30 días
+                  </span>
+                </div>
               </div>
               <button
                 className="secondary-button"
-                style={{ padding: "4px 8px" }}
+                style={{ padding: "6px 10px" }}
                 onClick={() => setMostrarMonitorVencimientos(false)}
               >
                 ✕
               </button>
             </div>
 
-            {/* Tarjetas de Semáforo */}
+            {/* Resumen de Estado */}
             {resumenVencimientos && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
-                <div style={{ padding: "12px", background: "var(--danger-soft)", borderRadius: "8px", border: "1px solid #fecaca" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "var(--danger)" }}>🔴 SEGUROS VENCIDOS</span>
-                  <div style={{ fontSize: "22px", fontWeight: "bold", color: "var(--danger)", marginTop: "2px" }}>
-                    {resumenVencimientos.vencidos} autos
-                  </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "20px" }}>
+                <div style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: "12px", borderRadius: "8px", textAlign: "center" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Total Auditados</div>
+                  <strong style={{ fontSize: "18px" }}>{resumenVencimientos.total}</strong>
                 </div>
-
-                <div style={{ padding: "12px", background: "var(--warning-soft)", borderRadius: "8px", border: "1px solid #fde68a" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "var(--warning)" }}>🟡 POR VENCER (&lt;30d)</span>
-                  <div style={{ fontSize: "22px", fontWeight: "bold", color: "var(--warning)", marginTop: "2px" }}>
-                    {resumenVencimientos.porVencer} autos
-                  </div>
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "12px", borderRadius: "8px", textAlign: "center", color: "var(--success)" }}>
+                  <div style={{ fontSize: "11px" }}>Al Día</div>
+                  <strong style={{ fontSize: "18px" }}>{resumenVencimientos.alDia}</strong>
                 </div>
-
-                <div style={{ padding: "12px", background: "var(--success-soft)", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "bold", color: "var(--success)" }}>🟢 PÓLIZAS AL DÍA</span>
-                  <div style={{ fontSize: "22px", fontWeight: "bold", color: "var(--success)", marginTop: "2px" }}>
-                    {resumenVencimientos.alDia} autos
-                  </div>
+                <div style={{ background: "#fefce8", border: "1px solid #fef08a", padding: "12px", borderRadius: "8px", textAlign: "center", color: "var(--warning)" }}>
+                  <div style={{ fontSize: "11px" }}>Por Vencer (≤30d)</div>
+                  <strong style={{ fontSize: "18px" }}>{resumenVencimientos.porVencer}</strong>
+                </div>
+                <div style={{ background: "#fef2f2", border: "1px solid #fecaca", padding: "12px", borderRadius: "8px", textAlign: "center", color: "var(--danger)" }}>
+                  <div style={{ fontSize: "11px" }}>Vencidos</div>
+                  <strong style={{ fontSize: "18px" }}>{resumenVencimientos.vencidos}</strong>
                 </div>
               </div>
             )}
 
-            {/* Tabla de Vencimientos */}
-            <div className="table-container" style={{ marginBottom: "20px" }}>
+            {/* Botón de Disparo a Telegram */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", backgroundColor: "var(--primary-soft)", padding: "12px 16px", borderRadius: "8px" }}>
+              <div style={{ fontSize: "13px" }}>
+                📲 <b>Canal de Alertas Telegram:</b> Envía un informe detallado con pólizas por vencer.
+              </div>
+              <button
+                type="button"
+                className="primary-button"
+                style={{ padding: "8px 14px", fontSize: "12px" }}
+                onClick={enviarAlertaTelegram}
+                disabled={notificandoTelegram}
+              >
+                {notificandoTelegram ? "Enviando..." : "📢 Notificar a Telegram"}
+              </button>
+            </div>
+
+            {/* Lista de Vehículos y Fechas */}
+            <div className="table-container">
               <table className="data-table" style={{ fontSize: "12px" }}>
                 <thead>
                   <tr>
-                    <th>Vehículo</th>
-                    <th>Póliza de Seguro</th>
-                    <th>Vencimiento</th>
+                    <th>Vehículo / Placa</th>
+                    <th>Póliza Registrada</th>
+                    <th>Vencimiento Seguro</th>
                     <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {reporteVencimientos.map((r) => (
-                    <tr key={r.id}>
+                  {reporteVencimientos.map((rep) => (
+                    <tr key={rep.id}>
                       <td>
-                        <strong>{r.marca} {r.modelo}</strong> (<code>{r.placa}</code>)
+                        <strong>{rep.marca} {rep.modelo}</strong>
+                        <div style={{ color: "var(--text-secondary)", fontSize: "11px" }}>
+                          Placa: {rep.placa}
+                        </div>
                       </td>
-                      <td>{r.seguroPoliza}</td>
+                      <td>{rep.seguroPoliza}</td>
                       <td>
-                        {r.seguroVencimiento
-                          ? new Date(r.seguroVencimiento).toLocaleDateString("es-DO")
-                          : "Sin fecha"}
+                        {rep.seguroVencimiento
+                          ? new Date(rep.seguroVencimiento).toLocaleDateString("es-DO")
+                          : "No registrada"}
+                        {rep.diasRestantesSeguro !== null && (
+                          <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                            {rep.diasRestantesSeguro < 0
+                              ? `Expiró hace ${Math.abs(rep.diasRestantesSeguro)} días`
+                              : `Quedan ${rep.diasRestantesSeguro} días`}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span
                           className={`badge ${
-                            r.estadoSeguro === "AL_DIA"
+                            rep.estadoSeguro === "AL_DIA"
                               ? "badge-disponible"
-                              : r.estadoSeguro === "POR_VENCER"
+                              : rep.estadoSeguro === "POR_VENCER"
                               ? "badge-mantenimiento"
                               : "badge-inactivo"
                           }`}
                         >
-                          {r.estadoSeguro === "AL_DIA"
-                            ? "🟢 Vigente"
-                            : r.estadoSeguro === "POR_VENCER"
-                            ? `🟡 Vence en ${r.diasRestantesSeguro}d`
+                          {rep.estadoSeguro === "AL_DIA"
+                            ? "🟢 Al Día"
+                            : rep.estadoSeguro === "POR_VENCER"
+                            ? "🟡 Por Vencer"
                             : "🔴 Vencido"}
                         </span>
                       </td>
@@ -1002,24 +1428,13 @@ export default function VehiculosPage() {
               </table>
             </div>
 
-            {/* Botones del Modal */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ marginTop: "20px", textAlign: "right" }}>
               <button
                 type="button"
                 className="secondary-button"
-                style={{ borderColor: "#38bdf8", color: "#0284c7" }}
-                onClick={enviarAlertaTelegram}
-                disabled={notificandoTelegram}
-              >
-                {notificandoTelegram ? "⏳ Enviando..." : "📲 Enviar Auditoría a Telegram"}
-              </button>
-
-              <button
-                type="button"
-                className="primary-button"
                 onClick={() => setMostrarMonitorVencimientos(false)}
               >
-                Cerrar Monitor
+                Cerrar
               </button>
             </div>
           </div>

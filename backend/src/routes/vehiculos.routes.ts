@@ -272,6 +272,15 @@ router.post("/", async (req, res) => {
       vin,
       kilometraje,
       tarifaDiaria,
+      fotoUrl,
+      imagenes,
+      categoria,
+      transmision,
+      combustible,
+      pasajeros,
+      maletas,
+      puertas,
+      aireAcondicionado,
       estado,
       seguroPoliza,
       seguroVencimiento,
@@ -315,6 +324,15 @@ router.post("/", async (req, res) => {
         vin: vin ? vin.trim() : null,
         kilometraje: kilometrajeNumero,
         tarifaDiaria: tarifaNumero,
+        fotoUrl: fotoUrl ? String(fotoUrl).trim() : null,
+        imagenes: imagenes || null,
+        categoria: categoria ? String(categoria).trim() : "SEDAN",
+        transmision: transmision ? String(transmision).trim() : "AUTOMATICA",
+        combustible: combustible ? String(combustible).trim() : "GASOLINA",
+        pasajeros: pasajeros !== undefined ? Number(pasajeros) : 5,
+        maletas: maletas !== undefined ? Number(maletas) : 2,
+        puertas: puertas !== undefined ? Number(puertas) : 4,
+        aireAcondicionado: aireAcondicionado !== undefined ? Boolean(aireAcondicionado) : true,
         estado: estadoConvertido ?? EstadoVehiculo.DISPONIBLE,
         seguroPoliza: seguroPoliza ? String(seguroPoliza).trim() : null,
         seguroVencimiento: seguroVencimiento ? new Date(seguroVencimiento) : null,
@@ -355,6 +373,15 @@ router.put("/:id", async (req, res) => {
       vin,
       kilometraje,
       tarifaDiaria,
+      fotoUrl,
+      imagenes,
+      categoria,
+      transmision,
+      combustible,
+      pasajeros,
+      maletas,
+      puertas,
+      aireAcondicionado,
       estado,
       seguroPoliza,
       seguroVencimiento,
@@ -371,6 +398,15 @@ router.put("/:id", async (req, res) => {
     if (vin !== undefined) dataToUpdate.vin = vin ? vin.trim() : null;
     if (kilometraje !== undefined) dataToUpdate.kilometraje = Number(kilometraje);
     if (tarifaDiaria !== undefined) dataToUpdate.tarifaDiaria = Number(tarifaDiaria);
+    if (fotoUrl !== undefined) dataToUpdate.fotoUrl = fotoUrl ? String(fotoUrl).trim() : null;
+    if (imagenes !== undefined) dataToUpdate.imagenes = imagenes;
+    if (categoria !== undefined) dataToUpdate.categoria = String(categoria).trim();
+    if (transmision !== undefined) dataToUpdate.transmision = String(transmision).trim();
+    if (combustible !== undefined) dataToUpdate.combustible = String(combustible).trim();
+    if (pasajeros !== undefined) dataToUpdate.pasajeros = Number(pasajeros);
+    if (maletas !== undefined) dataToUpdate.maletas = Number(maletas);
+    if (puertas !== undefined) dataToUpdate.puertas = Number(puertas);
+    if (aireAcondicionado !== undefined) dataToUpdate.aireAcondicionado = Boolean(aireAcondicionado);
     if (seguroPoliza !== undefined) dataToUpdate.seguroPoliza = seguroPoliza ? String(seguroPoliza).trim() : null;
     if (seguroVencimiento !== undefined) dataToUpdate.seguroVencimiento = seguroVencimiento ? new Date(seguroVencimiento) : null;
     if (marbeteVencimiento !== undefined) dataToUpdate.marbeteVencimiento = marbeteVencimiento ? new Date(marbeteVencimiento) : null;
