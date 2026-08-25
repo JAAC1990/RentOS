@@ -784,3 +784,29 @@ a {
     font-size: 24px;
   }
 }
+
+/* Reglas Globales de Impresión Limpia (Print Styles) */
+@media print {
+  .sidebar,
+  .topbar,
+  .no-print,
+  button,
+  .btn-action-edit,
+  .btn-action-delete {
+    display: none !important;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .main-layout {
+    display: block !important;
+  }
+
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
