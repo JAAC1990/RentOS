@@ -123,11 +123,13 @@ export default function ConfiguracionPage() {
     reader.readAsDataURL(file);
   };
 
-  // Parámetros de Alquiler
+  // Parámetros de Alquiler y Plantilla de Contrato
   const [moneda, setMoneda] = useState("USD");
   const [depositoEstandar, setDepositoEstandar] = useState("200.00");
   const [limiteKm, setLimiteKm] = useState("200");
   const [cargoKmExtra, setCargoKmExtra] = useState("0.25");
+  const [tipoPlantillaContrato, setTipoPlantillaContrato] = useState("ESTANDAR_DOMINICANA");
+  const [clausulasPersonalizadas, setClausulasPersonalizadas] = useState("");
   const [terminosContrato, setTerminosContrato] = useState("");
   const [telegramChatId, setTelegramChatId] = useState("");
 
@@ -146,7 +148,7 @@ export default function ConfiguracionPage() {
       const res = await fetch(`${API_RENTCARS}/${targetId}`);
       if (!res.ok) throw new Error("No fue posible cargar los datos de la empresa.");
 
-      const data: RentCar = await res.json();
+      const data = await res.json();
       setRentCar(data);
 
       setNombre(data.nombre || "");
@@ -163,6 +165,8 @@ export default function ConfiguracionPage() {
       setDepositoEstandar(String(data.depositoEstandar || "200.00"));
       setLimiteKm(String(data.limiteKilometrajeDiario || "200"));
       setCargoKmExtra(String(data.cargoKmExtra || "0.25"));
+      setTipoPlantillaContrato(data.tipoPlantillaContrato || "ESTANDAR_DOMINICANA");
+      setClausulasPersonalizadas(data.clausulasPersonalizadas || "");
       setTerminosContrato(
         data.terminosContrato ||
           "El cliente se compromete a devolver el vehículo en las mismas condiciones mecánicas y de combustible en que fue recibido. Cualquier infracción de tránsito durante el período de renta es responsabilidad exclusiva del conductor."
@@ -209,6 +213,8 @@ export default function ConfiguracionPage() {
         depositoEstandar: Number(depositoEstandar),
         limiteKilometrajeDiario: Number(limiteKm),
         cargoKmExtra: Number(cargoKmExtra),
+        tipoPlantillaContrato,
+        clausulasPersonalizadas: clausulasPersonalizadas.trim() || null,
         terminosContrato: terminosContrato.trim() || null,
         telegramChatId: telegramChatId.trim() || null,
       };
@@ -746,21 +752,106 @@ export default function ConfiguracionPage() {
                 />
               </div>
 
+              {/* Selector de Plantilla de Contrato */}
+              <div className="form-field" style={{ gridColumn: "span 3", backgroundColor: "var(--primary-soft, #f0f9ff)", padding: "16px", borderRadius: "10px", border: "1px solid #bfdbfe" }}>
+                <label style={{ fontSize: "14px", fontWeight: 800, color: "var(--primary, #0284c7)", display: "block", marginBottom: "8px" }}>
+                  📜 Formato de Contrato Legal & Cláusulas
+                </label>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
+                  <div
+                    onClick={() => setTipoPlantillaContrato("ESTANDAR_DOMINICANA")}
+                    style={{
+                      border: tipoPlantillaContrato === "ESTANDAR_DOMINICANA" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                      backgroundColor: tipoPlantillaContrato === "ESTANDAR_DOMINICANA" ? "#ffffff" : "var(--surface)",
+                      borderRadius: "10px",
+                      padding: "12px 14px",
+                      cursor: "pointer",
+                      display: "flex",
+                      gap: "10px",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="tipoPlantilla"
+                      checked={tipoPlantillaContrato === "ESTANDAR_DOMINICANA"}
+                      onChange={() => setTipoPlantillaContrato("ESTANDAR_DOMINICANA")}
+                      style={{ marginTop: "3px" }}
+                    />
+                    <div>
+                      <strong style={{ fontSize: "13px", display: "block" }}>
+                        🇩🇴 Plantilla Oficial Dominicana (Recomendada)
+                      </strong>
+                      <span style={{ fontSize: "11px", color: "var(--text-secondary)", lineHeight: "1.4", display: "block", marginTop: "2px" }}>
+                        Diseño físico auto-rellenable con logotipo de tu empresa, medidor de combustible, diagrama de daños 360°, checklist de 24 accesorios, código QR de autenticidad y leyes dominicanas (Ley 483 y Ley 63-17).
+                      </span>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setTipoPlantillaContrato("PERSONALIZADA")}
+                    style={{
+                      border: tipoPlantillaContrato === "PERSONALIZADA" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                      backgroundColor: tipoPlantillaContrato === "PERSONALIZADA" ? "#ffffff" : "var(--surface)",
+                      borderRadius: "10px",
+                      padding: "12px 14px",
+                      cursor: "pointer",
+                      display: "flex",
+                      gap: "10px",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="tipoPlantilla"
+                      checked={tipoPlantillaContrato === "PERSONALIZADA"}
+                      onChange={() => setTipoPlantillaContrato("PERSONALIZADA")}
+                      style={{ marginTop: "3px" }}
+                    />
+                    <div>
+                      <strong style={{ fontSize: "13px", display: "block" }}>
+                        ⚙️ Plantilla Personalizada de la Empresa
+                      </strong>
+                      <span style={{ fontSize: "11px", color: "var(--text-secondary)", lineHeight: "1.4", display: "block", marginTop: "2px" }}>
+                        Permite a tu empresa redactar o pegar cláusulas legales particulares formuladas por tu propio abogado o asesor legal sin alterar el formato de impresión.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {tipoPlantillaContrato === "PERSONALIZADA" && (
+                  <div>
+                    <label htmlFor="clausulasPersonalizadas" style={{ fontSize: "12px", fontWeight: 700, marginBottom: "4px", display: "block" }}>
+                      Redacta o pega las Cláusulas Legales de tu Empresa:
+                    </label>
+                    <textarea
+                      id="clausulasPersonalizadas"
+                      rows={6}
+                      placeholder="Pega aquí el texto legal de tu contrato (Preámbulo, Primero, Segundo, Cláusulas de penalización, Juzgados, etc.)..."
+                      style={{
+                        width: "100%",
+                        padding: "10px 14px",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border)",
+                        fontFamily: "inherit",
+                        fontSize: "12px",
+                        lineHeight: "1.5",
+                        boxSizing: "border-box",
+                      }}
+                      value={clausulasPersonalizadas}
+                      onChange={(e) => setClausulasPersonalizadas(e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+
               <div className="form-field" style={{ gridColumn: "span 3" }}>
-                <label htmlFor="terminosContrato">Términos y Cláusulas al Pie del Contrato Oficial</label>
-                <textarea
+                <label htmlFor="terminosContrato">Notas adicionales al pie del contrato</label>
+                <input
                   id="terminosContrato"
-                  rows={4}
-                  style={{
-                    width: "100%",
-                    padding: "10px 14px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border)",
-                    fontFamily: "inherit",
-                    fontSize: "13px",
-                    lineHeight: "1.5",
-                    boxSizing: "border-box",
-                  }}
+                  type="text"
+                  placeholder="Ej. Devolución con el mismo nivel de combustible. Prohibido fumar dentro del auto."
                   value={terminosContrato}
                   onChange={(e) => setTerminosContrato(e.target.value)}
                 />

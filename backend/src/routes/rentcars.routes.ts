@@ -180,6 +180,8 @@ router.put("/:id", async (req, res) => {
     if (whatsapp !== undefined) dataToUpdate.whatsapp = whatsapp ? String(whatsapp).trim() : null;
     if (moneda !== undefined) dataToUpdate.moneda = String(moneda).trim();
     if (terminosContrato !== undefined) dataToUpdate.terminosContrato = terminosContrato ? String(terminosContrato).trim() : null;
+    if (req.body.tipoPlantillaContrato !== undefined) dataToUpdate.tipoPlantillaContrato = String(req.body.tipoPlantillaContrato).trim();
+    if (req.body.clausulasPersonalizadas !== undefined) dataToUpdate.clausulasPersonalizadas = req.body.clausulasPersonalizadas ? String(req.body.clausulasPersonalizadas).trim() : null;
     if (limiteKilometrajeDiario !== undefined) dataToUpdate.limiteKilometrajeDiario = Number(limiteKilometrajeDiario);
     if (cargoKmExtra !== undefined) dataToUpdate.cargoKmExtra = Number(cargoKmExtra);
     if (depositoEstandar !== undefined) dataToUpdate.depositoEstandar = Number(depositoEstandar);

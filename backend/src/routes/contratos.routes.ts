@@ -1,22 +1,162 @@
 /**
  * ============================================================================
- * RentOS - Rutas de Contratos de Alquiler y Transacciones de Flota
+ * RentOS - Rutas de Contratos de Alquiler, Formalización Legal y Validación QR
  * ============================================================================
  * Maneja la formalización de contratos de arrendamiento, verificación de
- * disponibilidad, transición atómica de estados del vehículo (DISPONIBLE -> ALQUILADO)
- * y cálculo de extensiones, kilometrajes y pagos asociados.
+ * disponibilidad, transición atómica de estados del vehículo (DISPONIBLE -> ALQUILADO),
+ * firma digital táctil, checklist de inventario, medidor de combustible,
+ * validación pública de autenticidad por Código QR y cálculo de tarifas en RD$/USD.
  */
 
 import { Router } from "express";
+import crypto from "crypto";
 import { EstadoContrato, EstadoVehiculo } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
+/**
+ * Genera un código alfanumérico seguro para el código QR de verificación de autenticidad.
+ */
+function generarCodigoVerificacion(contratoId?: number): string {
+  const aleatorio = crypto.randomBytes(3).toString("hex").toUpperCase();
+  const sufijo = contratoId ? `-${contratoId}` : "";
+  return `CON-${aleatorio}${sufijo}`;
+}
+
+// ----------------------------------------------------------------------------
+// GET /api/contratos/verificar/:codigo
+// ----------------------------------------------------------------------------
+// Endpoint público para escanear el Código QR y verificar la legitimidad del contrato
+router.get("/verificar/:codigo", async (req, res) => {
+  try {
+    const { codigo } = req.params;
+
+    if (!codigo) {
+      return res.status(400).json({ error: "Código de verificación requerido." });
+    }
+
+    // Buscar contrato por código de verificación o por ID numérico
+    const esNumero = /^\d+$/.test(codigo);
+    const contrato = await prisma.contrato.findFirst({
+      where: esNumero
+        ? { OR: [{ codigoVerificacion: codigo }, { id: Number(codigo) }] }
+        : { codigoVerificacion: codigo },
+      include: {
+        rentCar: {
+          select: {
+            id: true,
+            nombre: true,
+            rnc: true,
+            telefono: true,
+            email: true,
+            direccion: true,
+            ciudad: true,
+            logoUrl: true,
+            colorPrimario: true,
+            whatsapp: true,
+            moneda: true,
+          },
+        },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            telefono: true,
+            email: true,
+            direccion: true,
+            estado: true,
+          },
+        },
+        vehiculo: {
+          select: {
+            id: true,
+            marca: true,
+            modelo: true,
+            anio: true,
+            placa: true,
+            color: true,
+            vin: true,
+            tarifaDiaria: true,
+            kilometraje: true,
+            estado: true,
+          },
+        },
+        entrega: {
+          include: {
+            defectos: true,
+          },
+        },
+      },
+    });
+
+    if (!contrato) {
+      return res.status(404).json({
+        valido: false,
+        mensaje: "⚠️ El código de contrato consultado no existe o ha sido revocado en la plataforma RentOS.",
+      });
+    }
+
+    // Generar hash criptográfico de integridad SHA-256
+    const hashIntegridad = crypto
+      .createHash("sha256")
+      .update(`${contrato.id}-${contrato.clienteId}-${contrato.vehiculoId}-${contrato.fechaInicio.toISOString()}-${contrato.createdAt.toISOString()}`)
+      .digest("hex")
+      .substring(0, 16)
+      .toUpperCase();
+
+    const diasRenta = Math.max(
+      1,
+      Math.ceil((new Date(contrato.fechaFin).getTime() - new Date(contrato.fechaInicio).getTime()) / (1000 * 60 * 60 * 24))
+    );
+
+    res.json({
+      valido: true,
+      selloAutenticidad: "VERIFICADO_OFICIAL_RENTOS",
+      codigoVerificacion: contrato.codigoVerificacion || `CON-${contrato.id}`,
+      hashIntegridad,
+      contratoId: contrato.id,
+      estado: contrato.estado,
+      fechaEmision: contrato.createdAt,
+      vigencia: {
+        inicio: contrato.fechaInicio,
+        fin: contrato.fechaFin,
+        dias: diasRenta,
+      },
+      empresa: contrato.rentCar,
+      cliente: {
+        nombreCompleto: `${contrato.cliente.nombre} ${contrato.cliente.apellido}`,
+        telefono: contrato.cliente.telefono,
+        email: contrato.cliente.email,
+        estado: contrato.cliente.estado,
+      },
+      vehiculo: {
+        descripcion: `${contrato.vehiculo.marca} ${contrato.vehiculo.modelo} (${contrato.vehiculo.anio})`,
+        placa: contrato.vehiculo.placa,
+        color: contrato.vehiculo.color,
+        vin: contrato.vehiculo.vin,
+      },
+      seguro: contrato.tipoSeguro || "FULL",
+      kilometrajeInicial: contrato.kilometrajeInicial,
+      kilometrajeFinal: contrato.kilometrajeFinal,
+      tieneFirmaDigital: Boolean(contrato.firmaCliente),
+      inspeccionRealizada: Boolean(contrato.entrega),
+    });
+  } catch (error) {
+    console.error("Error al verificar contrato por QR:", error);
+    res.status(500).json({
+      valido: false,
+      error: "No fue posible realizar la verificación del contrato.",
+      detalle: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
 // ----------------------------------------------------------------------------
 // GET /api/contratos
 // ----------------------------------------------------------------------------
-// Retorna todos los contratos registrados de una empresa con datos de cliente y auto
+// Retorna todos los contratos registrados de una empresa con datos de cliente, auto y empresa
 router.get("/", async (req, res) => {
   try {
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
@@ -29,6 +169,7 @@ router.get("/", async (req, res) => {
         createdAt: "desc",
       },
       include: {
+        rentCar: true,
         cliente: {
           select: {
             id: true,
@@ -36,6 +177,7 @@ router.get("/", async (req, res) => {
             apellido: true,
             telefono: true,
             email: true,
+            direccion: true,
           },
         },
         vehiculo: {
@@ -46,13 +188,19 @@ router.get("/", async (req, res) => {
             anio: true,
             placa: true,
             color: true,
+            vin: true,
             tarifaDiaria: true,
             kilometraje: true,
             estado: true,
           },
         },
         pagos: true,
-        entrega: true,
+        entrega: {
+          include: {
+            defectos: true,
+            evidencias: true,
+          },
+        },
       },
     });
 
@@ -81,6 +229,7 @@ router.get("/:id", async (req, res) => {
     const contrato = await prisma.contrato.findUnique({
       where: { id },
       include: {
+        rentCar: true,
         cliente: true,
         vehiculo: true,
         entrega: {
@@ -110,7 +259,7 @@ router.get("/:id", async (req, res) => {
 // ----------------------------------------------------------------------------
 // POST /api/contratos
 // ----------------------------------------------------------------------------
-// Crea un contrato de arrendamiento en una transacción atómica y bloquea el vehículo a ALQUILADO
+// Crea un contrato de arrendamiento con código QR, seguro, checklist y bloqueo atómico
 router.post("/", async (req, res) => {
   try {
     const {
@@ -122,6 +271,16 @@ router.post("/", async (req, res) => {
       tarifaDiaria,
       deposito,
       kilometrajeInicial,
+      tipoSeguro,
+      precioHora,
+      cobrosExtra,
+      deliveryMonto,
+      nivelCombustibleSalida,
+      inventarioChecklist,
+      firmaCliente,
+      firmaArrendador,
+      refFamiliarNombre,
+      refFamiliarTel,
       estado,
       observaciones,
     } = req.body;
@@ -190,6 +349,8 @@ router.post("/", async (req, res) => {
         ? Number(kilometrajeInicial)
         : vehiculo.kilometraje;
 
+    const codigoGenerado = generarCodigoVerificacion();
+
     // Transacción atómica: Crear contrato y actualizar vehículo
     const contrato = await prisma.$transaction(async (tx) => {
       const nuevo = await tx.contrato.create({
@@ -202,10 +363,22 @@ router.post("/", async (req, res) => {
           tarifaDiaria: tarifaNum,
           deposito: depositoNum,
           kilometrajeInicial: kmInicial,
+          codigoVerificacion: codigoGenerado,
+          tipoSeguro: tipoSeguro ? String(tipoSeguro) : "FULL",
+          precioHora: precioHora !== undefined && precioHora !== "" ? Number(precioHora) : null,
+          cobrosExtra: cobrosExtra !== undefined ? Number(cobrosExtra) : 0,
+          deliveryMonto: deliveryMonto !== undefined ? Number(deliveryMonto) : 0,
+          nivelCombustibleSalida: nivelCombustibleSalida ? String(nivelCombustibleSalida) : "100%",
+          inventarioChecklist: inventarioChecklist || null,
+          firmaCliente: firmaCliente ? String(firmaCliente) : null,
+          firmaArrendador: firmaArrendador ? String(firmaArrendador) : null,
+          refFamiliarNombre: refFamiliarNombre ? String(refFamiliarNombre).trim() : null,
+          refFamiliarTel: refFamiliarTel ? String(refFamiliarTel).trim() : null,
           estado: estadoContratoFinal,
           observaciones: observaciones ? String(observaciones).trim() : null,
         },
         include: {
+          rentCar: true,
           cliente: true,
           vehiculo: true,
         },
@@ -235,7 +408,7 @@ router.post("/", async (req, res) => {
 // ----------------------------------------------------------------------------
 // PUT /api/contratos/:id
 // ----------------------------------------------------------------------------
-// Actualiza datos del contrato, procesa extensiones o finaliza la renta liberando el vehículo
+// Actualiza datos del contrato, firmas, checklist o finaliza la renta liberando el vehículo
 router.put("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -259,6 +432,16 @@ router.put("/:id", async (req, res) => {
       tarifaDiaria,
       deposito,
       kilometrajeFinal,
+      tipoSeguro,
+      precioHora,
+      cobrosExtra,
+      deliveryMonto,
+      nivelCombustibleSalida,
+      inventarioChecklist,
+      firmaCliente,
+      firmaArrendador,
+      refFamiliarNombre,
+      refFamiliarTel,
       estado,
       observaciones,
     } = req.body;
@@ -273,13 +456,29 @@ router.put("/:id", async (req, res) => {
       if (tarifaDiaria !== undefined) dataToUpdate.tarifaDiaria = Number(tarifaDiaria);
       if (deposito !== undefined) dataToUpdate.deposito = Number(deposito);
       if (kilometrajeFinal !== undefined) dataToUpdate.kilometrajeFinal = Number(kilometrajeFinal);
+      if (tipoSeguro !== undefined) dataToUpdate.tipoSeguro = String(tipoSeguro);
+      if (precioHora !== undefined) dataToUpdate.precioHora = precioHora !== "" ? Number(precioHora) : null;
+      if (cobrosExtra !== undefined) dataToUpdate.cobrosExtra = Number(cobrosExtra);
+      if (deliveryMonto !== undefined) dataToUpdate.deliveryMonto = Number(deliveryMonto);
+      if (nivelCombustibleSalida !== undefined) dataToUpdate.nivelCombustibleSalida = String(nivelCombustibleSalida);
+      if (inventarioChecklist !== undefined) dataToUpdate.inventarioChecklist = inventarioChecklist;
+      if (firmaCliente !== undefined) dataToUpdate.firmaCliente = firmaCliente ? String(firmaCliente) : null;
+      if (firmaArrendador !== undefined) dataToUpdate.firmaArrendador = firmaArrendador ? String(firmaArrendador) : null;
+      if (refFamiliarNombre !== undefined) dataToUpdate.refFamiliarNombre = refFamiliarNombre ? String(refFamiliarNombre).trim() : null;
+      if (refFamiliarTel !== undefined) dataToUpdate.refFamiliarTel = refFamiliarTel ? String(refFamiliarTel).trim() : null;
       if (estado) dataToUpdate.estado = nuevoEstado;
       if (observaciones !== undefined) dataToUpdate.observaciones = observaciones ? String(observaciones).trim() : null;
+
+      // Asegurar código de verificación si no existiera
+      if (!existente.codigoVerificacion) {
+        dataToUpdate.codigoVerificacion = generarCodigoVerificacion(existente.id);
+      }
 
       const contrato = await tx.contrato.update({
         where: { id },
         data: dataToUpdate,
         include: {
+          rentCar: true,
           cliente: true,
           vehiculo: true,
           pagos: true,

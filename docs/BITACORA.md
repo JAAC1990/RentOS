@@ -501,32 +501,28 @@ El frontend de vehículos se comunica contra el endpoint de vehículos contempla
   - Validación de cero errores de compilación (`tsc` en backend y `vite build` en frontend).
 - **Resultado:** Código 100% autodocumentado, altamente legible y preparado para mantenimiento y escalabilidad a largo plazo.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### [2026-08-24] - Contrato Oficial Dominicano Auto-Rellenable con QR de Legitimidad, Diagrama 360°, Firma Táctil y Selector de Plantilla
+- **Problema/Necesidad:** Implementar la generación digital del contrato oficial dominicano basado en el formato físico de la industria, con auto-rellenado total de datos (cliente, vehículo, fechas, odómetros, desglose tarifario en RD$/US$, medidor de gasolina, checklist de 24 accesorios y diagrama 360°), código QR de legitimidad pública, firma digital en pantalla táctil, logotipo dinámico por empresa y opción de plantilla estándar vs personalizada.
+- **Decisión técnica:**
+  1. **Modelo de Datos (`schema.prisma`):**
+     - Ampliación de `RentCar`: `tipoPlantillaContrato` (`ESTANDAR_DOMINICANA` | `PERSONALIZADA`) y `clausulasPersonalizadas`.
+     - Ampliación de `Contrato`: `codigoVerificacion`, `tipoSeguro`, `precioHora`, `cobrosExtra`, `deliveryMonto`, `nivelCombustibleSalida`, `inventarioChecklist`, `firmaCliente`, `firmaArrendador`, `refFamiliarNombre`, `refFamiliarTel`.
+  2. **Validación QR Criptográfica (`contratos.routes.ts`):**
+     - Endpoint público `GET /api/contratos/verificar/:codigo` que devuelve el estado de autenticidad, hash SHA-256 de integridad, datos de la empresa emisora, vehículo autorizado y vigencia de alquiler.
+     - Generación automática de códigos de verificación seguros (`CON-XXXXXX`).
+  3. **Componente de Contrato Físico Imprimible (`ContratoDominicanoImprimible.tsx`):**
+     - Reproducción fidedigna del formato de papel físico: Logotipo y datos fiscales de la empresa en esquina superior izquierda, medidor de combustible visual `[E ▰▰▰▰ F]`, odómetros, tabla de tarifas (RD$/US$), diagrama de 4 vistas con pines de daños, checklist de 24 accesorios, cláusulas de Ley 483 y Ley 63-17, código QR dinámico incrustado y bloque notarial.
+  4. **Firma Digital Táctil (`ModalFirmaDigital.tsx`):**
+     - Lienzo interactivo Canvas touch/mouse para firma directa en celulares, tablets o laptops, estampada en Base64 en el contrato.
+  5. **Portal Público de Verificación (`VerificarContratoPage.tsx`):**
+     - Ruta pública `/verificar/:codigo` con sello verde oficial: *"✅ CONTRATO OFICIAL AUTÉNTICO Y REGISTRADO"*, para chequeo de DIGESETT, policías o clientes.
+  6. **Selector de Plantilla (`ConfiguracionPage.tsx`):**
+     - Opción para elegir entre *"Plantilla Estándar Dominicana (RentOS)"* o *"Plantilla Personalizada de la Empresa"* con editor de cláusulas particulares.
+  7. **Despacho WhatsApp (`ContratosPage.tsx`):**
+     - Envío directo del contrato oficial con enlace de verificación QR en 1 clic.
+- **Archivos afectados:** `prisma/schema.prisma`, `backend/src/routes/contratos.routes.ts`, `backend/src/routes/rentcars.routes.ts`, `frontend/src/App.tsx`, `frontend/src/components/ContratoDominicanoImprimible.tsx`, `frontend/src/components/ModalFirmaDigital.tsx`, `frontend/src/pages/Publico/VerificarContratoPage.tsx`, `frontend/src/pages/Contratos/ContratosPage.tsx`, `frontend/src/pages/Configuracion/ConfiguracionPage.tsx`, `docs/BITACORA.md`.
+- **Pruebas realizadas:**
+  - Sincronización Prisma (`npx prisma db push`).
+  - Pruebas de API `GET /api/contratos/verificar/3` retornando validación auténtica y hash SHA-256.
+  - Compilación TypeScript frontend (`npm run build`) y backend (`npx tsc`) con 0 errores.
+- **Resultado:** RentOS cuenta con emisión y validación de contratos oficiales legalmente robustos con tecnología QR y soporte multi-tenant de marca blanca.

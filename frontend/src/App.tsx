@@ -29,6 +29,7 @@ import SolicitudesPage from "./pages/SuperAdmin/SolicitudesPage";
 import BackupsSuperAdminPage from "./pages/SuperAdmin/BackupsSuperAdminPage";
 import LoginPage from "./pages/Auth/LoginPage";
 import RegistroRentCarPage from "./pages/Auth/RegistroRentCarPage";
+import VerificarContratoPage from "./pages/Publico/VerificarContratoPage";
 import "./App.css";
 
 /**
@@ -57,6 +58,9 @@ function AppRoutes() {
 
       {/* Catálogo Público de Reservas para Arrendatarios y Turistas */}
       <Route path="/reservar" element={<ReservasPublicasPage />} />
+
+      {/* Portal Público de Verificación de Autenticidad de Contrato QR */}
+      <Route path="/verificar/:codigo" element={<VerificarContratoPage />} />
 
       {/* Módulos Administrativos Protegidos por Autenticación */}
       <Route element={<RutaProtegida />}>
