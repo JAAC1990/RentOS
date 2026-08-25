@@ -595,27 +595,38 @@ export default function ContratosPage() {
         </div>
       </div>
 
-      {/* Tarjetas de Métricas de Flota y Contratos */}
-      <div className="metrics-grid">
-        <div className="metric-card">
-          <span className="metric-title">Total Contratos</span>
-          <span className="metric-value">{stats.total}</span>
-          <span className="metric-caption">Historial completo</span>
+      {/* Tarjetas de Estadísticas de Flota y Contratos */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon">📄</div>
+          <div className="stat-info">
+            <span className="stat-label">Total Contratos</span>
+            <strong className="stat-value">{stats.total}</strong>
+          </div>
         </div>
-        <div className="metric-card success">
-          <span className="metric-title">Autos en Renta (Activos)</span>
-          <span className="metric-value">{stats.activos}</span>
-          <span className="metric-caption">Flota en posesión de clientes</span>
+
+        <div className="stat-card">
+          <div className="stat-icon available">🔑</div>
+          <div className="stat-info">
+            <span className="stat-label">Autos en Renta (Activos)</span>
+            <strong className="stat-value">{stats.activos}</strong>
+          </div>
         </div>
-        <div className="metric-card warning">
-          <span className="metric-title">Reservas / Borradores</span>
-          <span className="metric-value">{stats.borradores}</span>
-          <span className="metric-caption">Pendientes de despacho</span>
+
+        <div className="stat-card">
+          <div className="stat-icon rented">📝</div>
+          <div className="stat-info">
+            <span className="stat-label">Reservas / Borradores</span>
+            <strong className="stat-value">{stats.borradores}</strong>
+          </div>
         </div>
-        <div className="metric-card">
-          <span className="metric-title">Finalizados</span>
-          <span className="metric-value">{stats.finalizados}</span>
-          <span className="metric-caption">Vehículos devueltos con éxito</span>
+
+        <div className="stat-card">
+          <div className="stat-icon maintenance">🏁</div>
+          <div className="stat-info">
+            <span className="stat-label">Finalizados</span>
+            <strong className="stat-value">{stats.finalizados}</strong>
+          </div>
         </div>
       </div>
 
@@ -948,12 +959,13 @@ export default function ContratosPage() {
         </section>
       )}
 
-      {/* Controles de Búsqueda y Filtros */}
-      <div className="controls-panel">
-        <div className="search-box">
+      {/* Barra de Filtros y Búsqueda */}
+      <div className="filter-bar">
+        <div className="search-input-wrapper">
           <span className="search-icon">🔍</span>
           <input
             type="text"
+            className="search-input"
             placeholder="Buscar por código QR, cliente, vehículo o placa..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
@@ -961,9 +973,12 @@ export default function ContratosPage() {
         </div>
 
         <div className="filter-group">
-          <label htmlFor="filtroEstado">Estado:</label>
+          <label htmlFor="filtroEstado" style={{ fontSize: "12px", fontWeight: 600 }}>
+            Estado:
+          </label>
           <select
             id="filtroEstado"
+            className="filter-select"
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
           >
@@ -973,6 +988,19 @@ export default function ContratosPage() {
             <option value="FINALIZADO">Finalizado</option>
             <option value="CANCELADO">Cancelado</option>
           </select>
+
+          {(busqueda || filtroEstado !== "TODOS") && (
+            <button
+              className="secondary-button"
+              style={{ padding: "8px 12px", fontSize: "12px" }}
+              onClick={() => {
+                setBusqueda("");
+                setFiltroEstado("TODOS");
+              }}
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
       </div>
 

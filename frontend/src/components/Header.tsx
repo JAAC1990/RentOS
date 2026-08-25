@@ -164,17 +164,39 @@ function Header() {
 
   return (
     <header className="topbar">
-      <div>
-        <div className="topbar-title">
-          {rentCar ? rentCar.nombre : "RentOS"}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div
+          style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "10px",
+            background: "linear-gradient(135deg, var(--primary) 0%, #2563eb 100%)",
+            color: "white",
+            display: "grid",
+            placeItems: "center",
+            fontSize: "20px",
+            boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
+            flexShrink: 0,
+          }}
+        >
+          🏢
         </div>
+        <div>
+          <div className="topbar-title" style={{ fontSize: "16px", fontWeight: 800, color: "var(--text)", lineHeight: 1.2 }}>
+            {rentCar ? rentCar.nombre : "RentOS"}
+          </div>
 
-        <div className="topbar-subtitle">
-          {usuario?.rol === "SUPERADMIN"
-            ? "👑 Modo SuperAdministrador Global (Vista Multitenant)"
-            : rentCar
-            ? `Plataforma SaaS • ${rentCar.ciudad}`
-            : "Sistema de gestión para Rent Cars"}
+          <div className="topbar-subtitle" style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "3px", display: "flex", alignItems: "center", gap: "6px" }}>
+            {usuario?.rol === "SUPERADMIN" ? (
+              <span className="badge badge-disponible" style={{ fontSize: "10px", padding: "1px 6px" }}>
+                👑 Modo SuperAdministrador Global
+              </span>
+            ) : rentCar ? (
+              <span>Plataforma SaaS • <b>{rentCar.ciudad}</b></span>
+            ) : (
+              <span>Sistema de gestión para Rent Cars</span>
+            )}
+          </div>
         </div>
       </div>
 
