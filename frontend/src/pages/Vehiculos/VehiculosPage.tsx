@@ -4,7 +4,10 @@
  * ============================================================================
  * Permite la administración integral del parque vehicular:
  * - Alta, edición y baja de vehículos con fotografía, ficha técnica (pasajeros, maletas,
- *   transmisión, combustible, A/C) y validación de placa dominicana y VIN.
+ *   transmisión, combustible, A/C) y validación estricta de placa (máx 7 caracteres) y año (máx 4 dígitos).
+ * - Selector interactivo de moneda (US$ / RD$) con switch convertidor en tiempo real según tasa de cambio.
+ * - Exportación completa a CSV de toda la flota mediante Blob UTF-8 seguro.
+ * - Mensaje de búsqueda sin resultados espaciado y legible.
  * - Monitoreo de estados (DISPONIBLE, ALQUILADO, MANTENIMIENTO, INACTIVO).
  * - Modal interactivo de Ficha Técnica y Fotos en alta resolución.
  * - Pestaña de Auditoría Legal con vencimientos de seguros y marbetes.
@@ -48,6 +51,7 @@ type FormularioVehiculo = {
   vin: string;
   kilometraje: string;
   tarifaDiaria: string;
+  monedaTarifa: "USD" | "DOP";
   fotoUrl: string;
   categoria: string;
   transmision: string;
@@ -83,6 +87,9 @@ type ResumenVencimientos = {
   alDia: number;
 };
 
+// Tasa de cambio de referencia (1 USD = 60.00 DOP)
+const TASA_DOLAR_PESO_DEFAULT = 60.00;
+
 const formularioInicial: FormularioVehiculo = {
   marca: "",
   modelo: "",
@@ -92,6 +99,7 @@ const formularioInicial: FormularioVehiculo = {
   vin: "",
   kilometraje: "0",
   tarifaDiaria: "",
+  monedaTarifa: "USD",
   fotoUrl: "",
   categoria: "SEDAN",
   transmision: "AUTOMATICA",
@@ -124,6 +132,10 @@ function obtenerFotoDefault(v: Vehiculo): string {
 export default function VehiculosPage() {
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [formulario, setFormulario] = useState<FormularioVehiculo>(formularioInicial);
+
+  // Control de tasa de cambio y visualización
+  const [tasaCambio, setTasaCambio] = useState<number>(TASA_DOLAR_PESO_DEFAULT);
+  const [monedaVisualizacion, setMonedaVisualizacion] = useState<"USD" | "DOP">("USD");
 
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -205,6 +217,26 @@ export default function VehiculosPage() {
     });
   }, [vehiculos, busqueda, filtroEstado]);
 
+  // Manejador del Switch de Moneda en Formulario (USD <-> DOP)
+  const alternarMonedaFormulario = (nuevaMoneda: "USD" | "DOP") => {
+    if (nuevaMoneda === formulario.monedaTarifa) return;
+
+    const valorActual = parseFloat(formulario.tarifaDiaria);
+    if (!isNaN(valorActual) && valorActual > 0) {
+      if (nuevaMoneda === "DOP") {
+        // De USD a DOP: Multiplicar por tasa
+        const convertido = (valorActual * tasaCambio).toFixed(2);
+        setFormulario((prev) => ({ ...prev, monedaTarifa: "DOP", tarifaDiaria: convertido }));
+      } else {
+        // De DOP a USD: Dividir entre tasa
+        const convertido = (valorActual / tasaCambio).toFixed(2);
+        setFormulario((prev) => ({ ...prev, monedaTarifa: "USD", tarifaDiaria: convertido }));
+      }
+    } else {
+      setFormulario((prev) => ({ ...prev, monedaTarifa: nuevaMoneda }));
+    }
+  };
+
   const handleSubirFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -265,14 +297,27 @@ export default function VehiculosPage() {
       setErrorFormulario("El modelo es obligatorio.");
       return false;
     }
-    if (!formulario.placa.trim()) {
+
+    // Validación estricta de Placa: Máximo 7 caracteres
+    const placaLimpia = formulario.placa.trim().toUpperCase();
+    if (!placaLimpia) {
       setErrorFormulario("La placa es obligatoria.");
       return false;
     }
+    if (placaLimpia.length > 7) {
+      setErrorFormulario("La placa no puede tener más de 7 caracteres (ej. A123456 o G771144).");
+      return false;
+    }
 
-    const anio = Number(formulario.anio);
-    if (!anio || anio < 1990 || anio > new Date().getFullYear() + 2) {
-      setErrorFormulario("El año debe ser un valor válido.");
+    // Validación estricta de Año: Exactamente 4 dígitos
+    const anioDigits = formulario.anio.replace(/\D/g, "");
+    if (!anioDigits || anioDigits.length !== 4) {
+      setErrorFormulario("El año debe tener exactamente 4 números (ej. 2024).");
+      return false;
+    }
+    const anioNum = Number(anioDigits);
+    if (anioNum < 1990 || anioNum > new Date().getFullYear() + 2) {
+      setErrorFormulario(`El año debe estar entre 1990 y ${new Date().getFullYear() + 2}.`);
       return false;
     }
 
@@ -306,15 +351,21 @@ export default function VehiculosPage() {
       setErrorFormulario("");
       setMensaje("");
 
+      // Si la tarifa fue ingresada en DOP, la estandarizamos o guardamos según corresponda
+      let tarifaFinalUSD = Number(formulario.tarifaDiaria);
+      if (formulario.monedaTarifa === "DOP") {
+        tarifaFinalUSD = Number((tarifaFinalUSD / tasaCambio).toFixed(2));
+      }
+
       const datos = {
         marca: formulario.marca.trim(),
         modelo: formulario.modelo.trim(),
-        anio: Number(formulario.anio),
+        anio: Number(formulario.anio.slice(0, 4)),
         color: formulario.color.trim() || undefined,
-        placa: formulario.placa.trim(),
+        placa: formulario.placa.trim().toUpperCase().slice(0, 7),
         vin: formulario.vin.trim() || undefined,
         kilometraje: Number(formulario.kilometraje),
-        tarifaDiaria: Number(formulario.tarifaDiaria),
+        tarifaDiaria: tarifaFinalUSD,
         fotoUrl: formulario.fotoUrl.trim() || undefined,
         categoria: formulario.categoria,
         transmision: formulario.transmision,
@@ -371,12 +422,13 @@ export default function VehiculosPage() {
     setFormulario({
       marca: vehiculo.marca ?? "",
       modelo: vehiculo.modelo ?? "",
-      anio: String(vehiculo.anio ?? ""),
+      anio: String(vehiculo.anio ?? "").slice(0, 4),
       color: vehiculo.color ?? "",
-      placa: vehiculo.placa ?? "",
+      placa: (vehiculo.placa ?? "").slice(0, 7),
       vin: vehiculo.vin ?? "",
       kilometraje: String(vehiculo.kilometraje ?? 0),
       tarifaDiaria: String(vehiculo.tarifaDiaria ?? ""),
+      monedaTarifa: "USD",
       fotoUrl: vehiculo.fotoUrl ?? "",
       categoria: vehiculo.categoria ?? "SEDAN",
       transmision: vehiculo.transmision ?? "AUTOMATICA",
@@ -449,8 +501,12 @@ export default function VehiculosPage() {
     }
   };
 
+  // Exportar TODOS los vehículos a CSV de forma segura mediante Blob UTF-8
   const exportarCSV = () => {
-    if (vehiculos.length === 0) return;
+    if (vehiculos.length === 0) {
+      alert("No hay vehículos registrados para exportar.");
+      return;
+    }
 
     const encabezados = [
       "ID",
@@ -462,44 +518,68 @@ export default function VehiculosPage() {
       "VIN",
       "Kilometraje",
       "Estado",
-      "Tarifa Diaria",
+      "Tarifa Diaria (USD)",
+      "Tarifa Diaria (DOP)",
       "Categoria",
       "Transmision",
       "Combustible",
+      "Pasajeros",
+      "Maletas",
       "Seguro Poliza",
       "Vencimiento Seguro",
+      "Vencimiento Marbete",
     ];
-    const filas = vehiculos.map((v) => [
-      v.id,
-      `"${v.marca}"`,
-      `"${v.modelo}"`,
-      v.anio,
-      `"${v.color || ""}"`,
-      `"${v.placa}"`,
-      `"${v.vin || ""}"`,
-      v.kilometraje,
-      v.estado,
-      v.tarifaDiaria,
-      v.categoria || "SEDAN",
-      v.transmision || "AUTOMATICA",
-      v.combustible || "GASOLINA",
-      `"${v.seguroPoliza || ""}"`,
-      v.seguroVencimiento ? new Date(v.seguroVencimiento).toLocaleDateString("es-DO") : "",
-    ]);
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [encabezados.join(","), ...filas.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const filas = vehiculos.map((v) => {
+      const tarifaUSD = Number(v.tarifaDiaria) || 0;
+      const tarifaDOP = (tarifaUSD * tasaCambio).toFixed(2);
+
+      return [
+        v.id,
+        `"${(v.marca || "").replace(/"/g, '""')}"`,
+        `"${(v.modelo || "").replace(/"/g, '""')}"`,
+        v.anio,
+        `"${(v.color || "").replace(/"/g, '""')}"`,
+        `"${(v.placa || "").replace(/"/g, '""')}"`,
+        `"${(v.vin || "").replace(/"/g, '""')}"`,
+        v.kilometraje,
+        v.estado,
+        tarifaUSD.toFixed(2),
+        tarifaDOP,
+        `"${v.categoria || "SEDAN"}"`,
+        `"${v.transmision || "AUTOMATICA"}"`,
+        `"${v.combustible || "GASOLINA"}"`,
+        v.pasajeros || 5,
+        v.maletas || 2,
+        `"${(v.seguroPoliza || "").replace(/"/g, '""')}"`,
+        v.seguroVencimiento ? new Date(v.seguroVencimiento).toLocaleDateString("es-DO") : "",
+        v.marbeteVencimiento ? new Date(v.marbeteVencimiento).toLocaleDateString("es-DO") : "",
+      ].join(",");
+    });
+
+    const csvContent = [encabezados.join(","), ...filas].join("\r\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `RentOS_Vehiculos_${new Date().toISOString().split("T")[0]}.csv`
+      `RentOS_Flota_Completa_${new Date().toISOString().split("T")[0]}.csv`
     );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Formato visual de precios según la moneda activa
+  const formatearPrecio = (tarifaUSD: number | string) => {
+    const valor = Number(tarifaUSD) || 0;
+    if (monedaVisualizacion === "DOP") {
+      const enPesos = valor * tasaCambio;
+      return `RD$ ${enPesos.toLocaleString("es-DO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return `$${valor.toFixed(2)} USD`;
   };
 
   return (
@@ -508,10 +588,82 @@ export default function VehiculosPage() {
       <div className="page-heading">
         <div>
           <h1>Gestión de Flota & Vehículos</h1>
-          <p>Administra la flota, fotografías, fichas técnicas, pólizas de seguros y vencimientos legales.</p>
+          <p>Administra la flota, fotografías, fichas técnicas, conversión de moneda, pólizas y vencimientos legales.</p>
         </div>
 
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+          {/* Selector Global de Moneda (USD / DOP) */}
+          <div
+            style={{
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              padding: "4px 8px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "12px",
+            }}
+          >
+            <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>Ver Precios en:</span>
+            <div style={{ display: "flex", backgroundColor: "var(--background)", borderRadius: "6px", padding: "2px" }}>
+              <button
+                type="button"
+                style={{
+                  border: "none",
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  backgroundColor: monedaVisualizacion === "USD" ? "var(--primary)" : "transparent",
+                  color: monedaVisualizacion === "USD" ? "#ffffff" : "var(--text)",
+                  cursor: "pointer",
+                }}
+                onClick={() => setMonedaVisualizacion("USD")}
+              >
+                💵 US$
+              </button>
+              <button
+                type="button"
+                style={{
+                  border: "none",
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  backgroundColor: monedaVisualizacion === "DOP" ? "var(--primary)" : "transparent",
+                  color: monedaVisualizacion === "DOP" ? "#ffffff" : "var(--text)",
+                  cursor: "pointer",
+                }}
+                onClick={() => setMonedaVisualizacion("DOP")}
+              >
+                🇩🇴 RD$
+              </button>
+            </div>
+            <span style={{ fontSize: "11px", color: "var(--text-secondary)", marginLeft: "4px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+              Tasa: 1$ =
+              <input
+                type="number"
+                min="1"
+                step="0.5"
+                value={tasaCambio}
+                onChange={(e) => setTasaCambio(parseFloat(e.target.value) || TASA_DOLAR_PESO_DEFAULT)}
+                style={{
+                  width: "55px",
+                  padding: "2px 4px",
+                  fontSize: "11px",
+                  borderRadius: "4px",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  color: "var(--text)",
+                  textAlign: "center",
+                }}
+                title="Tasa de cambio USD a DOP (editable)"
+              />
+              RD$
+            </span>
+          </div>
+
           <button
             className="secondary-button"
             style={{
@@ -531,8 +683,12 @@ export default function VehiculosPage() {
             )}
           </button>
 
-          <button className="secondary-button" onClick={exportarCSV}>
-            📥 Exportar CSV
+          <button
+            className="secondary-button"
+            onClick={exportarCSV}
+            title={`Exportar toda la flota (${vehiculos.length} vehículos) a CSV`}
+          >
+            📥 Exportar CSV ({vehiculos.length})
           </button>
 
           <button
@@ -692,18 +848,20 @@ export default function VehiculosPage() {
                 />
               </div>
 
+              {/* AÑO: Máximo 4 dígitos */}
               <div className="form-field">
-                <label htmlFor="anio">Año *</label>
+                <label htmlFor="anio">Año * (Máximo 4 números)</label>
                 <input
                   id="anio"
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
                   placeholder="2024"
-                  min="1990"
-                  max={new Date().getFullYear() + 2}
                   value={formulario.anio}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, anio: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
+                    setFormulario((prev) => ({ ...prev, anio: digits }));
+                  }}
                   required
                 />
               </div>
@@ -721,16 +879,19 @@ export default function VehiculosPage() {
                 />
               </div>
 
+              {/* PLACA: Máximo 7 dígitos/caracteres */}
               <div className="form-field">
-                <label htmlFor="placa">Placa / Matrícula *</label>
+                <label htmlFor="placa">Placa / Matrícula * (Máximo 7 caracteres)</label>
                 <input
                   id="placa"
                   type="text"
+                  maxLength={7}
                   placeholder="Ej. A123456"
                   value={formulario.placa}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, placa: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase().slice(0, 7);
+                    setFormulario((prev) => ({ ...prev, placa: val }));
+                  }}
                   required
                 />
               </div>
@@ -845,14 +1006,55 @@ export default function VehiculosPage() {
                 />
               </div>
 
+              {/* TARIFA DIARIA CON SWITCH CONVERTIDOR USD <-> DOP */}
               <div className="form-field">
-                <label htmlFor="tarifaDiaria">Tarifa Diaria (USD / DOP) *</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <label htmlFor="tarifaDiaria" style={{ margin: 0 }}>
+                    Tarifa Diaria * ({formulario.monedaTarifa === "USD" ? "Dólares US$" : "Pesos RD$"})
+                  </label>
+                  {/* Botones Switch USD/DOP */}
+                  <div style={{ display: "flex", backgroundColor: "var(--background)", borderRadius: "6px", padding: "2px", border: "1px solid var(--border)" }}>
+                    <button
+                      type="button"
+                      style={{
+                        border: "none",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        backgroundColor: formulario.monedaTarifa === "USD" ? "var(--primary)" : "transparent",
+                        color: formulario.monedaTarifa === "USD" ? "#ffffff" : "var(--text)",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => alternarMonedaFormulario("USD")}
+                    >
+                      💵 US$
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        border: "none",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        backgroundColor: formulario.monedaTarifa === "DOP" ? "var(--primary)" : "transparent",
+                        color: formulario.monedaTarifa === "DOP" ? "#ffffff" : "var(--text)",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => alternarMonedaFormulario("DOP")}
+                    >
+                      🇩🇴 RD$
+                    </button>
+                  </div>
+                </div>
+
                 <input
                   id="tarifaDiaria"
                   type="number"
                   min="1"
                   step="0.01"
-                  placeholder="0.00"
+                  placeholder={formulario.monedaTarifa === "USD" ? "45.00" : "2700.00"}
                   value={formulario.tarifaDiaria}
                   onChange={(e) =>
                     setFormulario((prev) => ({
@@ -862,6 +1064,21 @@ export default function VehiculosPage() {
                   }
                   required
                 />
+
+                {/* Equivalencia en tiempo real según tasa */}
+                {parseFloat(formulario.tarifaDiaria) > 0 && (
+                  <div style={{ fontSize: "11px", color: "var(--primary)", marginTop: "4px", fontWeight: 600 }}>
+                    {formulario.monedaTarifa === "USD" ? (
+                      <span>
+                        ≈ RD$ {(parseFloat(formulario.tarifaDiaria) * tasaCambio).toLocaleString("es-DO", { minimumFractionDigits: 2 })} DOP (Tasa: {tasaCambio})
+                      </span>
+                    ) : (
+                      <span>
+                        ≈ $ {(parseFloat(formulario.tarifaDiaria) / tasaCambio).toFixed(2)} USD (Tasa: {tasaCambio})
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="form-field">
@@ -998,19 +1215,22 @@ export default function VehiculosPage() {
         </div>
 
         {cargando ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">⏳</div>
-            <strong>Cargando vehículos...</strong>
+          <div className="empty-state" style={{ padding: "50px 20px", textAlign: "center" }}>
+            <div className="empty-state-icon" style={{ fontSize: "36px", marginBottom: "10px" }}>⏳</div>
+            <strong style={{ fontSize: "16px", color: "var(--text)" }}>Cargando vehículos...</strong>
           </div>
         ) : vehiculosFiltrados.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">🚗</div>
-            <strong>No se encontraron vehículos</strong>
-            <span>
+          /* MENSAJE DE BÚSQUEDA SIN RESULTADOS CON FORMATO Y ESPACIADO IMPECABLE */
+          <div className="empty-state" style={{ padding: "50px 20px", textAlign: "center" }}>
+            <div className="empty-state-icon" style={{ fontSize: "40px", marginBottom: "12px" }}>🚗</div>
+            <strong style={{ display: "block", fontSize: "17px", fontWeight: 800, marginBottom: "8px", color: "var(--text)" }}>
+              No se encontraron vehículos
+            </strong>
+            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "14px", maxWidth: "500px", marginInline: "auto" }}>
               {vehiculos.length === 0
-                ? "Aún no tienes vehículos registrados. Haz clic en '+ Nuevo Vehículo' para agregar el primero."
-                : "No hay vehículos que coincidan con la búsqueda o filtro seleccionado."}
-            </span>
+                ? "Aún no tienes vehículos registrados. Haz clic en '+ Nuevo Vehículo' para agregar el primero a tu flota."
+                : "No hay vehículos que coincidan con los términos de búsqueda o filtros seleccionados."}
+            </p>
           </div>
         ) : (
           <div className="table-container">
@@ -1021,7 +1241,7 @@ export default function VehiculosPage() {
                   <th>Placa / Chasis</th>
                   <th>Ficha Técnica</th>
                   <th>Odómetro</th>
-                  <th>Tarifa Diaria</th>
+                  <th>Tarifa Diaria ({monedaVisualizacion === "USD" ? "US$" : "RD$"})</th>
                   <th>Seguro / Póliza</th>
                   <th>Estado</th>
                   <th style={{ textAlign: "right" }}>Acciones</th>
@@ -1057,7 +1277,7 @@ export default function VehiculosPage() {
                       </td>
                       <td>
                         <div>
-                          <code>{vehiculo.placa}</code>
+                          <code style={{ fontWeight: 700 }}>{vehiculo.placa}</code>
                         </div>
                         <small style={{ color: "var(--text-secondary)", fontSize: "11px" }}>
                           {vehiculo.vin ? `VIN: ${vehiculo.vin}` : "Sin VIN"}
@@ -1075,8 +1295,12 @@ export default function VehiculosPage() {
                         <strong>{vehiculo.kilometraje.toLocaleString()} km</strong>
                       </td>
                       <td>
-                        <strong>${Number(vehiculo.tarifaDiaria).toFixed(2)}</strong>
-                        <small style={{ color: "var(--text-secondary)" }}> / día</small>
+                        <strong style={{ fontSize: "14px", color: "var(--primary)" }}>
+                          {formatearPrecio(vehiculo.tarifaDiaria)}
+                        </strong>
+                        <small style={{ color: "var(--text-secondary)", display: "block", fontSize: "11px" }}>
+                          / día
+                        </small>
                       </td>
                       <td>
                         {rep ? (
@@ -1254,7 +1478,7 @@ export default function VehiculosPage() {
                 </div>
                 <div style={{ backgroundColor: "var(--primary-soft)", padding: "8px", borderRadius: "8px", textAlign: "center" }}>
                   <span style={{ fontSize: "18px", display: "block" }}>💰</span>
-                  <strong style={{ fontSize: "11px" }}>${Number(vehiculoVerDetalle.tarifaDiaria).toFixed(2)}/día</strong>
+                  <strong style={{ fontSize: "11px" }}>{formatearPrecio(vehiculoVerDetalle.tarifaDiaria)}/día</strong>
                 </div>
               </div>
 

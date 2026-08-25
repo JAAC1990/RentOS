@@ -18,6 +18,7 @@
 | **1.0** | 2026-08-20 | Módulos Base | Publicación inicial del manual operativo de agencia. | Depto. Tecnología |
 | **1.5** | 2026-08-23 | Contratos & Facturación | Integración de Comprobantes Fiscales NCF (DGII) y firmas digitales. | Asesoría Legal / IT |
 | **2.0** | 2026-08-24 | Todos los Módulos (1 al 15) | Guía exhaustiva de funcionalidades y llenado campo por campo, fotos clicables, QR inmutable y reservas web. | Dirección RentOS |
+| **2.1** | 2026-08-24 | Flota & Vehículos | Validación estricta de Placa (máx 7 caracteres), Año (exacto 4 dígitos), Switch conversor USD ⇄ DOP con tasa en tiempo real y exportación total a CSV vía Blob UTF-8. | Operaciones RentOS |
 
 ---
 
@@ -203,9 +204,9 @@ Al hacer clic en **`+ Nuevo Vehículo`** o **`✏️ Editar`**, completar cada c
 | **Fotografía Principal** | Recomendado | Imagen PNG/JPG o URL | Subir foto nítida y limpia del auto. Se mostrará en el catálogo web y en la ficha interactiva. |
 | **Marca** | **Sí** | `Toyota`, `Hyundai`, `Kia` | Fabricante del vehículo según matrícula oficial. |
 | **Modelo** | **Sí** | `Corolla LE`, `Tucson`, `Sportage` | Versión comercial exacta. |
-| **Año** | **Sí** | `2024` | Año de fabricación (Rango permitido: 1990 a Año actual + 2). |
+| **Año** | **Sí** | `2024` (4 números) | Año de fabricación (Exactamente 4 dígitos, rango permitido: 1990 a Año actual + 2). |
 | **Color** | No | `Blanco Perlado`, `Gris Plata` | Color exterior predominante. |
-| **Placa / Matrícula** | **Sí** | `A123456`, `G771144` | Matrícula oficial dominicana registrada en la DGII (Única en el sistema). |
+| **Placa / Matrícula** | **Sí** | `A123456`, `G771144` | Matrícula oficial dominicana (Máximo 7 caracteres, única en el sistema). |
 | **No. Chasis / VIN** | No | 17 caracteres | Número grabado en el chasis. Crucial para pólizas y reporte de robo. |
 | **Categoría** | **Sí** | `SEDAN`, `SUV`, `COMPACTO`, `CAMIONETA`, `VAN`, `LUJO` | Segmento vehicular. Filtro principal en la web de reservas. |
 | **Transmisión** | **Sí** | `AUTOMATICA` o `MANUAL` | Tipo de caja de cambios. |
@@ -215,7 +216,7 @@ Al hacer clic en **`+ Nuevo Vehículo`** o **`✏️ Editar`**, completar cada c
 | **Puertas** | **Sí** | `4`, `5`, `2` | Cantidad de puertas de acceso. |
 | **Aire Acondicionado** | **Sí** | `Sí (Con Climatizador A/C)` | Estado operativo del A/C. |
 | **Odómetro Inicial (km)** | **Sí** | `15420` | Kilometraje real que marca el tablero al ingresar la unidad. |
-| **Tarifa Diaria** | **Sí** | `45.00`, `60.00` | Precio base por día de 24 horas (en moneda corporativa). |
+| **Tarifa Diaria (USD / DOP)** | **Sí** | `45.00` US$ o `2,700.00` RD$ | Precio base por día. Incluye **Switch Convertidor en vivo** según la tasa de cambio establecida (ej. 1 USD = 60.00 DOP). |
 | **Estado Operativo** | **Sí** | `DISPONIBLE`, `ALQUILADO`, `MANTENIMIENTO`, `INACTIVO` | Estado inicial del auto (por defecto `DISPONIBLE`). |
 | **Póliza de Seguro** | Recomendado | `Seguros Universal #UN-992288` | Aseguradora y número de contrato de seguro. |
 | **Vencimiento Seguro** | Recomendado | `YYYY-MM-DD` | Fecha de expiración de la póliza. Alerta preventiva a 30 días. |

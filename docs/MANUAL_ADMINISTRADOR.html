@@ -171,6 +171,13 @@
           <td>Guía de funcionalidades, fotos clicables, QR inmutable y diccionario campo por campo.</td>
           <td>Dirección RentOS</td>
         </tr>
+        <tr>
+          <td><b>v2.1</b></td>
+          <td>Agosto 2026</td>
+          <td>Flota & Vehículos</td>
+          <td>Validación de Placa (máx 7 caracteres), Año (exacto 4 dígitos), Switch conversor USD ⇄ DOP en vivo y exportación masiva a CSV.</td>
+          <td>Operaciones RentOS</td>
+        </tr>
       </tbody>
     </table>
 
@@ -193,7 +200,7 @@
         <tr>
           <td><b>Flota & Fichas</b></td>
           <td>Gestión integral del parque vehicular.</td>
-          <td>Fichas técnicas con fotos clicables, especificaciones mecánicas (*pasajeros, maletas, A/C, transmisión*) y auditoría legal de seguros y marbetes DGII.</td>
+          <td>Fichas técnicas con fotos clicables, especificaciones mecánicas (*pasajeros, maletas, A/C, transmisión*), switch de moneda USD/DOP y auditoría legal de seguros y marbetes DGII.</td>
         </tr>
         <tr>
           <td><b>Calendario Gantt</b></td>
@@ -267,14 +274,14 @@
         <tr>
           <td><b>Año</b></td>
           <td><span class="badge badge-si">Sí</span></td>
-          <td><code>2024</code></td>
-          <td>Año de fabricación del vehículo (1990 a Año actual + 2).</td>
+          <td><code>2024</code> (4 números)</td>
+          <td>Año de fabricación del vehículo (Exactamente 4 dígitos, rango: 1990 a Año actual + 2).</td>
         </tr>
         <tr>
           <td><b>Placa / Matrícula</b></td>
           <td><span class="badge badge-si">Sí</span></td>
-          <td><code>A123456</code></td>
-          <td>Placa oficial dominicana registrada en la DGII (Única en el sistema).</td>
+          <td><code>A123456</code> (Máx 7)</td>
+          <td>Placa oficial dominicana registrada en la DGII (Máximo 7 caracteres, única en el sistema).</td>
         </tr>
         <tr>
           <td><b>No. Chasis / VIN</b></td>
@@ -295,10 +302,16 @@
           <td>Capacidad física de personas y equipaje en el maletero.</td>
         </tr>
         <tr>
-          <td><b>Odómetro Inicial & Tarifa</b></td>
+          <td><b>Odómetro Inicial</b></td>
           <td><span class="badge badge-si">Sí</span></td>
-          <td><code>15,420 km</code> / <code>$45.00 USD/día</code></td>
-          <td>Kilometraje real y precio base por día de 24 horas.</td>
+          <td><code>15,420 km</code></td>
+          <td>Kilometraje real al ingresar la unidad a la flota.</td>
+        </tr>
+        <tr>
+          <td><b>Tarifa Diaria (USD / DOP)</b></td>
+          <td><span class="badge badge-si">Sí</span></td>
+          <td><code>$45.00 USD</code> / <code>RD$ 2,700</code></td>
+          <td>Precio base por día. Incluye <b>Switch Convertidor USD ⇄ DOP</b> en vivo con tasa editable.</td>
         </tr>
         <tr>
           <td><b>Póliza & Vencimiento</b></td>
