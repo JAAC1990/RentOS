@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import PhoneInput from "../../components/PhoneInput";
+import FechaInput from "../../components/FechaInput";
 import { API_URLS } from "../../services/api";
 
 type Cliente = {
@@ -485,17 +486,17 @@ export default function ClientesPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="fechaNacimiento">Fecha de Nacimiento</label>
-                <input
+                <label htmlFor="fechaNacimiento">Fecha de Nacimiento (DD/MM/AAAA)</label>
+                <FechaInput
                   id="fechaNacimiento"
-                  type="date"
                   value={formulario.fechaNacimiento}
-                  onChange={(e) =>
+                  onChange={(iso) =>
                     setFormulario((prev) => ({
                       ...prev,
-                      fechaNacimiento: e.target.value,
+                      fechaNacimiento: iso,
                     }))
                   }
+                  placeholder="DD/MM/AAAA"
                 />
               </div>
 

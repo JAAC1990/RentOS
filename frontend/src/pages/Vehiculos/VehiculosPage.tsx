@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
+import FechaInput from "../../components/FechaInput";
 
 type Vehiculo = {
   id: number;
@@ -1114,26 +1115,26 @@ export default function VehiculosPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="seguroVencimiento">Vencimiento del Seguro</label>
-                <input
+                <label htmlFor="seguroVencimiento">Vencimiento del Seguro (DD/MM/AAAA)</label>
+                <FechaInput
                   id="seguroVencimiento"
-                  type="date"
                   value={formulario.seguroVencimiento}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, seguroVencimiento: e.target.value }))
+                  onChange={(iso) =>
+                    setFormulario((prev) => ({ ...prev, seguroVencimiento: iso }))
                   }
+                  placeholder="DD/MM/AAAA"
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="marbeteVencimiento">Vencimiento de Marbete</label>
-                <input
+                <label htmlFor="marbeteVencimiento">Vencimiento de Marbete (DD/MM/AAAA)</label>
+                <FechaInput
                   id="marbeteVencimiento"
-                  type="date"
                   value={formulario.marbeteVencimiento}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, marbeteVencimiento: e.target.value }))
+                  onChange={(iso) =>
+                    setFormulario((prev) => ({ ...prev, marbeteVencimiento: iso }))
                   }
+                  placeholder="DD/MM/AAAA"
                 />
               </div>
 

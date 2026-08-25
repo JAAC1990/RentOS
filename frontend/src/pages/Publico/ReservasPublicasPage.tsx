@@ -13,6 +13,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import PhoneInput from "../../components/PhoneInput";
+import FechaInput from "../../components/FechaInput";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
 
@@ -421,43 +422,23 @@ export default function ReservasPublicasPage() {
         >
           <div>
             <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}>
-              📅 RETIRO
+              📅 RETIRO (DD/MM/AAAA)
             </label>
-            <input
-              type="date"
+            <FechaInput
               value={fechaInicio}
               min={hoy}
-              onChange={(e) => setFechaInicio(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                borderRadius: "6px",
-                border: "1px solid var(--border)",
-                background: "var(--surface)",
-                color: "var(--text)",
-                boxSizing: "border-box",
-              }}
+              onChange={(iso) => setFechaInicio(iso)}
             />
           </div>
 
           <div>
             <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}>
-              🏁 DEVOLUCIÓN
+              🏁 DEVOLUCIÓN (DD/MM/AAAA)
             </label>
-            <input
-              type="date"
+            <FechaInput
               value={fechaFin}
               min={fechaInicio}
-              onChange={(e) => setFechaFin(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "8px 10px",
-                borderRadius: "6px",
-                border: "1px solid var(--border)",
-                background: "var(--surface)",
-                color: "var(--text)",
-                boxSizing: "border-box",
-              }}
+              onChange={(iso) => setFechaFin(iso)}
             />
           </div>
 

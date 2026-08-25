@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
+import FechaInput from "../../components/FechaInput";
 
 type Vehiculo = {
   id: number;
@@ -334,12 +335,11 @@ export default function MantenimientoPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="mantFecha">Fecha de Realización *</label>
-                <input
+                <label htmlFor="mantFecha">Fecha de Realización (DD/MM/AAAA) *</label>
+                <FechaInput
                   id="mantFecha"
-                  type="date"
                   value={fechaServicio}
-                  onChange={(e) => setFechaServicio(e.target.value)}
+                  onChange={(iso) => setFechaServicio(iso)}
                   required
                 />
               </div>
@@ -369,12 +369,11 @@ export default function MantenimientoPage() {
               </div>
 
               <div className="form-field">
-                <label htmlFor="mantProximaFecha">Fecha Límite Próximo Servicio *</label>
-                <input
+                <label htmlFor="mantProximaFecha">Fecha Límite Próximo Servicio (DD/MM/AAAA) *</label>
+                <FechaInput
                   id="mantProximaFecha"
-                  type="date"
                   value={proximaFechaServicio}
-                  onChange={(e) => setProximaFechaServicio(e.target.value)}
+                  onChange={(iso) => setProximaFechaServicio(iso)}
                   required
                 />
               </div>

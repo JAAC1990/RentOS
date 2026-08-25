@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
+import FechaInput from "../../components/FechaInput";
 import ContratoDominicanoImprimible, { type DatosContratoImpresion } from "../../components/ContratoDominicanoImprimible";
 import ModalFirmaDigital from "../../components/ModalFirmaDigital";
 
@@ -702,26 +703,25 @@ export default function ContratosPage() {
 
               {/* Fechas de Renta */}
               <div className="form-field">
-                <label htmlFor="fechaInicio">Fecha & Hora de Salida *</label>
-                <input
+                <label htmlFor="fechaInicio">Fecha de Salida (DD/MM/AAAA) *</label>
+                <FechaInput
                   id="fechaInicio"
-                  type="date"
                   value={formulario.fechaInicio}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, fechaInicio: e.target.value }))
+                  onChange={(iso) =>
+                    setFormulario((prev) => ({ ...prev, fechaInicio: iso }))
                   }
                   required
                 />
               </div>
 
               <div className="form-field">
-                <label htmlFor="fechaFin">Fecha de Devolución Estimada *</label>
-                <input
+                <label htmlFor="fechaFin">Fecha de Retorno Estimada (DD/MM/AAAA) *</label>
+                <FechaInput
                   id="fechaFin"
-                  type="date"
                   value={formulario.fechaFin}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, fechaFin: e.target.value }))
+                  min={formulario.fechaInicio}
+                  onChange={(iso) =>
+                    setFormulario((prev) => ({ ...prev, fechaFin: iso }))
                   }
                   required
                 />
