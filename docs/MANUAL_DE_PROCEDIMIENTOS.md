@@ -1,243 +1,374 @@
 # 📘 MANUAL DE PROCEDIMIENTOS OPERATIVOS ESTÁNDAR (POE / SOP)
-# SISTEMA DE GESTIÓN INTEGRAL RentOS
+# SISTEMA DE GESTIÓN INTEGRAL RentOS (Multi-Tenant SaaS)
 
-**Versión del Documento:** 1.0  
-**Fecha de Emisión:** Agosto 2026  
-**Sistema:** RentOS Multi-Tenant Enterprise SaaS  
-**Aprobado por:** Dirección General de Operaciones & Tecnología  
-
----
-
-## 📑 ÍNDICE GENERAL
-
-1. [Marco Operativo & Matriz de Responsabilidades (RACI)](#1-marco-operativo--matriz-de-responsabilidades-raci)
-2. [PR-01: Procedimiento de Alta y Aprobación de Nuevas Empresas (Onboarding)](#pr-01-alta-y-aprobación-de-nuevas-empresas)
-3. [PR-02: Procedimiento de Configuración de Identidad White-Label y Marca](#pr-02-configuración-de-identidad-white-label-y-marca)
-4. [PR-03: Procedimiento de Inventario y Auditoría Legal de Flota](#pr-03-inventario-y-auditoría-legal-de-flota)
-5. [PR-04: Procedimiento de Planificación de Flota y Control de Overbooking](#pr-04-planificación-de-flota-y-control-de-overbooking)
-6. [PR-05: Procedimiento de Registro y Verificación de Arrendatarios](#pr-05-registro-y-verificación-de-arrendatarios)
-7. [PR-06: Procedimiento de Emisión de Contratos y Firma Digital](#pr-06-emisión-de-contratos-y-firma-digital)
-8. [PR-07: Protocolo de Entrega de Vehículo al Cliente (Check-Out)](#pr-07-protocolo-de-entrega-de-vehículo-al-cliente-check-out)
-9. [PR-08: Protocolo de Recepción, Inspección 360° y Liquidación de Depósito (Check-In)](#pr-08-protocolo-de-recepción-inspección-360-y-liquidación-de-depósito-check-in)
-10. [PR-09: Procedimiento de Cobros, Facturación Fiscal con NCF y Cierre de Caja](#pr-09-cobros-facturación-fiscal-con-ncf-y-cierre-de-caja)
-11. [PR-10: Procedimiento de Extensión de Renta y Recordatorios Automatizados](#pr-10-extensión-de-renta-y-recordatorios-automatizados)
-12. [PR-11: Procedimiento de Mantenimiento Preventivo y Alertas de Taller](#pr-11-mantenimiento-preventivo-y-alertas-de-taller)
-13. [PR-12: Protocolo de Monitoreo GPS Satelital e Inmovilización Remota](#pr-12-monitoreo-gps-satelital-e-inmovilización-remota)
-14. [PR-13: Plan de Continuidad, Respaldos y Restauración Ante Desastres](#pr-13-plan-de-continuidad-respaldos-y-restauración-ante-desastres)
-15. [Checklists Operativos de Mostrador (Anexos)](#15-checklists-operativos-de-mostrador-anexos)
+**Código del Documento:** `MPO-RENTOS-2026-V2`  
+**Versión del Manual:** 2.0 (Estructura Modular Ajustable)  
+**Última Actualización:** Agosto 2026  
+**Ámbito de Aplicación:** Todas las Sucursales y Rent a Cars Operativos en la Plataforma  
+**Aprobado por:** Dirección General de Operaciones, Cumplimiento Legal y Tecnología  
 
 ---
 
-## 1. MARCO OPERATIVO & MATRIZ DE RESPONSABILIDADES (RACI)
+## 📑 CONTROL DE VERSIONES & REGISTRO DE CAMBIOS (CHANGELOG)
 
-| Proceso Operativo | SuperAdmin | Admin RentCar | Empleado / Despacho |
-| :--- | :---: | :---: | :---: |
-| **Aprobación de Empresas** | **R / A** | I | I |
-| **Configuración de Marca y Políticas** | I | **R / A** | C |
-| **Ingreso y Auditoría de Vehículos** | I | **A** | **R** |
-| **Control de Disponibilidad y Timeline** | I | **A** | **R** |
-| **Alta y Verificación de Clientes** | I | A | **R** |
-| **Firma y Emisión de Contratos** | I | A | **R** |
-| **Inspección 360° y Fotos de Daños** | I | A | **R** |
-| **Cobro y Facturación con NCF** | I | **A** | **R** |
-| **Mantenimiento y Alertas de Taller** | I | **R / A** | C |
-| **Corte de Motor GPS Remoto** | **A** | **R** | C |
-| **Respaldos y Restauración de Datos** | **R / A** | C | I |
+Este manual es un documento vivo y **ajustable**. Cada vez que se incorpore una nueva función o mejora en RentOS, debe actualizarse la tabla inferior y la sección correspondiente del módulo.
 
-*(R = Responsable de Ejecutar, A = Aprueba / Autoriza, C = Consultado, I = Informado)*
+| Versión | Fecha | Módulos Actualizados / Incorporados | Descripción de la Modificación | Responsable |
+| :---: | :---: | :--- | :--- | :---: |
+| **1.0** | 2026-08-20 | Módulos 1 al 10 | Creación inicial del manual operativo estándar. | Depto. Tecnología |
+| **1.5** | 2026-08-23 | Contratos & Facturación | Integración de Comprobantes Fiscales NCF dominicanos y firmas digitales. | Asesoría Legal / IT |
+| **2.0** | 2026-08-24 | Todos los Módulos (1 al 15) | Guía exhaustiva campo por campo, contrato oficial con QR inmutable, fotos clicables y catálogo web. | Operaciones RentOS |
 
 ---
 
-## PR-01: ALTA Y APROBACIÓN DE NUEVAS EMPRESAS
-* **Objetivo:** Garantizar la legitimidad legal de las empresas Rent a Car que ingresan a la plataforma.
-* **Responsable:** SuperAdministrador.
-* **Pasos:**
-  1. Ingresar a `/solicitudes` en la barra lateral.
-  2. Verificar RNC, Nombre Comercial, Ciudad, Teléfono y Correo del solicitante.
-  3. Validar estado fiscal de la empresa.
-  4. Presionar `✅ Autorizar` para habilitar el tenant con su base de datos aislada, o `🔴 Rechazar` si no cumple los requisitos.
+## 🧭 ÍNDICE GENERAL DE MÓDULOS
+
+1. [MÓDULO 01: Inicio de Sesión, Autenticación & Perfiles de Usuario](#módulo-01-inicio-de-sesión-autenticación--perfiles-de-usuario)
+2. [MÓDULO 02: Panel de Control & Métricas en Tiempo Real (Dashboard)](#módulo-02-panel-de-control--métricas-en-tiempo-real-dashboard)
+3. [MÓDULO 03: Gestión de Flota, Fichas Técnicas & Auditoría Legal](#módulo-03-gestión-de-flota-fichas-técnicas--auditoría-legal)
+4. [MÓDULO 04: Calendario de Flota & Control de Disponibilidad Gantt](#módulo-04-calendario-de-flota--control-de-disponibilidad-gantt)
+5. [MÓDULO 05: Gestión de Clientes, Documentos & Consultas de Crédito](#módulo-05-gestión-de-clientes-documentos--consultas-de-crédito)
+6. [MÓDULO 06: Contratos, Firma Digital, QR de Autenticidad & Legal](#módulo-06-contratos-firma-digital-qr-de-autenticidad--legal)
+7. [MÓDULO 07: Entregas, Devoluciones & Protocolo Check-In / Check-Out](#módulo-07-entregas-devoluciones--protocolo-check-in--check-out)
+8. [MÓDULO 08: Caja, Facturación con NCF Dominicano & Control de Pagos](#módulo-08-caja-facturación-con-ncf-dominicano--control-de-pagos)
+9. [MÓDULO 09: Taller, Mantenimiento Preventivo & Correctivo](#módulo-09-taller-mantenimiento-preventivo--correctivo)
+10. [MÓDULO 10: Monitoreo GPS Satelital, Telemetría & Corte de Motor](#módulo-10-monitoreo-gps-satelital-telemetría--corte-de-motor)
+11. [MÓDULO 11: Equipo, Usuarios & Matriz de Permisos](#módulo-11-equipo-usuarios--matriz-de-permisos)
+12. [MÓDULO 12: Red de Aliados & Subarrendamiento B2B](#módulo-12-red-de-aliados--subarrendamiento-b2b)
+13. [MÓDULO 13: Configuración de la Empresa & Personalización de Marca](#módulo-13-configuración-de-la-empresa--personalización-de-marca)
+14. [MÓDULO 14: Catálogo Público de Reservas Web para Clientes Finales](#módulo-14-catálogo-público-de-reservas-web-para-clientes-finales)
+15. [MÓDULO 15: Portal Público de Verificación de Contratos QR](#módulo-15-portal-público-de-verificación-de-contratos-qr)
 
 ---
 
-## PR-02: CONFIGURACIÓN DE IDENTIDAD WHITE-LABEL Y MARCA
-* **Objetivo:** Personalizar la marca gráfica del Rent a Car en contratos, facturas y portal web.
-* **Responsable:** Administrador del Rent a Car.
-* **Pasos:**
-  1. Dirigirse a `/configuracion`.
-  2. Subir el **Logotipo Oficial** mediante `📁 Buscar en mi Dispositivo` (el sistema lo comprime automáticamente) o `🔗 Usar Enlace Web`.
-  3. Seleccionar el **Color Primario Corporativo** y configurar el **Eslogan Oficial**.
-  4. Ingresar el número de **WhatsApp de Atención al Cliente** (con código de país) y la moneda predeterminada.
-  5. Redactar las cláusulas legales y límites de kilometraje diario.
-  6. Presionar `💾 Guardar Configuración General`.
+# MÓDULO 01: INICIO DE SESIÓN, AUTENTICACIÓN & PERFILES DE USUARIO
+
+### 1.1 Objetivo del Módulo
+Garantizar el acceso seguro, controlado y restringido de cada colaborador a la sucursal o tenant asignado, protegiendo los datos corporativos de la empresa.
+
+### 1.2 Roles Autorizados
+* SuperAdministrador, Administrador de Rent a Car, Agente de Ventas/Cajero, Mecánico, Chofer.
+
+### 1.3 Procedimiento de Operación
+1. Abrir el navegador e ingresar a la URL del sistema (ej. `http://localhost:5173/login` o dominio de producción).
+2. RentOS siempre solicitará credenciales antes de mostrar cualquier información.
+3. Ingresar las credenciales proporcionadas por la gerencia y presionar **Iniciar Sesión**.
+
+### 1.4 Guía de Llenado de Campos (Login)
+| Campo | Obligatorio | Formato / Ejemplo | Explicación & Regla de Negocio |
+| :--- | :---: | :--- | :--- |
+| **Correo Electrónico** | Sí | `admin@rentos.com` | Correo corporativo registrado en el sistema. No distingue entre mayúsculas y minúsculas. |
+| **Contraseña** | Sí | Mínimo 6 caracteres | Clave confidencial. En caso de olvido, debe ser restablecida por el Administrador. |
+| **Cambio de Tema (Claro/Oscuro)** | No | Selector en encabezado | Permite adaptar la interfaz para trabajo diurno o nocturno según preferencia del operador. |
 
 ---
 
-## PR-03: INVENTARIO Y AUDITORÍA LEGAL DE FLOTA
-* **Objetivo:** Mantener el parque vehicular al día con la documentación legal vigente.
-* **Responsable:** Administrador / Encargado de Flota.
-* **Pasos:**
-  1. Ingresar a `/vehiculos` y hacer clic en `+ Nuevo Vehículo`.
-  2. Registrar: Marca, Modelo, Año, Color, Placa, VIN, Kilometraje inicial y Tarifa diaria.
-  3. **Auditoría de Vencimientos:**
-     * Registrar número de Póliza y Fecha de Vencimiento del Seguro.
-     * Registrar Fecha de Expiración del Marbete / Impuesto de Circulación.
-     * Registrar Fecha de Revista / Inspección Técnica Vehicular.
-  4. Guardar la unidad. El sistema notificará con insignias rojas y amarillas cuando un documento esté a 30 días o menos de expirar.
+# MÓDULO 02: PANEL DE CONTROL & MÉTRICAS EN TIEMPO REAL (DASHBOARD)
+
+### 2.1 Objetivo del Módulo
+Ofrecer a la gerencia y personal de operaciones una vista panorámica instantánea del rendimiento comercial, estado de la flota e ingresos financieros.
+
+### 2.2 Roles Autorizados
+* Administrador, Gerente de Operaciones, Encargado de Flota.
+
+### 2.3 Interpretación de Métricas & Indicadores
+* **Total Flota:** Suma total de unidades registradas bajo la empresa.
+* **Tasa de Ocupación (%):** Porcentaje de vehículos rentados en relación con la flota total disponible. (Meta óptima: >75%).
+* **Ingresos del Mes:** Total recaudado por concepto de rentas, seguros, cargos por demora y delivery.
+* **Vehículos en Taller:** Conteo de unidades bloqueadas por servicio técnico o reparaciones de choque.
+* **Alertas Preventivas:** Notificaciones sobre pólizas de seguros por vencer (≤30 días) o contratos próximos a vencer en el día.
 
 ---
 
-## PR-04: PLANIFICACIÓN DE FLOTA Y CONTROL DE OVERBOOKING
-* **Objetivo:** Maximizar la tasa de ocupación de vehículos y evitar sobreventas.
-* **Responsable:** Agente de Mostrador / Administrador.
-* **Pasos:**
-  1. Ingresar a `/calendario` (Vista Gantt / Timeline).
-  2. Seleccionar el mes correspondiente.
-  3. Consultar la barra de estado de cada auto:
-     * 🔵 **Azul (Alquilado):** Unidad en contrato activo.
-     * 🟡 **Amarillo (Reserva):** Compromiso futuro.
-     * ⚪ **Disponible:** Unidad lista para asignar.
-  4. Verificar que el período solicitado no se solape con reservas existentes antes de confirmar al cliente.
+# MÓDULO 03: GESTIÓN DE FLOTA, FICHAS TÉCNICAS & AUDITORÍA LEGAL
+
+### 3.1 Objetivo del Módulo
+Administrar el catálogo completo de vehículos, sus especificaciones técnicas de cara al cliente final y la auditoría de documentos legales exigidos por la Dirección General de Impuestos Internos (DGII) y la DIGESETT en República Dominicana.
+
+### 3.2 Procedimiento de Alta de un Nuevo Vehículo
+1. Ingresar a la sección **Vehículos** (`/vehiculos`).
+2. Hacer clic en el botón superior **`+ Nuevo Vehículo`**.
+3. Completar todos los campos del formulario según la tabla inferior.
+4. Subir la fotografía representativa del vehículo o ingresar el enlace URL.
+5. Hacer clic en **`Registrar Vehículo`**.
+
+### 3.3 Guía de Llenado Campo por Campo (Vehículos)
+| Campo | Obligatorio | Formato / Ejemplo | Explicación & Regla de Negocio |
+| :--- | :---: | :--- | :--- |
+| **Fotografía Principal** | Recomendado | Imagen PNG/JPG o URL | Foto real y limpia del vehículo. Se mostrará en el catálogo web público y en la ficha técnica. |
+| **Marca** | **Sí** | `Toyota`, `Hyundai`, `Kia`, `Ford` | Fabricante del vehículo. Escribir con mayúscula inicial. |
+| **Modelo** | **Sí** | `Corolla LE`, `Tucson 4WD`, `Sportage` | Versión comercial exacta del automóvil. |
+| **Año** | **Sí** | `2024`, `2025` | Año de fabricación según matrícula/título de propiedad. Rango permitido: 1990 a Año actual + 2. |
+| **Color** | No | `Blanco Perlado`, `Gris Plata`, `Negro` | Color exterior predominante. |
+| **Placa / Matrícula** | **Sí** | `A123456`, `G771144` | Placa oficial dominicana (Única e irrepetible en el sistema). |
+| **No. de Chasis / VIN** | No | 17 caracteres alfanuméricos | Número de identificación vehicular grabado en el chasis. Fundamental para reclamos de seguro y reporte de robo. |
+| **Categoría** | **Sí** | `SEDAN`, `SUV`, `COMPACTO`, `CAMIONETA`, `VAN`, `LUJO` | Segmento vehicular. Determina los filtros en la web de reservas. |
+| **Transmisión** | **Sí** | `AUTOMATICA` o `MANUAL` | Tipo de caja de cambios del automóvil. |
+| **Combustible** | **Sí** | `GASOLINA`, `DIESEL`, `HIBRIDO`, `ELECTRICO` | Tipo de carburante que debe suministrarse al vehículo. |
+| **Pasajeros** | **Sí** | `5`, `7`, `12` | Número máximo de ocupantes autorizados con cinturón. |
+| **Capacidad Maletas** | **Sí** | `2`, `3`, `5` | Número de maletas grandes de viaje que caben en el maletero. |
+| **Puertas** | **Sí** | `4`, `5`, `2` | Cantidad de puertas de acceso. |
+| **Aire Acondicionado** | **Sí** | `Sí (Con Climatizador A/C)` | Estado operativo del compresor de aire acondicionado. |
+| **Odómetro Inicial (km)** | **Sí** | `15420` | Kilometraje real que marca el tablero al momento del ingreso a la flota. |
+| **Tarifa Diaria** | **Sí** | `45.00`, `60.00` | Precio base de renta por cada 24 horas (en la moneda de la empresa, ej. USD o DOP). |
+| **Estado Operativo** | **Sí** | `DISPONIBLE`, `ALQUILADO`, `MANTENIMIENTO`, `INACTIVO` | Estado inicial del auto (por defecto siempre `DISPONIBLE`). |
+| **Póliza de Seguro** | Recomendado | `Seguros Universal #UN-992288` | Nombre de la aseguradora y número de póliza contratada. |
+| **Vencimiento Seguro** | Recomendado | `YYYY-MM-DD` (ej. `2027-02-15`) | Fecha de expiración de la póliza. El sistema alertará a los 30 días restantes. |
+| **Vencimiento Marbete** | Recomendado | `YYYY-MM-DD` | Fecha límite del impuesto de circulación vehicular anual emitido por DGII. |
+
+### 3.4 Procedimiento de Verificación en Mostrador
+* Al hacer **clic sobre cualquier vehículo de la tabla**, se desplegará una **Ficha Técnica en Gran Formato** con las fotos y especificaciones completas para mostrárselas al cliente en mostrador o enviárselas por WhatsApp.
 
 ---
 
-## PR-05: REGISTRO Y VERIFICACIÓN DE ARRENDATARIOS
-* **Objetivo:** Mitigar riesgos de fraude, impago o apropiación indebida.
-* **Responsable:** Agente de Mostrador.
-* **Pasos:**
-  1. Ingresar a `/clientes` y pulsar `+ Nuevo Cliente`.
-  2. Seleccionar el código internacional de país telefónico con bandera e ingresar el número de WhatsApp.
-  3. Solicitar Cédula/Pasaporte y Licencia de Conducir física vigente.
-  4. Verificar que el cliente no se encuentre en estado `BLOQUEADO` (Lista Negra).
-  5. Registrar los datos completos y guardar.
+# MÓDULO 04: CALENDARIO DE FLOTA & CONTROL DE DISPONIBILIDAD GANTT
+
+### 4.1 Objetivo del Módulo
+Visualizar de forma gráfica e interactiva la ocupación de toda la flota en una línea de tiempo (Diagrama de Gantt), coordinar entregas futuras y evitar el *overbooking* (sobreventa).
+
+### 4.2 Código de Colores del Calendario
+* 🔵 **Azul Sólido (Contrato Activo):** Vehículo en posesión del cliente.
+* 🟡 **Amarillo (Reserva Confirmada):** Vehículo comprometido para retiro en fechas futuras.
+* 🛠️ **Gris / Naranja (Mantenimiento Programado):** Unidad bloqueada para servicio en taller.
+* ⚪ **Espacio en Blanco (Disponible):** Vehículo 100% libre para alquiler inmediato o reserva.
+
+### 4.3 Procedimiento de Consulta de Disponibilidad
+1. Ingresar a **Calendario de Flota** (`/calendario`).
+2. Seleccionar el mes a consultar utilizando los botones de navegación `⬅️ Mes Anterior` / `Mes Siguiente ➡️`.
+3. Filtrar por categoría o marca según el requerimiento del cliente.
+4. Identificar las unidades que tengan la barra temporal libre durante el rango de fechas solicitado.
 
 ---
 
-## PR-06: EMISIÓN DE CONTRATOS Y FIRMA DIGITAL
-* **Objetivo:** Formalizar el contrato de arrendamiento legal sin uso de papel físico.
-* **Responsable:** Agente de Despacho.
-* **Pasos:**
-  1. Ingresar a `/contratos` y presionar `+ Nuevo Contrato`.
-  2. Seleccionar el Cliente, Vehículo disponible, Fechas de Inicio y Fin, y Depósito de Garantía.
-  3. Presionar `Guardar Contrato` (El vehículo pasa automáticamente a estado `ALQUILADO`).
-  4. Abrir la vista `🖨️ Contrato`:
-     * Verificar membrete con logotipo oficial y desglose tarifario.
-     * Solicitar al cliente que estampe su **Firma Digital Táctil** en el recuadro interactivo (con dedo o mouse).
-  5. Si el cliente requiere copia física, presionar `🖨️ Imprimir / Guardar PDF` (formato limpio a 1 página).
-  6. Presionar `💬 Enviar a WhatsApp` para despachar el contrato digital al cliente.
+# MÓDULO 05: GESTIÓN DE CLIENTES, DOCUMENTOS & CONSULTAS DE CRÉDITO
+
+### 5.1 Objetivo del Módulo
+Registrar la identidad completa de arrendatarios nacionales y extranjeros, validar su historial crediticio/conductual y archivar copias digitales de licencias y pasaportes.
+
+### 5.2 Procedimiento de Registro de Arrendatario
+1. Ingresar a **Clientes** (`/clientes`) y presionar **`+ Nuevo Cliente`**.
+2. Ingresar nombre, apellido, teléfono con código de país y correo electrónico.
+3. Subir las fotografías legibles de la **Cédula de Identidad / Pasaporte** y de la **Licencia de Conducir Vigente**.
+4. Realizar la consulta preventiva de crédito si las políticas de la empresa lo requieren.
+5. Presionar **`Guardar Cliente`**.
+
+### 5.3 Guía de Llenado Campo por Campo (Clientes)
+| Campo | Obligatorio | Formato / Ejemplo | Explicación & Regla de Negocio |
+| :--- | :---: | :--- | :--- |
+| **Nombre** | **Sí** | `Juan Carlos` | Primer y segundo nombre del cliente según documento oficial. |
+| **Apellido** | **Sí** | `Pérez Morales` | Apellidos completos del cliente. |
+| **Teléfono / WhatsApp** | **Sí** | `+1 (809) 555-0199` | Teléfono directo con código de país. Utilizado para el envío automático del contrato vía WhatsApp. |
+| **Correo Electrónico** | No | `juan.perez@email.com` | Correo electrónico para facturación y copia digital. |
+| **Dirección Residencial** | Recomendado | `Calle Las Palmas #12, Santo Domingo` | Dirección física donde reside el cliente (o dirección de hotel si es turista). |
+| **No. de Cédula / Pasaporte** | **Sí** | `402-1234567-8` o `P8472910` | Documento de identidad oficial y vigente. |
+| **No. Licencia de Conducir** | **Sí** | `DO-40212345678` | Licencia de conducir válida para el tipo de vehículo a rentar. |
+| **Fecha de Vencimiento Licencia** | **Sí** | `YYYY-MM-DD` | Debe verificarse que la licencia no venza durante el transcurso del alquiler. |
+| **Referencia Familiar / Teléfono** | Recomendado | `María Pérez - 809-555-0144` | Contacto de emergencia en caso de retraso no notificado o siniestro. |
 
 ---
 
-## PR-07: PROTOCOLO DE ENTREGA DE VEHÍCULO (CHECK-OUT)
-* **Objetivo:** Entregar la unidad en condiciones óptimas documentadas.
-* **Responsable:** Agente de Despacho.
-* **Checklist de Salida:**
-  1. Verificar que el odómetro físico coincida con el contrato.
-  2. Constatar que el combustible esté en **100% (Lleno)**.
-  3. Verificar presencia de rueda de repuesto, llave de cruz, gato hidráulico, triángulo de seguridad y botiquín.
-  4. Entregar llaves y desear un excelente viaje al cliente.
+# MÓDULO 06: CONTRATOS, FIRMA DIGITAL, QR DE AUTENTICIDAD & LEGAL
+
+### 6.1 Objetivo del Módulo
+Formalizar el arrendamiento bajo el marco legal de la **Ley No. 483** de Ventas Condicionales y Alquileres Muebles y la **Ley No. 63-17** de Movilidad y Tránsito de la República Dominicana, incorporando un código QR criptográfico SHA-256 inmutable de verificación.
+
+### 6.2 Procedimiento de Emisión y Firma del Contrato
+1. Ingresar a **Contratos** (`/contratos`) y hacer clic en **`+ Nuevo Contrato`**.
+2. Seleccionar el **Cliente** y el **Vehículo Disponible**.
+3. Definir la **Fecha y Hora de Salida** y la **Fecha y Hora de Retorno**.
+4. Seleccionar el **Tipo de Seguro** (`Full Cover`, `Full`, `De Ley`).
+5. Configurar el **Checklist de Inventario** (24 accesorios: A/C, radio, gato, goma de repuesto, micas, etc.).
+6. Registrar el nivel de combustible de salida (ej. `100% (Lleno)`).
+7. Marcar sobre el **Diagrama 360°** si el auto presenta rayones o abolladuras previas.
+8. Presionar **`✍️ Firmar`** para abrir el lienzo táctil en pantalla y solicitar la firma digital manuscrita al cliente y al inspector.
+9. Presionar **`📄 Contrato QR`** para abrir el documento oficial.
+10. Presionar **`🖨️ Imprimir / Guardar PDF`** para obtener la **hoja física limpia de 1 sola página** o presionar **`💬 WhatsApp`** para despachar el enlace de verificación QR directo al teléfono del cliente.
+
+### 6.3 Guía de Llenado Campo por Campo (Contratos)
+| Campo | Obligatorio | Formato / Ejemplo | Explicación & Regla de Negocio |
+| :--- | :---: | :--- | :--- |
+| **Cliente** | **Sí** | Selector | Debe estar previamente registrado y activo en el sistema. |
+| **Vehículo** | **Sí** | Selector | Solo se listarán unidades en estado `DISPONIBLE`. |
+| **Fecha/Hora de Inicio** | **Sí** | `YYYY-MM-DD HH:MM` | Momento exacto de entrega de la llave al cliente. |
+| **Fecha/Hora de Retorno** | **Sí** | `YYYY-MM-DD HH:MM` | Momento pactado de devolución en base a períodos de 24 horas. |
+| **Tarifa Diaria** | **Sí** | `50.00` | Monto diario por día de renta. Auto-cargado desde el vehículo. |
+| **Depósito en Garantía** | **Sí** | `200.00`, `500.00` | Monto de fianza reembolsable que se retiene en tarjeta o efectivo. |
+| **Cobros Extra / Servicios** | No | `20.00` | Cargos adicionales (ej. Conductor adicional, GPS portátil, Silla de bebé). |
+| **Monto de Delivery** | No | `15.00` | Cargo por entrega en aeropuerto, hotel o domicilio fuera de la oficina. |
+| **Tipo de Seguro** | **Sí** | `FULL_COVER`, `FULL`, `LEY` | Grado de cobertura ante colisión, vuelco, robo o daños a terceros. |
+| **Nivel Combustible Salida** | **Sí** | `100% (Lleno)`, `75% (3/4)`, `50% (1/2)` | Nivel exacto de gasolina/diésel registrado en el tablero al salir. |
+| **Checklist de Accesorios** | **Sí** | 24 Casillas de verificación | Verificación física de herramientas, repuesto, alfombras, micas y documentos. |
+| **Firma Digital Cliente** | **Sí** | Trazo manuscrito en Canvas | Firma táctil capturada en pantalla o tableta con valor probatorio legal. |
 
 ---
 
-## PR-08: PROTOCOLO DE RECEPCIÓN, INSPECCIÓN 360° Y LIQUIDACIÓN DE DEPÓSITO (CHECK-IN)
-* **Objetivo:** Auditar el estado de retorno de la unidad y liquidar el depósito de garantía justamente.
-* **Responsable:** Inspector de Patio / Agente de Devolución.
-* **Pasos:**
-  1. Ingresar a `/entregas` y presionar `🔑 Nueva Recepción / Check-in`.
-  2. Seleccionar el Contrato Activo e ingresar el **Kilometraje Final (Odómetro)**.
-  3. Seleccionar el **Nivel de Combustible** retornado (*Reserva, 1/4, 1/2, 3/4, Full*).
-  4. **Inspección Visual de Carrocería 360°:**
-     * Revisar el contorno del vehículo. Si hay daños nuevos, hacer clic en la silueta interactiva para colocar un pin indicando la zona (*Frente, Lateral, Trasera, Techo*), tipo (*Rayón, Abolladura, Golpe, Cristal, Llanta*) y severidad (*Leve, Medio, Grave*).
-  5. **Captura de Fotos:** Pulsar `📷 Tomar / Subir Fotos` y fotografiar daños, odómetro y nivel de combustible.
-  6. **Liquidación de Depósito de Garantía:**
-     * `✓ Reembolsar Completo`: Si el auto retorna sin novedades.
-     * `⚠️ Deducir por Daños / Combustible`: Indicar el monto a deducir ($) y el motivo detallado.
-     * `🔒 Retener Depósito`: Si requiere cotización en taller externo.
-  7. Presionar `✓ Completar Check-in & Liberar Auto`. El vehículo vuelve automáticamente a estado `DISPONIBLE`.
+# MÓDULO 07: ENTREGAS, DEVOLUCIONES & PROTOCOLO CHECK-IN / CHECK-OUT
+
+### 7.1 Objetivo del Módulo
+Supervisar el estado físico, mecánico y de limpieza del vehículo tanto al momento de salir de la agencia (Check-Out) como al retornar (Check-In), garantizando el cobro de penalizaciones justas ante faltantes o demoras.
+
+### 7.2 Protocolo de Salida (Check-Out)
+1. Llevar al cliente alrededor del vehículo para inspección visual conjunta.
+2. Confirmar que el odómetro coincida con el contrato.
+3. Verificar que el combustible coincida con el medidor gráfico.
+4. Marcar en la tableta cualquier detalle estético previo (rayones o golpes menores).
+5. Entregar la llave y desearle un excelente viaje.
+
+### 7.3 Protocolo de Recepción (Check-In & Liquidación)
+1. Recibir el automóvil y registrar el **Kilometraje Final (KM Llegada)**.
+2. Inspeccionar el **Nivel de Combustible**:
+   * *Si entrega con el mismo nivel:* No hay cargo de combustible.
+   * *Si entrega con menos nivel:* Se cobra la reposición según tarifa de combustible del Rent a Car.
+3. Revisar el estado de la carrocería comparando con el diagrama de salida:
+   * *Si hay daños nuevos:* Se cuantifica la reparación y se retiene del depósito en garantía.
+4. Verificar la **Hora de Entrega**:
+   * Más de 3 horas de retraso no autorizadas: Se factura un día adicional completo.
+5. Proceder a la devolución del remanente del depósito y cerrar la entrega.
 
 ---
 
-## PR-09: COBROS, FACTURACIÓN FISCAL CON NCF Y CIERRE DE CAJA
-* **Objetivo:** Garantizar la transparencia fiscal y el cuadre financiero diario.
-* **Responsable:** Cajero / Administrador.
-* **Pasos:**
-  1. Ingresar a `/pagos` y pulsar `+ Registrar Cobro / Factura`.
-  2. Seleccionar el contrato y el monto cobrado.
-  3. Seleccionar la forma de pago: `💵 Efectivo`, `💳 Tarjeta`, `🏦 Transferencia` o `🌐 PayPal`.
-  4. Ingresar el **Número de Comprobante Fiscal (NCF)** o número de voucher bancario.
-  5. Guardar el cobro.
-  6. Presionar `🧾 Recibo / NCF` para ver el recibo membretado con logo y presionar `💬 Enviar a WhatsApp` para remitir el comprobante al cliente.
-  7. Al finalizar el día, verificar el panel de **Cierre de Caja** en `/dashboard` cuadrando los totales por método de pago.
+# MÓDULO 08: CAJA, FACTURACIÓN CON NCF DOMINICANO & CONTROL DE PAGOS
+
+### 8.1 Objetivo del Módulo
+Registrar cada transacción monetaria, cobro de rentas, abonos, retención de depósitos y emisión de Comprobantes Fiscales autorizados por la DGII.
+
+### 8.2 Estructura de Comprobantes Fiscales (NCF)
+* **B01 (Crédito Fiscal):** Para empresas registradas que deducen ITBIS y gastos de ISR. (Requiere RNC válido).
+* **B02 (Consumidor Final):** Para personas físicas, turistas y clientes particulares sin crédito fiscal.
+* **B14 (Regímenes Especiales):** Para empresas en Zonas Francas exentas de ITBIS.
+* **B15 (Gubernamental):** Para instituciones del Estado dominicano.
+
+### 8.3 Guía de Llenado Campo por Campo (Pagos)
+| Campo | Obligatorio | Formato / Ejemplo | Explicación & Regla de Negocio |
+| :--- | :---: | :--- | :--- |
+| **Contrato Asociado** | **Sí** | Selector | Número de contrato que sustenta el cobro. |
+| **Monto a Cobrar** | **Sí** | `150.00` | Cantidad exacta a ingresar en caja. |
+| **Método de Pago** | **Sí** | `EFECTIVO`, `TARJETA`, `TRANSFERENCIA`, `STRIPE` | Medio de pago utilizado por el arrendatario. |
+| **Tipo de Comprobante NCF** | **Sí** | `B01`, `B02`, `B14`, `B15` | Tipo de comprobante fiscal requerido por el cliente. |
+| **RNC / Cédula Fiscal** | Obligatorio si es B01 | `1-31-88992-1` | RNC de la empresa receptora de la factura con crédito fiscal. |
+| **Concepto de Pago** | **Sí** | `Pago Renta Contrato #12 + Seguro Full Cover` | Detalle claro para el recibo y auditoría contable. |
 
 ---
 
-## PR-10: EXTENSIÓN DE RENTA Y RECORDATORIOS AUTOMATIZADOS
-* **Objetivo:** Prevenir retrasos y facilitar renovaciones de contrato a clientes activos.
-* **Responsable:** Asesor de Servicio al Cliente.
-* **Pasos:**
-  1. Ingresar a `/contratos`.
-  2. Identificar contratos próximos a vencer (24-48 horas).
-  3. Presionar el botón `🔔 Recordar`: Se abrirá un mensaje de WhatsApp prediseñado recordando la fecha de retorno e invitando al cliente a extender si lo desea.
-  4. Si el cliente solicita días adicionales:
-     * Presionar el botón `➕ Extender`.
-     * Seleccionar los días extra (*+1, +2, +3, +5, +7 días*).
-     * El sistema recalcula la nueva fecha de devolución y el monto adicional a cobrar.
-     * Presionar `✓ Confirmar Extensión`.
+# MÓDULO 09: TALLER, MANTENIMIENTO PREVENTIVO & CORRECTIVO
+
+### 9.1 Objetivo del Módulo
+Controlar la vida útil de los componentes mecánicos (cambios de aceite, pastillas de freno, neumáticos, amortiguadores), planificar mantenimientos preventivos cada 5,000 km y evitar que un vehículo en mal estado sea rentado.
+
+### 9.2 Procedimiento de Registro de Mantenimiento
+1. Ingresar a **Mantenimiento** (`/mantenimiento`) y presionar **`+ Registrar Servicio`**.
+2. Seleccionar el vehículo y tipo de mantenimiento (`PREVENTIVO` o `CORRECTIVO`).
+3. Ingresar la descripción de los trabajos y repuestos instalados.
+4. Establecer el costo total y el odómetro objetivo para el próximo servicio.
+5. Al guardar, el vehículo pasará automáticamente a estado `MANTENIMIENTO` bloqueando su disponibilidad en el calendario hasta que sea finalizado.
 
 ---
 
-## PR-11: MANTENIMIENTO PREVENTIVO Y ALERTAS DE TALLER
-* **Objetivo:** Asegurar la vida útil mecánica de la flota y la seguridad del usuario.
-* **Responsable:** Encargado de Mantenimiento.
-* **Pasos:**
-  1. Ingresar a `/mantenimiento`.
-  2. Registrar servicios ejecutados: Cambio de Aceite y Filtro, Frenos, Neumáticos, etc.
-  3. Indicar el kilometraje del servicio y el kilometraje sugerido para el próximo mantenimiento.
-  4. Monitorear la **Campana de Notificaciones (`🔔`)** en la cabecera del sistema, la cual alertará en vivo cuando un vehículo esté a 500 km o menos de su próximo servicio de taller.
+# MÓDULO 10: MONITOREO GPS SATELITAL, TELEMETRÍA & CORTE DE MOTOR
+
+### 10.1 Objetivo del Módulo
+Rastrear en tiempo real la ubicación geográfica de toda la flota, supervisar velocidades, nivel de batería, estado de ignición y ejecutar el inmovilizador satelital (corte de motor remoto) ante sospecha de robo o apropiación indebida.
+
+### 10.2 Protocolo de Apagado de Motor Remoto (Inmovilizador)
+> [!CAUTION]
+> El corte de motor solo debe ejecutarse con el vehículo detenido o a muy baja velocidad (<20 km/h) para evitar accidentes en autopistas, y bajo estricta autorización de la gerencia o en coordinación con la Policía Nacional / DIGESETT.
+
+1. Ingresar a **GPS Satelital** (`/gps`).
+2. Localizar el vehículo en el mapa satelital interactivo.
+3. Verificar estado de ignición y velocidad actual.
+4. Presionar el botón rojo **`🔒 Cortar Motor / Inmovilizar`**.
+5. Confirmar el diálogo de seguridad. El sistema enviará la trama de corte al dispositivo GPS y notificará por Telegram la confirmación de inmovilización.
+6. Una vez resuelto el incidente, presionar **`🔓 Reactivar Motor`** para habilitar el encendido.
 
 ---
 
-## PR-12: MONITOREO GPS SATELITAL E INMOVILIZACIÓN REMOTA
-* **Objetivo:** Proteger los activos vehiculares contra robo o uso indebido.
-* **Responsable:** Oficial de Seguridad / SuperAdmin.
-* **Pasos:**
-  1. Ingresar a `/gps`.
-  2. Visualizar la flota en el mapa interactivo satelital con velocidad y estado de ignición en tiempo real.
-  3. **Protocolo de Inmovilización Remota:**
-     * En caso de impago grave, salida no autorizada del país o sospecha de hurto:
-     * Seleccionar el vehículo y activar `🛑 Bloqueo de Motor`.
-     * Notificar a las autoridades competentes y al equipo de recuperación.
+# MÓDULO 11: EQUIPO, USUARIOS & MATRIZ DE PERMISOS
+
+### 11.1 Objetivo del Módulo
+Gestionar el personal interno de la empresa, asignando roles con permisos diferenciados para proteger la información sensible.
+
+### 11.2 Matriz de Roles y Permisos (RBAC)
+| Módulo / Acción | Administrador | Agente de Ventas | Encargado Flota | Chofer |
+| :--- | :---: | :---: | :---: | :---: |
+| **Configuración de Empresa** | ✅ Total | ❌ No | ❌ No | ❌ No |
+| **Crear y Modificar Vehículos** | ✅ Total | 👁️ Solo Lectura | ✅ Total | ❌ No |
+| **Emitir y Cobrar Contratos** | ✅ Total | ✅ Total | 👁️ Solo Lectura | ❌ No |
+| **Check-In / Check-Out de Flota** | ✅ Total | ✅ Total | ✅ Total | ✅ Solo Check-Out |
+| **Corte de Motor GPS** | ✅ Total | ❌ No | ❌ No | ❌ No |
+| **Auditoría Legal y Vencimientos** | ✅ Total | 👁️ Solo Lectura | ✅ Total | ❌ No |
 
 ---
 
-## PR-13: PLAN DE CONTINUIDAD, RESPALDOS Y RESTAURACIÓN ANTE DESASTRES
-* **Objetivo:** Salvaguardar la información operativa y financiera ante cualquier contingencia.
-* **Responsable:** SuperAdministrador Global.
-* **Pasos:**
-  1. Ingresar a `/backups`.
-  2. **Respaldo Periódico de Empresa:**
-     * Seleccionar la empresa en el menú desplegable.
-     * Presionar `📥 Descargar Respaldo Actual (JSON)`.
-  3. **Restauración Aislada de Empresa (Cliente con pérdida de datos):**
-     * Subir el archivo `.json` de la empresa.
-     * Validar el conteo de registros en la vista previa.
-     * Presionar `✓ Restaurar en [Empresa]`.
-  4. **Respaldo Global del Servidor:**
-     * Presionar `+ Generar Backup Ahora` para crear un snapshot `.sql` en el servidor PostgreSQL.
+# MÓDULO 12: RED DE ALIADOS & SUBARRENDAMIENTO B2B
+
+### 12.1 Objetivo del Módulo
+Permitir el intercambio colaborativo de flota entre agencias Rent a Car afiliadas a RentOS cuando una sucursal tiene sobredemanda de una categoría específica (ej. Jeeps 4x4 o Vans de 12 pasajeros).
+
+### 12.2 Procedimiento de Solicitud B2B
+1. Ingresar a **Red de Aliados** (`/red-aliados`).
+2. Explorar las unidades compartidas por agencias aliadas en la misma ciudad.
+3. Presionar **`Solicitar Intercambio / Subarrendamiento`**.
+4. La agencia propietaria recibirá la solicitud y al aprobarla, la unidad se integrará temporalmente a la flota disponible con su tarifa inter-empresa acordada.
 
 ---
 
-## 15. CHECKLISTS OPERATIVOS DE MOSTRADOR (ANEXOS)
+# MÓDULO 13: CONFIGURACIÓN DE LA EMPRESA & PERSONALIZACIÓN DE MARCA
 
-### Checklist de Turno de Mostrador:
-- [ ] Iniciar sesión en RentOS y revisar la campana de notificaciones `🔔`.
-- [ ] Revisar el `/calendario` de flota para entregas y recepciones del día.
-- [ ] Verificar contratos que vencen hoy y enviar recordatorio `🔔` por WhatsApp.
-- [ ] Realizar arqueo de caja en `/dashboard` al finalizar la jornada.
+### 13.1 Objetivo del Módulo
+Configurar la identidad visual corporativa (White-Label) de la empresa para que todos los contratos, facturas NCF y el portal web público lleven su logotipo, colores, eslogan y datos de contacto.
 
-### Checklist de Recepción de Auto (Check-in):
-- [ ] Verificar odómetro final vs contrato.
-- [ ] Validar nivel de combustible con el marcador digital de 5 niveles.
-- [ ] Realizar inspección 360° y colocar pines de daños si existen rayones.
-- [ ] Tomar fotos de evidencia y adjuntarlas en `/entregas`.
-- [ ] Liquidar el depósito de garantía (Reembolso o Deducción).
-- [ ] Liberar el vehículo a `DISPONIBLE`.
+### 13.2 Guía de Llenado Campo por Campo (Configuración)
+| Campo | Obligatorio | Formato / Ejemplo | Explicación & Regla de Negocio |
+| :--- | :---: | :--- | :--- |
+| **Nombre Comercial** | **Sí** | `Caribe Car Rental, SRL` | Razón social o nombre público del Rent a Car. |
+| **RNC** | **Sí** | `1-31-99283-1` | Registro Nacional de Contribuyentes para encabezados legales. |
+| **Teléfono & WhatsApp** | **Sí** | `8095550199` | Número directo al que los clientes escribirán para reservar autos. |
+| **Logotipo Oficial** | Recomendado | Archivo PNG/JPG o URL | Logotipo que aparecerá arriba a la izquierda en los contratos impresos y catálogo web. |
+| **Color Primario** | **Sí** | Selector de color `#1e3a8a` | Color predominante en botones, encabezados y catálogo web. |
+| **Moneda Predeterminada** | **Sí** | `USD` o `DOP` | Moneda estándar utilizada para cotizaciones y cobros. |
+| **Plantilla de Contrato** | **Sí** | `OFICIAL_DOMINICANA` o `PERSONALIZADA` | Permite elegir entre el marco estándar dominicano bajo Ley 483 / 63-17 o cláusulas redactadas a medida por la empresa. |
+
+---
+
+# MÓDULO 14: CATÁLOGO PÚBLICO DE RESERVAS WEB PARA CLIENTES FINALES
+
+### 14.1 Objetivo del Módulo
+Canal público de captación en línea (`/reservar?rentcar=:id`) que permite a turistas y clientes locales explorar la flota con fotos en alta calidad, consultar especificaciones mecánicas detalladas al dar clic en los vehículos, cotizar por fechas y reservar directamente con despacho a WhatsApp.
+
+### 14.2 Flujo de Experiencia del Cliente Final
+1. El cliente ingresa al enlace público proporcionado por la agencia (o escaneado de publicidad/redes).
+2. Selecciona las **Fechas de Retiro y Devolución** en el buscador superior.
+3. Puede filtrar por marca o categoría (*Sedán, SUV, Compacto, 4x4, Van, Lujo*).
+4. **Al hacer clic en cualquier vehículo**, se abre la **Ficha Técnica & Galería** con:
+   * Foto en gran formato.
+   * Insignias de Asientos, Maletas, Transmisión, Combustible y A/C.
+   * Lista de equipamiento (Bluetooth, Pantalla, Cámara de reversa, Airbags, etc.).
+   * Desglose del costo total estimado en la moneda de la empresa.
+5. El cliente puede presionar **`⚡ Reservar Este Auto`** para completar su nombre, teléfono y extras opcionales (*Seguro Full Cover, Silla para bebé, Conductor adicional*), o presionar **`💬 Consultar por WhatsApp`** para chatear directamente con el Rent a Car.
+
+---
+
+# MÓDULO 15: PORTAL PÚBLICO DE VERIFICACIÓN DE CONTRATOS QR
+
+### 15.1 Objetivo del Módulo
+Portal de validación pública accesible sin necesidad de iniciar sesión (`/verificar/:codigo`), permitiendo a las autoridades de tránsito (DIGESETT, Policía Nacional), aseguradoras o a los propios clientes escanear con la cámara del celular el código QR impreso en el contrato y certificar su legitimidad en tiempo real.
+
+### 15.2 Elementos de Seguridad del Portal de Verificación
+* **Sello Verde de Autenticidad:** Confirma que el contrato está formalmente registrado en la base de datos de RentOS.
+* **Hash Criptográfico SHA-256 Inmutable:** Certifica que los datos del cliente, vehículo y fechas no han sido alterados ni falsificados en papel.
+* **Datos Mostrados:**
+  * Número de Contrato oficial.
+  * Empresa Rent a Car emisora.
+  * Arrendatario y documento de identidad enmascarado.
+  * Vehículo, marca, modelo, año y placa oficial.
+  * Período de vigencia de la renta.
+  * Estado operativo actual del contrato.
+
+---
+
+## 📌 GUÍA PARA INCORPORAR NUEVAS MEJORAS AL MANUAL
+
+Cuando el equipo desarrolle una nueva funcionalidad o modifique un flujo existente:
+1. Localizar el módulo afectado en este archivo (`docs/MANUAL_DE_PROCEDIMIENTOS.md`).
+2. Si se agregaron nuevos campos en la base de datos o pantalla, agregarlos a la **Tabla de Llenado Campo por Campo** indicando: Nombre, Obligatoriedad, Formato y Regla de Negocio.
+3. Actualizar la tabla de **Control de Versiones** en el encabezado con el nuevo número de versión, fecha y resumen de cambios.
