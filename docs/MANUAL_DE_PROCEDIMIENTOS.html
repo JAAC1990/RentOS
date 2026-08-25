@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manual de Procedimiento de Todos los Módulos - RentOS</title>
+  <title>Manual de Procedimientos para Administradores y SuperAdministradores - RentOS</title>
   <style>
     :root {
       --primary: #1e3a8a;
@@ -12,6 +12,8 @@
       --text: #1e293b;
       --border: #cbd5e1;
       --bg: #f8fafc;
+      --danger: #dc2626;
+      --success: #16a34a;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -42,15 +44,16 @@
       background-color: #2563eb;
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 10px 22px;
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
       font-size: 14px;
       text-decoration: none;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.3);
     }
     .container {
-      max-width: 1000px;
+      max-width: 1050px;
       margin: 30px auto;
       background: white;
       padding: 40px;
@@ -100,9 +103,13 @@
       background: #fee2e2;
       color: #991b1b;
     }
-    .badge-no {
-      background: #f1f5f9;
-      color: #475569;
+    .badge-admin {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .badge-super {
+      background: #fae8ff;
+      color: #86198f;
     }
     .alert-box {
       background: #fefce8;
@@ -111,6 +118,11 @@
       border-radius: 4px;
       margin: 16px 0;
       font-size: 13px;
+    }
+    .alert-danger {
+      background: #fef2f2;
+      border-left: 4px solid var(--danger);
+      color: #991b1b;
     }
     @media print {
       .header-bar .btn-print, .no-print {
@@ -134,56 +146,114 @@
 <body>
 
   <div class="header-bar no-print">
-    <h1>📘 Manual de Procedimiento de Todos los Módulos</h1>
-    <p>Sistema Integral RentOS • Versión 2.0 (Ajustable con Diccionario Campo por Campo)</p>
+    <h1>👑 Manual de Procedimientos para Administradores & SuperAdministradores</h1>
+    <p>RentOS Multi-Tenant Enterprise SaaS • República Dominicana • Versión 2.0 Directiva</p>
     <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar en PDF</button>
   </div>
 
   <div class="container">
     <div style="text-align: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px;">
-      <h1 style="color: #1e3a8a; margin: 0 0 6px 0;">MANUAL DE PROCEDIMIENTO OPERATIVO ESTÁNDAR (SOP)</h1>
-      <strong style="color: #475569; font-size: 14px;">RentOS Multi-Tenant Enterprise SaaS • República Dominicana</strong>
-      <div style="font-size: 12px; color: #64748b; margin-top: 6px;">Código: <code>MPO-RENTOS-2026-V2</code> | Versión: 2.0 | Estado: Activo & Ajustable</div>
+      <h1 style="color: #1e3a8a; margin: 0 0 6px 0;">MANUAL DE PROCEDIMIENTOS OPERATIVOS (POE / SOP)</h1>
+      <strong style="color: #475569; font-size: 15px;">Guía de Gobernanza, Supervisión Directiva & Operaciones</strong>
+      <div style="margin-top: 8px;">
+        <span class="badge badge-super">SuperAdministrador (SaaS)</span>
+        <span class="badge badge-admin">Administrador de Rent a Car (Tenant)</span>
+      </div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 8px;">Código: <code>MPO-RENTOS-2026-ADM-V2</code> | Versión: 2.0 | Estado: Activo & Ajustable</div>
     </div>
 
-    <h2>📑 Control de Versiones & Registro de Cambios</h2>
+    <h2>👑 Matriz de Gobernanza y Responsabilidades (RACI)</h2>
     <table>
       <thead>
         <tr>
-          <th>Versión</th>
-          <th>Fecha</th>
-          <th>Módulos Modificados</th>
-          <th>Descripción del Cambio</th>
-          <th>Responsable</th>
+          <th>Proceso / Módulo Operativo</th>
+          <th>SuperAdministrador (SaaS)</th>
+          <th>Administrador de RentCar</th>
+          <th>Personal Operativo</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><b>v1.0</b></td>
-          <td>Agosto 2026</td>
-          <td>Módulos 1 al 10</td>
-          <td>Emisión inicial del manual operativo.</td>
-          <td>Operaciones IT</td>
+          <td><b>Aprobación de Nuevas Empresas / Tenants</b></td>
+          <td><b>R / A (Exclusivo)</b></td>
+          <td>I</td>
+          <td>I</td>
         </tr>
         <tr>
-          <td><b>v2.0</b></td>
-          <td>Agosto 2026</td>
-          <td>Todos los Módulos (1 al 15)</td>
-          <td>Diccionario campo por campo, fotos clicables, QR inmutable y reservas web.</td>
-          <td>Dirección RentOS</td>
+          <td><b>Configuración de Marca (Logo, Moneda, WhatsApp)</b></td>
+          <td>I</td>
+          <td><b>R / A (Exclusivo)</b></td>
+          <td>C</td>
+        </tr>
+        <tr>
+          <td><b>Definición de Plantilla de Contrato & Cláusulas</b></td>
+          <td>C</td>
+          <td><b>R / A (Exclusivo)</b></td>
+          <td>I</td>
+        </tr>
+        <tr>
+          <td><b>Alta de Flota, Fotos y Fichas Técnicas</b></td>
+          <td>I</td>
+          <td><b>A</b></td>
+          <td><b>R</b></td>
+        </tr>
+        <tr>
+          <td><b>Auditoría Legal (Seguros, Marbetes, Revistas)</b></td>
+          <td>I</td>
+          <td><b>R / A</b></td>
+          <td>C</td>
+        </tr>
+        <tr>
+          <td><b>Emisión, Firma Digital y QR de Contratos</b></td>
+          <td>I</td>
+          <td><b>A</b></td>
+          <td><b>R</b></td>
+        </tr>
+        <tr>
+          <td><b>Facturación Fiscal NCF (B01, B02, B14, B15)</b></td>
+          <td>I</td>
+          <td><b>R / A</b></td>
+          <td><b>R</b></td>
+        </tr>
+        <tr>
+          <td><b>Liquidación y Devolución de Depósitos</b></td>
+          <td>I</td>
+          <td><b>R / A (Exclusivo)</b></td>
+          <td>C</td>
+        </tr>
+        <tr>
+          <td><b>Corte de Motor Remoto GPS (Inmovilizador)</b></td>
+          <td>A (Auditoría)</td>
+          <td><b>R / A (Exclusivo)</b></td>
+          <td>❌ No Autorizado</td>
+        </tr>
+        <tr>
+          <td><b>Creación de Usuarios y Asignación de Roles</b></td>
+          <td><b>R (Crea Admins)</b></td>
+          <td><b>R (Crea Empleados)</b></td>
+          <td>❌ No Autorizado</td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Módulo 03: Flota y Vehículos -->
-    <h2>🚗 MÓDULO 03: Gestión de Flota & Fichas Técnicas</h2>
-    <p><b>Objetivo:</b> Administrar el parque vehicular, especificaciones para el cliente y auditoría de documentos DGII / DIGESETT.</p>
+    <!-- Módulo 00: SuperAdmin -->
+    <h2>🌐 MÓDULO 00: Procedimientos del SuperAdministrador</h2>
+    <p><b>Objetivo:</b> Gobernar la plataforma SaaS, auditar empresas solicitantes y garantizar el aislamiento multi-tenant.</p>
+    <ul>
+      <li><b>Aprobación de Empresas:</b> En <code>/solicitudes</code>, verificar el RNC ante la DGII, teléfono comercial y correo antes de pulsar <code>✅ Autorizar</code>.</li>
+      <li><b>Aislamiento de Base de Datos:</b> Garantizar que cada empresa solo tenga acceso a sus propios datos.</li>
+      <li><b>Respaldos de Seguridad:</b> Comprobación de copias diarias en PostgreSQL.</li>
+    </ul>
+
+    <!-- Módulo 03: Vehículos -->
+    <h2>🚗 MÓDULO 03: Flota, Fichas Técnicas & Auditoría Legal</h2>
+    <p><b>Objetivo:</b> Mantener la flota con fotografías en alta calidad para el cliente y seguros/marbetes al día.</p>
     <table>
       <thead>
         <tr>
           <th>Campo</th>
           <th>Obligatorio</th>
-          <th>Ejemplo / Formato</th>
+          <th>Formato / Ejemplo</th>
           <th>Instrucción & Regla de Negocio</th>
         </tr>
       </thead>
@@ -192,13 +262,13 @@
           <td><b>Fotografía Principal</b></td>
           <td><span class="badge">Recomendado</span></td>
           <td>JPG/PNG o URL</td>
-          <td>Foto real del auto que se mostrará en el catálogo web público y en la ficha interactiva.</td>
+          <td>Foto real que se muestra en el catálogo web público y en la ficha interactiva al dar clic.</td>
         </tr>
         <tr>
           <td><b>Marca & Modelo</b></td>
           <td><span class="badge badge-si">Sí</span></td>
           <td><code>Toyota Corolla LE</code></td>
-          <td>Fabricante y versión comercial exacta según título de propiedad.</td>
+          <td>Fabricante y versión comercial exacta según matrícula oficial.</td>
         </tr>
         <tr>
           <td><b>Año</b></td>
@@ -213,157 +283,98 @@
           <td>Placa oficial dominicana registrada en la DGII (Única en el sistema).</td>
         </tr>
         <tr>
-          <td><b>VIN / Chasis</b></td>
+          <td><b>No. Chasis / VIN</b></td>
           <td><span class="badge">Opcional</span></td>
           <td>17 caracteres</td>
-          <td>Número de chasis grabado. Crucial para reclamos a aseguradoras y reportes a la Policía.</td>
+          <td>Número grabado en el chasis. Fundamental para reclamos a aseguradoras y reporte de robo.</td>
         </tr>
         <tr>
-          <td><b>Categoría</b></td>
+          <td><b>Categoría & Transmisión</b></td>
           <td><span class="badge badge-si">Sí</span></td>
-          <td><code>SEDAN</code>, <code>SUV</code>, <code>4x4</code></td>
-          <td>Segmento vehicular para filtros en el portal público de reservas.</td>
-        </tr>
-        <tr>
-          <td><b>Transmisión & Combustible</b></td>
-          <td><span class="badge badge-si">Sí</span></td>
-          <td><code>Automática</code> / <code>Gasolina</code></td>
-          <td>Especificación mecánica visible en el catálogo para el turista o cliente final.</td>
+          <td><code>SEDAN</code> / <code>AUTOMATICA</code></td>
+          <td>Segmento vehicular y tipo de caja de cambios.</td>
         </tr>
         <tr>
           <td><b>Pasajeros & Maletas</b></td>
           <td><span class="badge badge-si">Sí</span></td>
           <td><code>5 Asientos</code> / <code>2 Maletas</code></td>
-          <td>Capacidad real de personas y equipaje en el maletero.</td>
+          <td>Capacidad física de ocupantes y equipaje.</td>
         </tr>
         <tr>
-          <td><b>Odómetro Inicial</b></td>
+          <td><b>Odómetro Inicial & Tarifa</b></td>
           <td><span class="badge badge-si">Sí</span></td>
-          <td><code>15,400 km</code></td>
-          <td>Kilometraje real al ingresar la unidad a la empresa.</td>
-        </tr>
-        <tr>
-          <td><b>Tarifa Diaria</b></td>
-          <td><span class="badge badge-si">Sí</span></td>
-          <td><code>$50.00 USD</code></td>
-          <td>Precio base por cada período de 24 horas de renta.</td>
+          <td><code>15,420 km</code> / <code>$45.00/día</code></td>
+          <td>Kilometraje inicial y tarifa por día de 24 horas.</td>
         </tr>
         <tr>
           <td><b>Póliza & Vencimiento</b></td>
           <td><span class="badge">Recomendado</span></td>
           <td><code>Seguros Universal</code> / <code>2027-02-15</code></td>
-          <td>El sistema emitirá alertas amarillas a los 30 días y rojas al vencerse.</td>
+          <td>El sistema alertará a los 30 días previos a la expiración.</td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Módulo 05: Clientes -->
-    <h2>👤 MÓDULO 05: Registro de Clientes & Documentos Legales</h2>
-    <p><b>Objetivo:</b> Registrar la identidad de arrendatarios, validar licencias vigentes y consultar historial crediticio.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Campo</th>
-          <th>Obligatorio</th>
-          <th>Ejemplo / Formato</th>
-          <th>Instrucción & Regla de Negocio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><b>Nombre & Apellido</b></td>
-          <td><span class="badge badge-si">Sí</span></td>
-          <td><code>Juan Carlos Pérez</code></td>
-          <td>Nombre legal completo idéntico al documento de identidad.</td>
-        </tr>
-        <tr>
-          <td><b>Teléfono / WhatsApp</b></td>
-          <td><span class="badge badge-si">Sí</span></td>
-          <td><code>+1 (809) 555-0199</code></td>
-          <td>Número telefónico principal con código de país para despacho automático del contrato QR.</td>
-        </tr>
-        <tr>
-          <td><b>Cédula / Pasaporte</b></td>
-          <td><span class="badge badge-si">Sí</span></td>
-          <td><code>402-1234567-8</code></td>
-          <td>Documento de identidad oficial. En extranjeros se registra el número de pasaporte.</td>
-        </tr>
-        <tr>
-          <td><b>Licencia de Conducir</b></td>
-          <td><span class="badge badge-si">Sí</span></td>
-          <td><code>DO-40212345678</code></td>
-          <td>Debe verificarse que no esté vencida durante el período de alquiler.</td>
-        </tr>
-        <tr>
-          <td><b>Referencia Familiar</b></td>
-          <td><span class="badge">Recomendado</span></td>
-          <td><code>María Pérez - 809-555-0144</code></td>
-          <td>Contacto de emergencia en caso de demora no reportada o accidente.</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Módulo 06: Contratos y QR -->
-    <h2>📄 MÓDULO 06: Emisión de Contratos, QR de Autenticidad & Firmas</h2>
+    <!-- Módulo 06: Contratos -->
+    <h2>📄 MÓDULO 06: Contratos Oficiales, Firma Digital & QR Inmutable</h2>
     <p><b>Objetivo:</b> Formalizar el arrendamiento bajo la Ley 483 y Ley 63-17 con código QR criptográfico inmutable.</p>
     <table>
       <thead>
         <tr>
           <th>Campo</th>
           <th>Obligatorio</th>
-          <th>Ejemplo / Formato</th>
+          <th>Formato / Ejemplo</th>
           <th>Instrucción & Regla de Negocio</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><b>Vehículo & Cliente</b></td>
+          <td><b>Cliente & Vehículo</b></td>
           <td><span class="badge badge-si">Sí</span></td>
           <td>Selectores</td>
-          <td>Asociación del auto disponible con el cliente previamente registrado.</td>
+          <td>Asociación del cliente registrado con el auto disponible.</td>
         </tr>
         <tr>
-          <td><b>Fechas de Salida / Retorno</b></td>
+          <td><b>Fechas Salida & Retorno</b></td>
           <td><span class="badge badge-si">Sí</span></td>
           <td><code>YYYY-MM-DD HH:MM</code></td>
-          <td>Fechas y horas exactas. La renta se calcula en bloques de 24 horas.</td>
+          <td>Período exacto pactado (en bloques de 24 horas).</td>
         </tr>
         <tr>
           <td><b>Depósito en Garantía</b></td>
           <td><span class="badge badge-si">Sí</span></td>
           <td><code>$200.00 USD</code></td>
-          <td>Fianza retenida para cubrir eventuales daños, faltante de gasolina o multas DIGESETT.</td>
+          <td>Fianza reembolsable retenida en tarjeta o efectivo.</td>
         </tr>
         <tr>
           <td><b>Tipo de Seguro</b></td>
           <td><span class="badge badge-si">Sí</span></td>
           <td><code>Full Cover</code>, <code>Full</code>, <code>De Ley</code></td>
-          <td>Nivel de cobertura del contrato pactado con el cliente.</td>
+          <td>Grado de cobertura ante siniestros.</td>
         </tr>
         <tr>
-          <td><b>Combustible de Salida</b></td>
+          <td><b>Nivel de Combustible</b></td>
           <td><span class="badge badge-si">Sí</span></td>
           <td><code>100% (Lleno)</code></td>
-          <td>Nivel que marca el medidor al salir. El cliente debe devolver con el mismo nivel.</td>
+          <td>Nivel registrado al salir. El cliente debe devolver con el mismo nivel.</td>
         </tr>
         <tr>
           <td><b>Checklist de 24 Accesorios</b></td>
           <td><span class="badge badge-si">Sí</span></td>
           <td>24 Casillas</td>
-          <td>Verificación de herramientas, gato, repuesto, micas, documentos y accesorios.</td>
+          <td>Verificación física de herramientas, repuesto, micas y accesorios.</td>
         </tr>
         <tr>
           <td><b>Firma Digital Táctil</b></td>
           <td><span class="badge badge-si">Sí</span></td>
           <td>Trazo en Pantalla</td>
-          <td>Captura de firma manuscrita del arrendatario y del inspector del Rent a Car.</td>
+          <td>Captura manuscrita del arrendatario y del inspector.</td>
         </tr>
       </tbody>
     </table>
 
     <!-- Módulo 08: Facturación NCF -->
-    <h2>💳 MÓDULO 08: Caja & Comprobantes Fiscales (NCF)</h2>
-    <p><b>Objetivo:</b> Cobro seguro de rentas, depósitos y emisión de NCF autorizados por la DGII.</p>
+    <h2>💳 MÓDULO 08: Comprobantes Fiscales NCF ante la DGII</h2>
     <table>
       <thead>
         <tr>
@@ -375,12 +386,12 @@
       <tbody>
         <tr>
           <td><b>B01 - Crédito Fiscal</b></td>
-          <td>Empresas y Personas Jurídicas</td>
-          <td>Requiere RNC válido registrado en DGII para deducir ITBIS y gastos.</td>
+          <td>Empresas Registradas en DGII</td>
+          <td>Requiere RNC válido para deducción de ITBIS y gastos de ISR.</td>
         </tr>
         <tr>
           <td><b>B02 - Consumidor Final</b></td>
-          <td>Clientes Particulares & Turistas</td>
+          <td>Particulares y Turistas</td>
           <td>Para personas físicas sin crédito fiscal.</td>
         </tr>
         <tr>
@@ -390,35 +401,33 @@
         </tr>
         <tr>
           <td><b>B15 - Gubernamental</b></td>
-          <td>Ministerios e Instituciones del Estado</td>
+          <td>Instituciones del Estado</td>
           <td>Compras del sector público dominicano.</td>
         </tr>
       </tbody>
     </table>
 
     <!-- Módulo 10: GPS y Telemetría -->
-    <h2>📡 MÓDULO 10: GPS Satelital & Corte de Motor Remoto</h2>
-    <p><b>Objetivo:</b> Monitoreo de ubicación en tiempo real, velocímetro, ignición e inmovilización remota.</p>
-    <div class="alert-box">
-      ⚠️ <b>Protocolo de Seguridad:</b> El corte de motor solo debe ejecutarse previa autorización de la gerencia y con el vehículo detenido o a baja velocidad (<20 km/h) para evitar accidentes.
+    <h2>📡 MÓDULO 10: Protocolo de Inmovilización Satelital (Corte de Motor)</h2>
+    <div class="alert-box alert-danger">
+      ⚠️ <b>DECISIÓN DIRECTIVA EXCLUSIVA:</b> El corte de motor solo debe ejecutarse cuando el auto esté <b>DETENIDO o a velocidad inferior a 20 km/h</b> para prevenir siniestros en autopistas, y bajo conocimiento de las autoridades policiales.
     </div>
 
-    <!-- Módulo 14: Catálogo Web Público -->
-    <h2>🌐 MÓDULO 14: Catálogo Público de Reservas Web</h2>
-    <p><b>Objetivo:</b> Portal en línea para que turistas y clientes coticen, vean fotos clicables y reserven vía WhatsApp.</p>
+    <!-- Módulo 13: Configuración -->
+    <h2>⚙️ MÓDULO 13: Configuración de Marca (White-Label)</h2>
     <ul>
-      <li><b>Fotografías Clicables:</b> Al hacer clic en cualquier auto, se abre la Ficha Técnica con especificaciones mecánicas detalladas.</li>
-      <li><b>Cotizador en Vivo:</b> Calcula el costo total exacto según los días seleccionados en el calendario.</li>
-      <li><b>Despacho a WhatsApp:</b> Conecta directamente con el número de atención del Rent a Car con el vehículo y fechas precargadas.</li>
+      <li><b>Logotipo Oficial:</b> Se estampa en la esquina superior izquierda de contratos y facturas.</li>
+      <li><b>Colores & Moneda:</b> Personaliza la interfaz y define la moneda estándar (<code>USD</code> o <code>DOP</code>).</li>
+      <li><b>Selector de Plantilla:</b> Permite alternar entre la <i>Plantilla Oficial Dominicana (Ley 483 / 63-17)</i> o <i>Plantilla Personalizada con Cláusulas Propias</i>.</li>
     </ul>
 
     <!-- Procedimiento de Ajuste del Manual -->
-    <h2>🔧 Procedimiento para Ajustar o Agregar Nuevos Módulos</h2>
+    <h2>🔧 Procedimiento para Ajustar Este Manual ante Nuevas Mejoras</h2>
     <ol>
-      <li>Editar el archivo <code>docs/MANUAL_DE_PROCEDIMIENTOS.md</code>.</li>
-      <li>Localizar el módulo o sección a actualizar.</li>
-      <li>Si se agregaron campos nuevos en pantallas o base de datos, incorporarlos en la tabla del diccionario de datos correspondiente.</li>
-      <li>Incrementar la versión en el Control de Versiones (ej. <code>v2.1</code>) y colocar la fecha y descripción del cambio.</li>
+      <li>Editar el archivo markdown: <code>docs/MANUAL_DE_PROCEDIMIENTOS.md</code>.</li>
+      <li>Localizar el módulo y agregar o modificar las instrucciones de los campos nuevos.</li>
+      <li>Actualizar el <b>Control de Versiones</b> con el nuevo número de versión (ej. <code>v2.1</code>), fecha y resumen de cambios.</li>
+      <li>Exportar el PDF actualizado con el botón superior.</li>
     </ol>
   </div>
 
