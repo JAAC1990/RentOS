@@ -302,7 +302,7 @@ Al hacer clic en **`+ Registrar Servicio`**, completar:
 | Nombre del Campo | ¿Obligatorio? | Formato / Ejemplo | Instrucción & Regla de Negocio |
 | :--- | :---: | :--- | :--- |
 | **Vehículo** | **Sí** | Selector | Vehículo que ingresa a taller. Pasará a estado `MANTENIMIENTO`. |
-| **Tipo de Servicio** | **Sí** | `PREVENTIVO` o `CORRECTIVO` | Cambio de aceite de rutina vs reparación por falla o choque. |
+| **Tipo de Servicio** | **Sí** | Selector + Campo "Otros" | Opciones: `Aceite & Filtro`, `Frenos`, `Neumáticos`, `Suspensión`, `Batería`, `Inspección` u **`Otros (Mantenimiento Personalizado)`** que despliega un campo de texto para especificar el trabajo exacto. |
 | **Descripción de Trabajos** | **Sí** | `Cambio de aceite sintético 5W30, filtro de aceite y pastillas de freno` | Detalle exhaustivo de las labores mecánicas realizadas. |
 | **Costo Total** | **Sí** | `4,500.00 DOP` o `85.00 USD` | Monto facturado por el taller o repuestos comprados. |
 | **Odómetro del Servicio** | **Sí** | `45,200 km` | Kilometraje en el que se realizó el trabajo. |

@@ -72,6 +72,7 @@ export default function MantenimientoPage() {
 
   const [vehiculoId, setVehiculoId] = useState("");
   const [tipoServicio, setTipoServicio] = useState("Cambio de Aceite y Filtro");
+  const [otroTipoServicio, setOtroTipoServicio] = useState("");
   const [costo, setCosto] = useState("65.00");
   const [monedaCosto, setMonedaCosto] = useState<"USD" | "DOP">("USD");
   const [tasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
@@ -163,8 +164,15 @@ export default function MantenimientoPage() {
   const registrarMantenimiento = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!vehiculoId || !tipoServicio) {
-      setError("Debes seleccionar un vehículo y tipo de servicio.");
+    const tipoFinal =
+      tipoServicio === "OTRO" ? otroTipoServicio.trim() : tipoServicio.trim();
+
+    if (!vehiculoId || !tipoFinal) {
+      setError(
+        tipoServicio === "OTRO"
+          ? "Debes especificar el tipo de mantenimiento personalizado."
+          : "Debes seleccionar un vehículo y tipo de servicio."
+      );
       return;
     }
 
@@ -173,11 +181,16 @@ export default function MantenimientoPage() {
       setError("");
       setMensaje("");
 
+      let costoFinalUSD = Number(costo);
+      if (monedaCosto === "DOP") {
+        costoFinalUSD = Number((costoFinalUSD / tasaCambio).toFixed(2));
+      }
+
       const datos = {
         vehiculoId: Number(vehiculoId),
-        tipoServicio: tipoServicio.trim(),
+        tipoServicio: tipoFinal,
         descripcion: descripcion.trim() || undefined,
-        costo: Number(costo),
+        costo: costoFinalUSD,
         kilometrajeServicio: Number(kilometrajeServicio),
         proximoKilometraje: Number(proximoKilometraje),
         proximaFechaServicio,
@@ -200,6 +213,7 @@ export default function MantenimientoPage() {
       setMensaje("✅ Servicio de mantenimiento registrado con éxito.");
       setVehiculoId("");
       setDescripcion("");
+      setOtroTipoServicio("");
       setMostrarFormulario(false);
       await cargarDatos();
     } catch (err) {
@@ -321,8 +335,24 @@ export default function MantenimientoPage() {
                   <option value="Suspensión y Amortiguadores">🔩 Suspensión y Amortiguadores</option>
                   <option value="Batería y Sistema Eléctrico">⚡ Batería y Sistema Eléctrico</option>
                   <option value="Inspección General">🔍 Inspección General Preventiva</option>
+                  <option value="OTRO">📦 Otros (Especificar tipo de servicio personalizado)</option>
                 </select>
               </div>
+
+              {/* Campo desplegable dinámico si se selecciona 'Otros' */}
+              {tipoServicio === "OTRO" && (
+                <div className="form-field" style={{ gridColumn: "span 2" }}>
+                  <label htmlFor="otroTipoServicio">Especifique el Tipo de Mantenimiento *</label>
+                  <input
+                    id="otroTipoServicio"
+                    type="text"
+                    placeholder="Ej. Reparación de Cremallera de Dirección, Cambio de Radiador, Pintura..."
+                    value={otroTipoServicio}
+                    onChange={(e) => setOtroTipoServicio(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
 
               <MonedaInput
                 id="mantCosto"
