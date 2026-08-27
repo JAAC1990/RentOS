@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import PhoneInput from "../../components/PhoneInput";
+import PhoneInput, { validarTelefono } from "../../components/PhoneInput";
 import FechaInput from "../../components/FechaInput";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
@@ -203,6 +203,12 @@ export default function ReservasPublicasPage() {
 
     if (!nombre.trim() || !apellido.trim() || !telefono.trim()) {
       setError("Por favor completa tu nombre, apellido y teléfono para confirmar la reserva.");
+      return;
+    }
+
+    const valTel = validarTelefono(telefono);
+    if (!valTel.valido) {
+      setError(valTel.mensajeError || "El teléfono ingresado no es válido.");
       return;
     }
 

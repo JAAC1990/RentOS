@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
-import PhoneInput from "../../components/PhoneInput";
+import PhoneInput, { validarTelefono } from "../../components/PhoneInput";
 
 type RentCar = {
   id: number;
@@ -190,6 +190,22 @@ export default function ConfiguracionPage() {
     if (!nombre.trim()) {
       setError("El nombre comercial de la empresa es obligatorio.");
       return;
+    }
+
+    if (telefono.trim()) {
+      const valTel = validarTelefono(telefono);
+      if (!valTel.valido) {
+        setError(valTel.mensajeError || "El teléfono de oficina no es válido.");
+        return;
+      }
+    }
+
+    if (whatsapp.trim()) {
+      const valWsp = validarTelefono(whatsapp);
+      if (!valWsp.valido) {
+        setError(valWsp.mensajeError || "El WhatsApp para reservas no es válido.");
+        return;
+      }
     }
 
     try {

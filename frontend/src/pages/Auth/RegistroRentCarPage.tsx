@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import PhoneInput from "../../components/PhoneInput";
+import PhoneInput, { validarTelefono } from "../../components/PhoneInput";
 import { API_URLS } from "../../services/api";
 
 export default function RegistroRentCarPage() {
@@ -33,6 +33,12 @@ export default function RegistroRentCarPage() {
 
     if (!nombreNegocio || !nombreContacto || !email || !telefono || !password) {
       setError("Por favor completa los campos obligatorios.");
+      return;
+    }
+
+    const valTel = validarTelefono(telefono);
+    if (!valTel.valido) {
+      setError(valTel.mensajeError || "El teléfono ingresado no es válido.");
       return;
     }
 

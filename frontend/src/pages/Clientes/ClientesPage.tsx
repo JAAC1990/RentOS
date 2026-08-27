@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import PhoneInput from "../../components/PhoneInput";
+import PhoneInput, { validarTelefono } from "../../components/PhoneInput";
 import FechaInput from "../../components/FechaInput";
 import { API_URLS } from "../../services/api";
 
@@ -142,6 +142,11 @@ export default function ClientesPage() {
     }
     if (!formulario.telefono.trim()) {
       setErrorFormulario("El teléfono de contacto es obligatorio.");
+      return false;
+    }
+    const valTel = validarTelefono(formulario.telefono);
+    if (!valTel.valido) {
+      setErrorFormulario(valTel.mensajeError || "El teléfono ingresado no es válido.");
       return false;
     }
     if (formulario.email.trim() && !formulario.email.includes("@")) {

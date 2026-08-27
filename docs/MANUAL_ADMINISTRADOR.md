@@ -20,6 +20,7 @@
 | **2.0** | 2026-08-24 | Todos los Módulos (1 al 15) | Guía exhaustiva de funcionalidades y llenado campo por campo, fotos clicables, QR inmutable y reservas web. | Dirección RentOS |
 | **2.1** | 2026-08-24 | Flota & Vehículos | Validación estricta de Placa (hasta 8 caracteres con guion), Año (exacto 4 dígitos) y Switch conversor USD ⇄ DOP en tiempo real. | Operaciones RentOS |
 | **2.2** | 2026-08-25 | Global / Todos los Módulos | Estandarización obligatoria del formato de fechas a **Día / Mes / Año (DD/MM/AAAA)** en todas las vistas, tablas, contratos, reportes de inspección, WhatsApp y exportaciones. | Dirección RentOS |
+| **2.3** | 2026-08-26 | Clientes & Teléfonos | Validación estricta de teléfonos por país: límite máximo de **10 dígitos para República Dominicana (809/829/849)** con máscara de guiones automática e impedimento de números incompletos. | Seguridad & Datos |
 
 ---
 
@@ -233,7 +234,7 @@ Al hacer clic en **`+ Nuevo Cliente`**, completar:
 | :--- | :---: | :--- | :--- |
 | **Nombre** | **Sí** | `Juan Carlos` | Primer y segundo nombre según cédula o pasaporte. |
 | **Apellido** | **Sí** | `Pérez Morales` | Apellidos completos del cliente. |
-| **Teléfono / WhatsApp** | **Sí** | `+1 (809) 555-0199` | Teléfono con código de país para envío del contrato QR vía WhatsApp. |
+| **Teléfono / WhatsApp** | **Sí** | `+1 809-555-0199` | **Validación estricta:** Para Rep. Dom. no permite más ni menos de **10 dígitos** sin contar guiones (iniciando en 809, 829 o 849). Para otros países aplica el límite internacional exacto. Se autoplaza con guiones automáticos. |
 | **Correo Electrónico** | No | `juan.perez@email.com` | Correo para facturación y confirmaciones. |
 | **Dirección Residencial** | Recomendado | `Calle Las Palmas #12, Santo Domingo` | Dirección física donde reside el cliente (o nombre de hotel si es turista). |
 | **No. Cédula / Pasaporte** | **Sí** | `402-1234567-8` o `P8472910` | Documento de identidad oficial y vigente. |
