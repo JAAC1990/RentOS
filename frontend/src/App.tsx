@@ -19,6 +19,7 @@ import ClientesPage from "./pages/Clientes/ClientesPage";
 import ContratosPage from "./pages/Contratos/ContratosPage";
 import EntregasPage from "./pages/Entregas/EntregasPage";
 import PagosPage from "./pages/Pagos/PagosPage";
+import ContabilidadPage from "./pages/Contabilidad/ContabilidadPage";
 import MantenimientoPage from "./pages/Mantenimiento/MantenimientoPage";
 import GpsPage from "./pages/Gps/GpsPage";
 import UsuariosPage from "./pages/Usuarios/UsuariosPage";
@@ -73,6 +74,7 @@ function AppRoutes() {
         <Route path="/contratos" element={<ContratosPage />} />
         <Route path="/entregas" element={<EntregasPage />} />
         <Route path="/pagos" element={<PagosPage />} />
+        <Route path="/contabilidad" element={<ContabilidadPage />} />
         <Route path="/mantenimiento" element={<MantenimientoPage />} />
         <Route path="/gps" element={<GpsPage />} />
         <Route path="/usuarios" element={<UsuariosPage />} />

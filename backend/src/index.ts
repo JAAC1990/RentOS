@@ -14,9 +14,11 @@ import express from "express";
 import authRoutes from "./routes/auth.routes.js";
 import backupRoutes from "./routes/backup.routes.js";
 import clientesRoutes from "./routes/clientes.routes.js";
+import contabilidadRoutes from "./routes/contabilidad.routes.js";
 import contratosRoutes from "./routes/contratos.routes.js";
 import creditoRoutes from "./routes/credito.routes.js";
 import entregasRoutes from "./routes/entregas.routes.js";
+import gastosRoutes from "./routes/gastos.routes.js";
 import gpsRoutes from "./routes/gps.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import mantenimientoRoutes from "./routes/mantenimiento.routes.js";
@@ -57,6 +59,9 @@ app.use("/api/backups", backupRoutes);
 // Directorio y gestión de clientes / arrendatarios
 app.use("/api/clientes", clientesRoutes);
 
+// Informes de contabilidad, P&L, balance de clientes y rentabilidad de flota
+app.use("/api/contabilidad", contabilidadRoutes);
+
 // Emisión, consulta, firma digital y extensión de contratos de renta
 app.use("/api/contratos", contratosRoutes);
 
@@ -65,6 +70,9 @@ app.use("/api/credito", creditoRoutes);
 
 // Inspecciones 360° de carrocería, fotos de daños y liquidación de depósitos (Check-in / Check-out)
 app.use("/api/entregas", entregasRoutes);
+
+// Gestión de gastos operativos, compras y egresos administrativos
+app.use("/api/gastos", gastosRoutes);
 
 // Rastreo satelital GPS en tiempo real y comando de corte de motor remoto
 app.use("/api/gps", gpsRoutes);

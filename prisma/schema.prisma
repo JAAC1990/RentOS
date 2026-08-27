@@ -68,6 +68,18 @@ enum EstadoMantenimiento {
   CANCELADO
 }
 
+enum CategoriaGasto {
+  MANTENIMIENTO_TALLER
+  COMBUSTIBLE_LAVADO
+  SEGUROS_MARBETES
+  NOMINA_PERSONAL
+  ALQUILER_LOCAL_SERVICIOS
+  REPUESTOS_ACCESORIOS
+  PUBLICIDAD_MARKETING
+  IMPUESTOS_LEGALES
+  OTROS_GASTOS
+}
+
 model RentCar {
   id        Int      @id @default(autoincrement())
   nombre    String   // Nombre comercial (ej. "RentCar Santo Domingo")
@@ -99,6 +111,7 @@ model RentCar {
   clientes       Cliente[]
   contratos      Contrato[]
   mantenimientos Mantenimiento[]
+  gastos         Gasto[]
 }
 
 model Usuario {
@@ -118,6 +131,7 @@ model Usuario {
   documentos          DocumentoCliente[]
   entregas            Entrega[]
   pagos               Pago[]
+  gastos              Gasto[]
 
   @@index([rentCarId])
 }
@@ -207,6 +221,7 @@ model Vehiculo {
   mantenimientos Mantenimiento[]
   ubicacionesGPS UbicacionGPS[]
   transferencias TransferenciaFlota[]
+  gastos         Gasto[]
 
   @@index([rentCarId])
 }
@@ -398,3 +413,29 @@ model TransferenciaFlota {
   @@index([origenRentCarId])
   @@index([destinoRentCarId])
 }
+
+model Gasto {
+  id          Int            @id @default(autoincrement())
+  rentCarId   Int            @default(1)
+  vehiculoId  Int?           // Opcional si el gasto es atribuible a una unidad específica de la flota (para ROI)
+  categoria   CategoriaGasto @default(OTROS_GASTOS)
+  descripcion String
+  monto       Decimal        @db.Decimal(10, 2)
+  moneda      String         @default("USD") // USD o DOP
+  fecha       DateTime       @default(now())
+  comprobante String?        // NCF, Factura o número de recibo
+  proveedor   String?        // Nombre del taller, suplidor o acreedor
+  metodoPago  TipoPago       @default(EFECTIVO)
+  usuarioId   Int?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  rentCar  RentCar   @relation(fields: [rentCarId], references: [id])
+  vehiculo Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  usuario  Usuario?  @relation(fields: [usuarioId], references: [id])
+
+  @@index([rentCarId])
+  @@index([vehiculoId])
+  @@index([fecha])
+}
+

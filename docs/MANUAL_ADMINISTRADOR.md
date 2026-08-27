@@ -22,6 +22,7 @@
 | **2.2** | 2026-08-25 | Global / Todos los Módulos | Estandarización obligatoria del formato de fechas a **Día / Mes / Año (DD/MM/AAAA)** en todas las vistas, tablas, contratos, reportes de inspección, WhatsApp y exportaciones. | Dirección RentOS |
 | **2.3** | 2026-08-26 | Clientes & Teléfonos | Validación estricta de teléfonos por país: límite máximo de **10 dígitos para República Dominicana (809/829/849)** con máscara de guiones automática e impedimento de números incompletos. | Seguridad & Datos |
 | **2.4** | 2026-08-26 | Pagos, Contratos & Monedas | Conmutador universal de moneda **Dólares (US$) ⇄ Pesos Dominicanos (RD$)** con cálculo en tiempo real en todos los cobros, contratos, depósitos y tarifas. Teléfono de referencia familiar con formato y guiones automáticos. | Operaciones & Finanzas |
+| **2.5** | 2026-08-27 | Módulo de Contabilidad & Finanzas | Lanzamiento del **Módulo Integral de Contabilidad (`/contabilidad`)**: Estado de Resultados (P&L), análisis financiero por cliente (cuánto gastó y en qué), ROI de flota por vehículo, registro de egresos operativos y emisión de Estados de Cuenta imprimibles en PDF. | Dirección Financiera / IT |
 
 ---
 
@@ -36,13 +37,14 @@
 6. [Módulo 05: Contratos, Firma Digital & QR de Autenticidad](#módulo-05-contratos-firma-digital--qr-de-autenticidad)
 7. [Módulo 06: Entregas, Devoluciones & Protocolo Check-In / Check-Out](#módulo-06-entregas-devoluciones--protocolo-check-in--check-out)
 8. [Módulo 07: Caja, Facturación con NCF Dominicano & Control de Pagos](#módulo-07-caja-facturación-con-ncf-dominicano--control-de-pagos)
-9. [Módulo 08: Taller, Mantenimiento Preventivo & Correctivo](#módulo-08-taller-mantenimiento-preventivo--correctivo)
-10. [Módulo 09: Monitoreo GPS Satelital, Telemetría & Corte de Motor](#módulo-09-monitoreo-gps-satelital-telemetría--corte-de-motor)
-11. [Módulo 10: Equipo, Usuarios & Matriz de Permisos](#módulo-10-equipo-usuarios--matriz-de-permisos)
-12. [Módulo 11: Red de Aliados & Subarrendamiento B2B](#módulo-11-red-de-aliados--subarrendamiento-b2b)
-13. [Módulo 12: Configuración de Marca White-Label](#módulo-12-configuración-de-marca-white-label)
-14. [Módulo 13: Portal Público de Reservas Web para Clientes](#módulo-13-portal-público-de-reservas-web-para-clientes)
-15. [Módulo 14: Portal Público de Verificación de Contratos QR](#módulo-14-portal-público-de-verificación-de-contratos-qr)
+9. [Módulo 08: Contabilidad, Finanzas & Estado de Resultados (P&L)](#módulo-08-contabilidad-finanzas--estado-de-resultados-pl)
+10. [Módulo 09: Taller, Mantenimiento Preventivo & Correctivo](#módulo-09-taller-mantenimiento-preventivo--correctivo)
+11. [Módulo 10: Monitoreo GPS Satelital, Telemetría & Corte de Motor](#módulo-10-monitoreo-gps-satelital-telemetría--corte-de-motor)
+12. [Módulo 11: Equipo, Usuarios & Matriz de Permisos](#módulo-11-equipo-usuarios--matriz-de-permisos)
+13. [Módulo 12: Red de Aliados & Subarrendamiento B2B](#módulo-12-red-de-aliados--subarrendamiento-b2b)
+14. [Módulo 13: Configuración de Marca White-Label](#módulo-13-configuración-de-marca-white-label)
+15. [Módulo 14: Portal Público de Reservas Web para Clientes](#módulo-14-portal-público-de-reservas-web-para-clientes)
+16. [Módulo 15: Portal Público de Verificación de Contratos QR](#módulo-15-portal-público-de-verificación-de-contratos-qr)
 
 ### PARTE II: MANUAL DE PROCEDIMIENTOS OPERATIVOS (Guía de Llenado Campo por Campo)
 * [Guía de Llenado de Vehículos](#guía-de-llenado-de-vehículos)
@@ -141,7 +143,18 @@ RentOS es una plataforma integral diseñada para optimizar todas las fases opera
 
 ---
 
-## MÓDULO 08: TALLER, MANTENIMIENTO PREVENTIVO & CORRECTIVO
+## MÓDULO 08: CONTABILIDAD, FINANZAS & ESTADO DE RESULTADOS (P&L)
+* **¿Para qué sirve?** Obtener el balance financiero integral de la empresa en cualquier período de tiempo, auditar los gastos y consumos exactos de cada cliente, analizar la rentabilidad por vehículo y controlar todos los costos operativos.
+* **¿Cómo funciona?**
+  * **Estado de Resultados (P&L):** Consolida en tiempo real los ingresos cobrados (rentas, extras, delivery, penalidades), resta los costos de taller y gastos operativos, calculando la **Utilidad Neta (Ganancia Real)** y el **Margen de Rentabilidad (%)**.
+  * **Análisis Financiero por Cliente:** Permite saber con exactitud **cuánto gastó el cliente y en qué** (desglose por contrato, auto, días, extras, delivery y seguro), con su saldo liquidado vs saldo pendiente, permitiendo emitir en 1 clic su **Estado de Cuenta Oficial en PDF**.
+  * **Rentabilidad por Vehículo (ROI de Flota):** Compara los ingresos producidos por cada auto contra sus gastos de taller y costos directos para identificar los vehículos más rentables.
+  * **Gestión de Egresos:** Registro categorizado de compras, combustible, lavado, nómina, alquileres y repuestos con `MonedaInput` (switch USD ⇄ DOP en vivo).
+  * **Exportación:** Permite descargar el informe en **Excel / CSV** o imprimir el balance oficial.
+
+---
+
+## MÓDULO 09: TALLER, MANTENIMIENTO PREVENTIVO & CORRECTIVO
 * **¿Para qué sirve?** Controlar los servicios mecánicos periódicos, cambios de aceite y reparaciones de choque.
 * **¿Cómo funciona?**
   * Bloquea automáticamente el vehículo en el calendario de flota mientras está en taller.
@@ -150,7 +163,7 @@ RentOS es una plataforma integral diseñada para optimizar todas las fases opera
 
 ---
 
-## MÓDULO 09: MONITOREO GPS SATELITAL, TELEMETRÍA & CORTE DE MOTOR
+## MÓDULO 10: MONITOREO GPS SATELITAL, TELEMETRÍA & CORTE DE MOTOR
 * **¿Para qué sirve?** Rastrear en tiempo real la ubicación de cada vehículo, supervisar excesos de velocidad e inmovilizar el motor ante robo o mora grave.
 * **¿Cómo funciona?**
   * Muestra el mapa satelital con velocímetro, estado de ignición y nivel de batería del GPS.
@@ -158,7 +171,7 @@ RentOS es una plataforma integral diseñada para optimizar todas las fases opera
 
 ---
 
-## MÓDULO 10: EQUIPO, USUARIOS & MATRIZ DE PERMISOS
+## MÓDULO 11: EQUIPO, USUARIOS & MATRIZ DE PERMISOS
 * **¿Para qué sirve?** Crear las cuentas de los empleados de la agencia y definir sus privilegios de acceso.
 * **¿Cómo funciona?**
   * **Administrador:** Acceso total a configuración, finanzas, corte de motor y contratos.
@@ -168,21 +181,21 @@ RentOS es una plataforma integral diseñada para optimizar todas las fases opera
 
 ---
 
-## MÓDULO 11: RED DE ALIADOS & SUBARRENDAMIENTO B2B
+## MÓDULO 12: RED DE ALIADOS & SUBARRENDAMIENTO B2B
 * **¿Para qué sirve?** Intercambiar vehículos entre agencias Rent a Car afiliadas a RentOS cuando no hay disponibilidad de una categoría solicitada.
 * **¿Cómo funciona?**
   * Permite solicitar en préstamo un vehículo de otra agencia pagando una tarifa inter-empresa acordada y generando comisiones compartidas.
 
 ---
 
-## MÓDULO 12: CONFIGURACIÓN DE MARCA WHITE-LABEL
+## MÓDULO 13: CONFIGURACIÓN DE MARCA WHITE-LABEL
 * **¿Para qué sirve?** Personalizar la identidad visual de la agencia en contratos, facturas y portal web.
 * **¿Cómo funciona?**
   * Permite subir el logotipo oficial, seleccionar el color corporativo, definir el número de WhatsApp para reservas, elegir la moneda por defecto (`USD` / `DOP`) y seleccionar entre la **Plantilla de Contrato Oficial Dominicana** o una **Plantilla Personalizada con Cláusulas Propias**.
 
 ---
 
-## MÓDULO 13: PORTAL PÚBLICO DE RESERVAS WEB PARA CLIENTES
+## MÓDULO 14: PORTAL PÚBLICO DE RESERVAS WEB PARA CLIENTES
 * **¿Para qué sirve?** Sitio web abierto para que los clientes finales y turistas puedan explorar la flota, cotizar por fechas y reservar.
 * **¿Cómo funciona?**
   * Los clientes pueden ver fotografías en alta resolución, filtrar por categoría (*Sedán, SUV, 4x4, Van, Lujo*), abrir la ficha técnica interactiva al hacer clic en cualquier auto y enviar la reserva directamente por WhatsApp al Rent a Car.
@@ -294,6 +307,25 @@ Al hacer clic en **`+ Registrar Servicio`**, completar:
 | **Costo Total** | **Sí** | `4,500.00 DOP` o `85.00 USD` | Monto facturado por el taller o repuestos comprados. |
 | **Odómetro del Servicio** | **Sí** | `45,200 km` | Kilometraje en el que se realizó el trabajo. |
 | **Próximo Servicio (km)** | **Sí** | `50,200 km` | Kilometraje objetivo para el siguiente mantenimiento (+5,000 km). |
+
+---
+
+## GUÍA DE REGISTRO DE GASTOS & CONTABILIDAD (`/contabilidad`)
+
+Al hacer clic en **`+ Registrar Gasto`** o consultar reportes:
+
+| Nombre del Campo / Filtro | ¿Obligatorio? | Formato / Ejemplo | Instrucción & Regla de Negocio |
+| :--- | :---: | :--- | :--- |
+| **Categoría Contable** | **Sí** | Selector oficial | `MANTENIMIENTO_TALLER`, `COMBUSTIBLE_LAVADO`, `SEGUROS_MARBETES`, `NOMINA_PERSONAL`, `ALQUILER_LOCAL_SERVICIOS`, `REPUESTOS_ACCESORIOS`, `PUBLICIDAD_MARKETING`, `IMPUESTOS_LEGALES`, `OTROS_GASTOS`. |
+| **Descripción del Gasto** | **Sí** | `Compra de 4 neumáticos nuevos para Kia Seltos` | Motivo detallado del egreso de caja o cuenta bancaria. |
+| **Monto del Gasto** | **Sí** | `150.00` US$ o `9,000.00` RD$ | Cantidad egresada con **Switch Moneda USD ⇄ DOP**. |
+| **Fecha de Realización** | **Sí** | `DD/MM/AAAA` | Momento exacto del desembolso o factura. |
+| **Comprobante / NCF / Factura #** | Opcional | `B0100000492` o `Voucher #882` | Número de comprobante fiscal para conciliación contable. |
+| **Proveedor / Taller** | Opcional | `Centro Gomas Dominicana, SRL` | Nombre de la entidad o suplidor receptor del pago. |
+| **Método de Pago** | **Sí** | `EFECTIVO`, `TRANSFERENCIA`, `TARJETA`, `OTRO` | Vía por la que salió el dinero. |
+| **Vehículo Asociado** | Opcional | Selector de Vehículo | Si el gasto corresponde a un auto específico, permite calcular su **ROI Unitario**. |
+| **Filtro de Período** | **Sí** | Presets o Rango `DD/MM/AAAA` | Filtra el P&L, consumos por cliente y balance de caja por fechas. |
+| **Estado de Cuenta de Cliente** | **Sí** | Botón `📄 Imprimir / Emitir` | Genera y descarga el PDF oficial con el desglose pormenorizado de consumos del cliente. |
 
 ---
 

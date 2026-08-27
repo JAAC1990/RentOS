@@ -48,6 +48,11 @@ const menuItems = [
     icon: "💳",
   },
   {
+    path: "/contabilidad",
+    label: "Contabilidad",
+    icon: "📊",
+  },
+  {
     path: "/mantenimiento",
     label: "Mantenimiento",
     icon: "🛠️",

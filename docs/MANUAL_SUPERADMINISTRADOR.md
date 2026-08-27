@@ -18,6 +18,7 @@
 | **1.0** | 2026-08-20 | Infraestructura Base | Publicación inicial del manual maestro del SuperAdmin. | Dirección IT |
 | **1.5** | 2026-08-23 | Multi-Tenant & Fiscal | Monitoreo de NCF y firmas criptográficas SHA-256 de contratos. | Seguridad / Legal |
 | **2.0** | 2026-08-24 | Todos los Módulos Maestros | Protocolo de onboarding de empresas, gestión de cuotas, DRP y diccionario de campos. | Dirección RentOS |
+| **2.5** | 2026-08-27 | Módulo de Contabilidad Multi-Tenant | Monitoreo centralizado del nuevo motor de contabilidad P&L, análisis financiero por cliente y ROI de flota por empresa. | Dirección IT / Finanzas |
 
 ---
 
