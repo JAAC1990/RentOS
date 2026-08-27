@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
+import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
 
 type Cliente = {
   id: number;
@@ -94,6 +95,9 @@ export default function PagosPage() {
   const [rentCarInfo, setRentCarInfo] = useState<RentCarInfo | null>(null);
 
   const [formulario, setFormulario] = useState<FormularioPago>(formularioInicial);
+  const [monedaVisualizacion, setMonedaVisualizacion] = useState<"USD" | "DOP">("USD");
+  const [monedaFormulario, setMonedaFormulario] = useState<"USD" | "DOP">("USD");
+  const [tasaCambio, setTasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -257,12 +261,65 @@ export default function PagosPage() {
           </p>
         </div>
 
-        <button
-          className="primary-button"
-          onClick={() => setMostrarFormulario(!mostrarFormulario)}
-        >
-          {mostrarFormulario ? "Cerrar Formulario" : "+ Registrar Cobro / Factura"}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          {/* Switch Convertidor de Moneda Global USD / DOP */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--surface)", padding: "4px 8px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)" }}>
+              MONEDA:
+            </span>
+            <div style={{ display: "flex", gap: "2px" }}>
+              <button
+                type="button"
+                style={{
+                  border: "none",
+                  padding: "3px 8px",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  backgroundColor: monedaVisualizacion === "USD" ? "var(--primary)" : "transparent",
+                  color: monedaVisualizacion === "USD" ? "#ffffff" : "var(--text)",
+                  cursor: "pointer",
+                }}
+                onClick={() => setMonedaVisualizacion("USD")}
+              >
+                💵 US$
+              </button>
+              <button
+                type="button"
+                style={{
+                  border: "none",
+                  padding: "3px 8px",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  backgroundColor: monedaVisualizacion === "DOP" ? "var(--primary)" : "transparent",
+                  color: monedaVisualizacion === "DOP" ? "#ffffff" : "var(--text)",
+                  cursor: "pointer",
+                }}
+                onClick={() => setMonedaVisualizacion("DOP")}
+              >
+                🇩🇴 RD$
+              </button>
+            </div>
+            <div style={{ borderLeft: "1px solid var(--border)", paddingLeft: "6px", marginLeft: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Tasa:</span>
+              <input
+                type="number"
+                value={tasaCambio}
+                onChange={(e) => setTasaCambio(Math.max(1, parseFloat(e.target.value) || 60))}
+                style={{ width: "52px", padding: "2px 4px", fontSize: "11px", borderRadius: "4px", border: "1px solid var(--border)" }}
+                title="Tasa de cambio USD a DOP"
+              />
+            </div>
+          </div>
+
+          <button
+            className="primary-button"
+            onClick={() => setMostrarFormulario(!mostrarFormulario)}
+          >
+            {mostrarFormulario ? "Cerrar Formulario" : "+ Registrar Cobro / Factura"}
+          </button>
+        </div>
       </div>
 
       {/* Alertas */}
@@ -272,9 +329,11 @@ export default function PagosPage() {
       {/* Tarjetas de Métricas de Caja */}
       <div className="dashboard-metrics" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
         <div className="metric-card">
-          <div className="metric-title">Total Recaudado</div>
+          <div className="metric-title">Total Recaudado ({monedaVisualizacion})</div>
           <div className="metric-value" style={{ color: "var(--success)" }}>
-            ${Number(stats.totalRecaudado).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            {monedaVisualizacion === "USD"
+              ? `$ ${Number(stats.totalRecaudado).toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`
+              : `RD$ ${(Number(stats.totalRecaudado) * tasaCambio).toLocaleString("es-DO", { minimumFractionDigits: 2 })} DOP`}
           </div>
           <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "4px" }}>
             {stats.cantidadPagados} cobros confirmados
@@ -333,18 +392,16 @@ export default function PagosPage() {
                 </select>
               </div>
 
-              <div className="form-field">
-                <label htmlFor="montoInput">Monto a Cobrar ($) *</label>
-                <input
-                  id="montoInput"
-                  type="number"
-                  step="0.01"
-                  placeholder="Ej. 150.00"
-                  value={formulario.monto}
-                  onChange={(e) => setFormulario({ ...formulario, monto: e.target.value })}
-                  required
-                />
-              </div>
+              <MonedaInput
+                id="montoInput"
+                label="Monto a Cobrar"
+                value={formulario.monto}
+                onChange={(val) => setFormulario({ ...formulario, monto: val })}
+                moneda={monedaFormulario}
+                onMonedaChange={setMonedaFormulario}
+                tasaCambio={tasaCambio}
+                required
+              />
 
               <div className="form-field">
                 <label htmlFor="tipoSelect">Método de Pago *</label>
@@ -501,9 +558,25 @@ export default function PagosPage() {
                       ) : "N/D"}
                     </td>
                     <td>
-                      <strong style={{ fontSize: "14px", color: "#15803d" }}>
-                        ${Number(p.monto).toFixed(2)}
-                      </strong>
+                      {monedaVisualizacion === "USD" ? (
+                        <div>
+                          <strong style={{ fontSize: "14px", color: "#15803d" }}>
+                            ${Number(p.monto).toFixed(2)} USD
+                          </strong>
+                          <div style={{ fontSize: "10px", color: "var(--text-secondary)" }}>
+                            ≈ RD$ {(Number(p.monto) * tasaCambio).toLocaleString("es-DO", { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <strong style={{ fontSize: "14px", color: "#15803d" }}>
+                            RD$ {(Number(p.monto) * tasaCambio).toLocaleString("es-DO", { minimumFractionDigits: 2 })} DOP
+                          </strong>
+                          <div style={{ fontSize: "10px", color: "var(--text-secondary)" }}>
+                            ≈ ${Number(p.monto).toFixed(2)} USD
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td>{iconoTipoPago(p.tipo)}</td>
                     <td>

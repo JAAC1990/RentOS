@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
 import FechaInput from "../../components/FechaInput";
+import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
 
 type Vehiculo = {
   id: number;
@@ -72,6 +73,8 @@ export default function MantenimientoPage() {
   const [vehiculoId, setVehiculoId] = useState("");
   const [tipoServicio, setTipoServicio] = useState("Cambio de Aceite y Filtro");
   const [costo, setCosto] = useState("65.00");
+  const [monedaCosto, setMonedaCosto] = useState<"USD" | "DOP">("USD");
+  const [tasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
   const [kilometrajeServicio, setKilometrajeServicio] = useState("");
   const [proximoKilometraje, setProximoKilometraje] = useState("");
   const [proximaFechaServicio, setProximaFechaServicio] = useState(
@@ -321,18 +324,16 @@ export default function MantenimientoPage() {
                 </select>
               </div>
 
-              <div className="form-field">
-                <label htmlFor="mantCosto">Costo Total ($ USD) *</label>
-                <input
-                  id="mantCosto"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={costo}
-                  onChange={(e) => setCosto(e.target.value)}
-                  required
-                />
-              </div>
+              <MonedaInput
+                id="mantCosto"
+                label="Costo del Servicio"
+                value={costo}
+                onChange={(val) => setCosto(val)}
+                moneda={monedaCosto}
+                onMonedaChange={setMonedaCosto}
+                tasaCambio={tasaCambio}
+                required
+              />
 
               <div className="form-field">
                 <label htmlFor="mantFecha">Fecha de Realización (DD/MM/AAAA) *</label>

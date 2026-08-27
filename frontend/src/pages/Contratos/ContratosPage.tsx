@@ -18,6 +18,8 @@ import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
 import FechaInput from "../../components/FechaInput";
+import PhoneInput from "../../components/PhoneInput";
+import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
 import ContratoDominicanoImprimible, { type DatosContratoImpresion } from "../../components/ContratoDominicanoImprimible";
 import ModalFirmaDigital from "../../components/ModalFirmaDigital";
 
@@ -151,6 +153,8 @@ export default function ContratosPage() {
   const [rentCarInfo, setRentCarInfo] = useState<RentCarInfo | null>(null);
 
   const [formulario, setFormulario] = useState<FormularioContrato>(formularioInicial);
+  const [monedaFormulario, setMonedaFormulario] = useState<"USD" | "DOP">("USD");
+  const [tasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
@@ -753,53 +757,38 @@ export default function ContratosPage() {
                 </select>
               </div>
 
-              {/* Tarifas y Depósito */}
-              <div className="form-field">
-                <label htmlFor="tarifaDiaria">Tarifa Diaria ({rentCarInfo?.moneda || "USD"}) *</label>
-                <input
-                  id="tarifaDiaria"
-                  type="number"
-                  min="1"
-                  step="0.01"
-                  placeholder="Tarifa por día"
-                  value={formulario.tarifaDiaria}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, tarifaDiaria: e.target.value }))
-                  }
-                  required
-                />
-              </div>
+              {/* Tarifas y Depósito con MonedaInput */}
+              <MonedaInput
+                id="tarifaDiaria"
+                label="Tarifa Diaria"
+                value={formulario.tarifaDiaria}
+                onChange={(val) => setFormulario((prev) => ({ ...prev, tarifaDiaria: val }))}
+                moneda={monedaFormulario}
+                onMonedaChange={setMonedaFormulario}
+                tasaCambio={tasaCambio}
+                required
+              />
 
-              <div className="form-field">
-                <label htmlFor="deposito">Depósito de Garantía ({rentCarInfo?.moneda || "USD"}) *</label>
-                <input
-                  id="deposito"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Monto de depósito"
-                  value={formulario.deposito}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, deposito: e.target.value }))
-                  }
-                  required
-                />
-              </div>
+              <MonedaInput
+                id="deposito"
+                label="Depósito de Garantía"
+                value={formulario.deposito}
+                onChange={(val) => setFormulario((prev) => ({ ...prev, deposito: val }))}
+                moneda={monedaFormulario}
+                onMonedaChange={setMonedaFormulario}
+                tasaCambio={tasaCambio}
+                required
+              />
 
-              <div className="form-field">
-                <label htmlFor="deliveryMonto">Cargo Delivery / Aeropuerto ({rentCarInfo?.moneda || "USD"})</label>
-                <input
-                  id="deliveryMonto"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formulario.deliveryMonto}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, deliveryMonto: e.target.value }))
-                  }
-                />
-              </div>
+              <MonedaInput
+                id="deliveryMonto"
+                label="Cargo Delivery / Aeropuerto"
+                value={formulario.deliveryMonto}
+                onChange={(val) => setFormulario((prev) => ({ ...prev, deliveryMonto: val }))}
+                moneda={monedaFormulario}
+                onMonedaChange={setMonedaFormulario}
+                tasaCambio={tasaCambio}
+              />
 
               {/* Kilometraje y Nivel de Gasolina */}
               <div className="form-field">
@@ -832,20 +821,15 @@ export default function ContratosPage() {
                 </select>
               </div>
 
-              <div className="form-field">
-                <label htmlFor="cobrosExtra">Cobros Extra / Adicionales ({rentCarInfo?.moneda || "USD"})</label>
-                <input
-                  id="cobrosExtra"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formulario.cobrosExtra}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, cobrosExtra: e.target.value }))
-                  }
-                />
-              </div>
+              <MonedaInput
+                id="cobrosExtra"
+                label="Cobros Extra / Adicionales"
+                value={formulario.cobrosExtra}
+                onChange={(val) => setFormulario((prev) => ({ ...prev, cobrosExtra: val }))}
+                moneda={monedaFormulario}
+                onMonedaChange={setMonedaFormulario}
+                tasaCambio={tasaCambio}
+              />
 
               {/* Referencias Familiares */}
               <div className="form-field">
@@ -863,32 +847,25 @@ export default function ContratosPage() {
 
               <div className="form-field">
                 <label htmlFor="refFamiliarTel">Teléfono Referencia Familiar</label>
-                <input
+                <PhoneInput
                   id="refFamiliarTel"
-                  type="text"
-                  placeholder="Ej. 809-555-9988"
                   value={formulario.refFamiliarTel}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, refFamiliarTel: e.target.value }))
+                  onChange={(val) =>
+                    setFormulario((prev) => ({ ...prev, refFamiliarTel: val }))
                   }
+                  placeholder="809-555-0199"
                 />
               </div>
 
-              <div className="form-field">
-                <label htmlFor="precioHora">Precio Hora Extra (Opcional)</label>
-                <input
-                  id="precioHora"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Ej. 10.00"
-                  value={formulario.precioHora}
-                  onChange={(e) =>
-                    setFormulario((prev) => ({ ...prev, precioHora: e.target.value }))
-                  }
-                />
-              </div>
-
+              <MonedaInput
+                id="precioHora"
+                label="Precio Hora Extra (Opcional)"
+                value={formulario.precioHora}
+                onChange={(val) => setFormulario((prev) => ({ ...prev, precioHora: val }))}
+                moneda={monedaFormulario}
+                onMonedaChange={setMonedaFormulario}
+                tasaCambio={tasaCambio}
+              />
               {/* Resumen Calculado de la Renta */}
               <div
                 style={{
@@ -907,7 +884,7 @@ export default function ContratosPage() {
                     Resumen Estimado: {diasCalculados} {diasCalculados === 1 ? "día" : "días"} de renta
                   </strong>
                   <div style={{ color: "var(--text-secondary)", fontSize: "12px", marginTop: "2px" }}>
-                    Tarifa diaria: ${Number(formulario.tarifaDiaria || 0).toFixed(2)} • Depósito: ${Number(formulario.deposito || 0).toFixed(2)} • Extras/Delivery: ${(Number(formulario.cobrosExtra || 0) + Number(formulario.deliveryMonto || 0)).toFixed(2)}
+                    Tarifa diaria: {monedaFormulario === "USD" ? "$" : "RD$"} {Number(formulario.tarifaDiaria || 0).toFixed(2)} • Depósito: {monedaFormulario === "USD" ? "$" : "RD$"} {Number(formulario.deposito || 0).toFixed(2)} • Extras/Delivery: {monedaFormulario === "USD" ? "$" : "RD$"} {(Number(formulario.cobrosExtra || 0) + Number(formulario.deliveryMonto || 0)).toFixed(2)}
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -915,7 +892,7 @@ export default function ContratosPage() {
                     Total Alquiler Estimado:
                   </span>
                   <strong style={{ fontSize: "22px", color: "var(--primary)" }}>
-                    ${totalEstimado} {rentCarInfo?.moneda || "USD"}
+                    {monedaFormulario === "USD" ? "$" : "RD$"} {totalEstimado} {monedaFormulario}
                   </strong>
                 </div>
               </div>

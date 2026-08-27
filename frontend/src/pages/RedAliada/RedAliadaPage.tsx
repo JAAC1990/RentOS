@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
+import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
 
 type RentCarAliado = {
   id: number;
@@ -66,6 +67,8 @@ export default function RedAliadaPage() {
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<VehiculoRed | null>(null);
 
   const [tarifaPactada, setTarifaPactada] = useState("50.00");
+  const [monedaPactada, setMonedaPactada] = useState<"USD" | "DOP">("USD");
+  const [tasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
   const [notas, setNotas] = useState("");
 
   const [filtroCiudad, setFiltroCiudad] = useState("TODAS");
@@ -567,18 +570,16 @@ export default function RedAliadaPage() {
             </div>
 
             <form onSubmit={enviarSolicitudTransferencia}>
-              <div className="form-field" style={{ marginBottom: "14px" }}>
-                <label htmlFor="tarifaPactadaInput">Tarifa Inter-Empresa Acordada ($/día) *</label>
-                <input
-                  id="tarifaPactadaInput"
-                  type="number"
-                  min="1"
-                  step="0.5"
-                  value={tarifaPactada}
-                  onChange={(e) => setTarifaPactada(e.target.value)}
-                  required
-                />
-              </div>
+              <MonedaInput
+                id="tarifaPactadaInput"
+                label="Tarifa Inter-Empresa Acordada"
+                value={tarifaPactada}
+                onChange={(val) => setTarifaPactada(val)}
+                moneda={monedaPactada}
+                onMonedaChange={setMonedaPactada}
+                tasaCambio={tasaCambio}
+                required
+              />
 
               <div className="form-field" style={{ marginBottom: "20px" }}>
                 <label htmlFor="notasInput">Notas o Período Estimado</label>

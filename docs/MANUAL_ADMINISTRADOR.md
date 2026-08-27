@@ -21,6 +21,7 @@
 | **2.1** | 2026-08-24 | Flota & Vehículos | Validación estricta de Placa (hasta 8 caracteres con guion), Año (exacto 4 dígitos) y Switch conversor USD ⇄ DOP en tiempo real. | Operaciones RentOS |
 | **2.2** | 2026-08-25 | Global / Todos los Módulos | Estandarización obligatoria del formato de fechas a **Día / Mes / Año (DD/MM/AAAA)** en todas las vistas, tablas, contratos, reportes de inspección, WhatsApp y exportaciones. | Dirección RentOS |
 | **2.3** | 2026-08-26 | Clientes & Teléfonos | Validación estricta de teléfonos por país: límite máximo de **10 dígitos para República Dominicana (809/829/849)** con máscara de guiones automática e impedimento de números incompletos. | Seguridad & Datos |
+| **2.4** | 2026-08-26 | Pagos, Contratos & Monedas | Conmutador universal de moneda **Dólares (US$) ⇄ Pesos Dominicanos (RD$)** con cálculo en tiempo real en todos los cobros, contratos, depósitos y tarifas. Teléfono de referencia familiar con formato y guiones automáticos. | Operaciones & Finanzas |
 
 ---
 
@@ -254,10 +255,11 @@ Al hacer clic en **`+ Nuevo Contrato`**, completar:
 | **Vehículo** | **Sí** | Selector | Unidad en estado `DISPONIBLE`. |
 | **Fecha/Hora de Inicio** | **Sí** | `DD/MM/AAAA HH:MM` | Momento exacto de entrega de la llave al cliente. |
 | **Fecha/Hora de Retorno** | **Sí** | `DD/MM/AAAA HH:MM` | Momento pactado de devolución en base a períodos de 24 horas. |
-| **Tarifa Diaria** | **Sí** | `50.00` | Monto diario por día de renta. Auto-cargado desde el vehículo. |
-| **Depósito en Garantía** | **Sí** | `200.00`, `500.00` | Monto de fianza reembolsable que se retiene en tarjeta o efectivo. |
-| **Cobros Extra / Servicios** | No | `20.00` | Cargos adicionales (ej. Conductor adicional, GPS portátil, Silla de bebé). |
-| **Monto de Delivery** | No | `15.00` | Cargo por entrega en aeropuerto, hotel o domicilio fuera de la oficina. |
+| **Tarifa Diaria** | **Sí** | `50.00` US$ o `3,000.00` RD$ | Monto diario por día de renta. Incluye **Switch Moneda USD ⇄ DOP** y equivalencia en tiempo real. |
+| **Depósito en Garantía** | **Sí** | `200.00` US$ o `12,000.00` RD$ | Fianza reembolsable. Incluye **Switch Moneda USD ⇄ DOP**. |
+| **Cobros Extra / Servicios** | No | `20.00` US$ / `1,200.00` RD$ | Cargos adicionales (Conductor adicional, GPS, Silla de bebé) con **Switch USD ⇄ DOP**. |
+| **Monto de Delivery** | No | `15.00` US$ / `900.00` RD$ | Cargo por entrega fuera de oficina con **Switch USD ⇄ DOP**. |
+| **Teléfono Referencia Familiar** | Recomendado | `+1 809-555-0199` | Teléfono con código de país y **guiones automáticos** para contacto de emergencia. |
 | **Tipo de Seguro** | **Sí** | `FULL_COVER`, `FULL`, `LEY` | Grado de cobertura ante colisión, vuelco, robo o daños a terceros. |
 | **Nivel Combustible Salida** | **Sí** | `100% (Lleno)`, `75% (3/4)`, `50% (1/2)` | Nivel exacto de combustible que marca el tablero al salir. |
 | **Checklist 24 Accesorios** | **Sí** | 24 Casillas de verificación | Verificación física de herramientas, repuesto, micas, alfombras y documentos. |
@@ -272,8 +274,8 @@ Al hacer clic en **`+ Registrar Pago`**, completar:
 | Nombre del Campo | ¿Obligatorio? | Formato / Ejemplo | Instrucción & Regla de Negocio |
 | :--- | :---: | :--- | :--- |
 | **Contrato Asociado** | **Sí** | Selector | Número de contrato que sustenta el cobro. |
-| **Monto a Cobrar** | **Sí** | `150.00` | Cantidad exacta a ingresar en caja. |
-| **Método de Pago** | **Sí** | `EFECTIVO`, `TARJETA`, `TRANSFERENCIA`, `STRIPE` | Medio de pago utilizado por el arrendatario. |
+| **Monto a Cobrar** | **Sí** | `150.00` US$ o `9,000.00` RD$ | Cantidad exacta a ingresar en caja. Permite **Switch Moneda USD ⇄ DOP** y conversión en vivo. |
+| **Método de Pago** | **Sí** | `EFECTIVO`, `TARJETA`, `TRANSFERENCIA`, `PAYPAL` | Medio de pago utilizado por el arrendatario. |
 | **Tipo de Comprobante NCF** | **Sí** | `B01`, `B02`, `B14`, `B15` | Tipo de comprobante fiscal requerido por el cliente. |
 | **RNC / Cédula Fiscal** | Obligatorio si es B01 | `1-31-88992-1` | RNC de la empresa receptora de la factura con crédito fiscal. |
 | **Concepto de Pago** | **Sí** | `Pago Renta Contrato #12 + Seguro Full Cover` | Detalle claro para el recibo y auditoría contable. |

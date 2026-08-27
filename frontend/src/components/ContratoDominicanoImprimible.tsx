@@ -90,6 +90,21 @@ type Props = {
   onCerrar?: () => void;
 };
 
+function formatearTelefonoImpresion(tel?: string | null): string {
+  if (!tel) return "-";
+  const str = tel.trim();
+  if (str.includes("-")) return str;
+  const digitos = str.replace(/\D/g, "");
+  if (digitos.length === 10) {
+    return `${digitos.slice(0, 3)}-${digitos.slice(3, 6)}-${digitos.slice(6, 10)}`;
+  }
+  if (digitos.length === 11 && digitos.startsWith("1")) {
+    const d = digitos.slice(1);
+    return `+1 ${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6, 10)}`;
+  }
+  return str;
+}
+
 export default function ContratoDominicanoImprimible({ contrato, onCerrar }: Props) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const contenedorImpresionRef = useRef<HTMLDivElement>(null);
@@ -371,12 +386,12 @@ export default function ContratoDominicanoImprimible({ contrato, onCerrar }: Pro
                   <b>Dirección:</b> <span>{contrato.cliente.direccion || "Santo Domingo, República Dominicana"}</span>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px dotted #cbd5e1", paddingBottom: "1px" }}>
-                  <div><b>Teléfono:</b> <span>{contrato.cliente.telefono}</span></div>
+                  <div><b>Teléfono:</b> <span>{formatearTelefonoImpresion(contrato.cliente.telefono)}</span></div>
                   <div><b>Cédula/Licencia:</b> <span>{contrato.cliente.licenciaNumero || contrato.cliente.documentoNumero || "DO-8839201-1"}</span></div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
                   <div><b>Ref. Familiar:</b> <span>{contrato.refFamiliarNombre || "Contacto de Emergencia"}</span></div>
-                  <div><b>Tel:</b> <span>{contrato.refFamiliarTel || contrato.cliente.telefono}</span></div>
+                  <div><b>Tel:</b> <span>{formatearTelefonoImpresion(contrato.refFamiliarTel || contrato.cliente.telefono)}</span></div>
                 </div>
               </div>
             </div>
