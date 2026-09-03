@@ -739,6 +739,85 @@ a {
 }
 
 /* =========================================================
+   PANTALLAS DE AUTENTICACIÓN (LOGIN Y REGISTRO) RESPONSIVE
+   ========================================================= */
+
+.login-page-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background);
+  padding: 24px 16px;
+  font-family: Inter, sans-serif;
+  box-sizing: border-box;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.login-card-container {
+  max-width: 880px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  background-color: var(--surface);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.login-form-side {
+  padding: 40px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.login-demo-side {
+  background-color: var(--primary-soft);
+  border-left: 1px solid var(--border);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .login-page-container {
+    padding: 16px 12px;
+    align-items: flex-start;
+  }
+
+  .login-card-container {
+    display: flex !important;
+    flex-direction: column !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 16px;
+    margin: 8px auto;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  .login-form-side {
+    padding: 28px 18px !important;
+    width: 100% !important;
+  }
+
+  .login-demo-side {
+    padding: 24px 18px !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border) !important;
+    width: 100% !important;
+  }
+}
+
+/* =========================================================
    SISTEMA RESPONSIVE INTEGRAL PARA MÓVILES Y TABLETAS
    ========================================================= */
 

@@ -120,32 +120,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "var(--background)",
-        padding: "20px",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "880px",
-          width: "100%",
-          display: "grid",
-          gridTemplateColumns: "1fr 1.1fr",
-          backgroundColor: "var(--surface)",
-          borderRadius: "20px",
-          border: "1px solid var(--border)",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
-          overflow: "hidden",
-        }}
-      >
+    <div className="login-page-container">
+      <div className="login-card-container">
         {/* Lado Izquierdo: Formulario de Inicio de Sesión */}
-        <div style={{ padding: "40px 36px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div className="login-form-side">
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
             <div
               style={{
@@ -315,16 +293,7 @@ export default function LoginPage() {
         </div>
 
         {/* Lado Derecho: Selector Rápido de Roles (SuperAdmin vs RentCars) */}
-        <div
-          style={{
-            backgroundColor: "var(--primary-soft)",
-            borderLeft: "1px solid var(--border)",
-            padding: "40px 32px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
+        <div className="login-demo-side">
           <h3 style={{ fontSize: "15px", margin: "0 0 4px 0", color: "var(--primary)" }}>
             ⚡ Acceso Rápido por Rol
           </h3>

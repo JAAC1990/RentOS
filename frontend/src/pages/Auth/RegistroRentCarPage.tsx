@@ -76,17 +76,7 @@ export default function RegistroRentCarPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "var(--background)",
-        padding: "24px 20px",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
+    <div className="login-page-container">
       <div
         style={{
           maxWidth: "600px",
@@ -94,8 +84,9 @@ export default function RegistroRentCarPage() {
           backgroundColor: "var(--surface)",
           borderRadius: "20px",
           border: "1px solid var(--border)",
-          padding: "36px",
+          padding: "36px 28px",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
+          boxSizing: "border-box",
         }}
       >
         {/* Cabecera */}
@@ -154,7 +145,7 @@ export default function RegistroRentCarPage() {
             {error && <div className="alert-box error" style={{ marginBottom: "16px" }}>{error}</div>}
 
             <form onSubmit={handleSubmit}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+              <div className="form-grid" style={{ marginBottom: "12px" }}>
                 <div className="form-field">
                   <label htmlFor="regNegocio">Nombre Comercial del Rent a Car *</label>
                   <input
@@ -179,7 +170,7 @@ export default function RegistroRentCarPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+              <div className="form-grid" style={{ marginBottom: "12px" }}>
                 <div className="form-field">
                   <label htmlFor="regContacto">Nombre y Apellido del Dueño / Contacto *</label>
                   <input
@@ -205,7 +196,7 @@ export default function RegistroRentCarPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+              <div className="form-grid" style={{ marginBottom: "12px" }}>
                 <div className="form-field">
                   <label htmlFor="regEmail">Correo Electrónico (Para Iniciar Sesión) *</label>
                   <input
@@ -229,7 +220,7 @@ export default function RegistroRentCarPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+              <div className="form-grid" style={{ marginBottom: "16px" }}>
                 <div className="form-field">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                     <label htmlFor="regPass" style={{ margin: 0 }}>Contraseña Deseada *</label>
