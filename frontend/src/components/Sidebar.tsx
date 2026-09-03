@@ -79,20 +79,37 @@ const menuItems = [
   },
 ];
 
-function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const { usuario } = useAuth();
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? "open" : ""}`}>
       <div className="sidebar-brand">
-        <div className="brand-mark">R</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="brand-mark">R</div>
 
-        <div>
-          <div className="brand-name">RentOS</div>
-          <div className="brand-subtitle">
-            Rent Operating System
+          <div>
+            <div className="brand-name">RentOS</div>
+            <div className="brand-subtitle">
+              Rent Operating System
+            </div>
           </div>
         </div>
+
+        {/* Botón de cierre visible únicamente en móviles y tabletas */}
+        <button
+          type="button"
+          className="sidebar-close-btn"
+          onClick={onClose}
+          aria-label="Cerrar menú lateral"
+        >
+          ✕
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -101,6 +118,7 @@ function Sidebar() {
             <div className="nav-section-title" style={{ color: "#a855f7" }}>SUPERADMIN</div>
             <NavLink
               to="/solicitudes"
+              onClick={onClose}
               className={({ isActive }) =>
                 `nav-item ${isActive ? "active" : ""}`
               }
@@ -111,6 +129,7 @@ function Sidebar() {
             </NavLink>
             <NavLink
               to="/backups"
+              onClick={onClose}
               className={({ isActive }) =>
                 `nav-item ${isActive ? "active" : ""}`
               }
@@ -128,6 +147,7 @@ function Sidebar() {
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={onClose}
             className={({ isActive }) =>
               `nav-item ${isActive ? "active" : ""}`
             }
@@ -142,6 +162,7 @@ function Sidebar() {
           href="/reservar"
           target="_blank"
           rel="noreferrer"
+          onClick={onClose}
           className="nav-item"
           style={{ color: "#38bdf8" }}
         >

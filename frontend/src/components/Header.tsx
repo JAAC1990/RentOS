@@ -30,7 +30,11 @@ type AlertaNotificacion = {
   urgencia: "alta" | "media";
 };
 
-function Header() {
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+function Header({ onToggleSidebar }: HeaderProps) {
   const { usuario, logout, tenantActivoId, cambiarTenantSuperadmin } = useAuth();
   const [rentCar, setRentCar] = useState<RentCar | null>(null);
   const [listaRentCars, setListaRentCars] = useState<RentCar[]>([]);
@@ -164,37 +168,49 @@ function Header() {
 
   return (
     <header className="topbar">
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+        {/* Botón Hamburguesa visible en Móviles y Tabletas */}
+        <button
+          type="button"
+          className="mobile-hamburger-btn"
+          onClick={onToggleSidebar}
+          title="Abrir menú de navegación"
+          aria-label="Abrir menú de navegación"
+        >
+          ☰
+        </button>
+
         <div
+          className="topbar-logo-icon"
           style={{
-            width: "40px",
-            height: "40px",
+            width: "38px",
+            height: "38px",
             borderRadius: "10px",
             background: "linear-gradient(135deg, var(--primary) 0%, #2563eb 100%)",
             color: "white",
             display: "grid",
             placeItems: "center",
-            fontSize: "20px",
+            fontSize: "18px",
             boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
             flexShrink: 0,
           }}
         >
           🏢
         </div>
-        <div>
-          <div className="topbar-title" style={{ fontSize: "16px", fontWeight: 800, color: "var(--text)", lineHeight: 1.2 }}>
+        <div style={{ minWidth: 0, overflow: "hidden" }}>
+          <div className="topbar-title" style={{ fontSize: "15px", fontWeight: 800, color: "var(--text)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {rentCar ? rentCar.nombre : "RentOS"}
           </div>
 
-          <div className="topbar-subtitle" style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "3px", display: "flex", alignItems: "center", gap: "6px" }}>
+          <div className="topbar-subtitle" style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "2px", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
             {usuario?.rol === "SUPERADMIN" ? (
-              <span className="badge badge-disponible" style={{ fontSize: "10px", padding: "1px 6px" }}>
-                👑 Modo SuperAdministrador Global
+              <span className="badge badge-disponible" style={{ fontSize: "9px", padding: "1px 5px" }}>
+                👑 SuperAdmin
               </span>
             ) : rentCar ? (
-              <span>Plataforma SaaS • <b>{rentCar.ciudad}</b></span>
+              <span><b>{rentCar.ciudad}</b></span>
             ) : (
-              <span>Sistema de gestión para Rent Cars</span>
+              <span>Rent Car System</span>
             )}
           </div>
         </div>

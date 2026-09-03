@@ -108,30 +108,46 @@ a {
 .app-shell {
   min-height: 100vh;
   background: var(--background);
+  position: relative;
 }
 
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
-  width: 250px;
+  width: 260px;
   display: flex;
   flex-direction: column;
   background: var(--sidebar);
   color: white;
-  z-index: 10;
+  z-index: 1000;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+.sidebar-close-btn {
+  display: none;
+}
+
+.mobile-hamburger-btn {
+  display: none;
 }
 
 .app-main {
-  width: calc(100% - 250px);
+  width: calc(100% - 260px);
   min-height: 100vh;
-  margin-left: 250px;
+  margin-left: 260px;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  background: var(--background);
 }
 
 .page-content {
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
-  padding: 32px;
+  padding: 24px 32px;
 }
 
 /* =========================
@@ -722,67 +738,220 @@ a {
   }
 }
 
-@media (max-width: 800px) {
+/* =========================================================
+   SISTEMA RESPONSIVE INTEGRAL PARA MÓVILES Y TABLETAS
+   ========================================================= */
+
+@media (max-width: 1024px) {
+  /* Menú Lateral Drawer en Móviles / Tablets */
   .sidebar {
-    position: static;
-    width: 100%;
-    min-height: auto;
+    position: fixed !important;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    z-index: 9999;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.45);
+    overflow-y: auto;
   }
 
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Fondo Oscuro Traslúcido al abrir el Drawer */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(3px);
+    z-index: 9998;
+    animation: fadeIn 0.2s ease;
+  }
+
+  /* Botón de Cierre dentro del Drawer */
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: auto;
+    transition: background 0.2s ease;
+  }
+
+  .sidebar-close-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Botón Hamburguesa en la Barra Superior */
+  .mobile-hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 20px;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Contenedor Principal Ocupa el 100% de la Pantalla */
   .app-main {
-    width: 100%;
-    margin-left: 0;
+    width: 100% !important;
+    margin-left: 0 !important;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   .page-content {
-    padding: 20px;
+    padding: 16px 14px;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   .topbar {
-    padding: 0 20px;
-  }
-
-  .page-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-actions {
-    grid-column: span 1;
-  }
-
-  .filter-bar {
-    flex-direction: column;
-    align-items: stretch;
+    padding: 0 14px;
+    min-height: 64px;
+    gap: 8px;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .page-content {
-    padding: 16px;
+    padding: 12px 10px;
   }
 
   .topbar {
-    min-height: 68px;
-    padding: 0 16px;
+    min-height: 60px;
+    padding: 0 10px;
   }
 
-  .topbar-subtitle,
-  .user-info span {
+  .topbar-subtitle {
     display: none;
   }
 
-  .page-heading h1 {
-    font-size: 24px;
+  .page-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
   }
+
+  .page-heading h1 {
+    font-size: 20px;
+  }
+
+  .page-heading > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .page-heading button,
+  .page-heading a {
+    flex: 1 1 auto;
+    justify-content: center;
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  /* Tablas con desplazamiento táctil horizontal fluido */
+  .table-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: block;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .data-table {
+    min-width: 650px;
+    width: 100%;
+  }
+
+  /* Adaptación de Grids y Tarjetas Métricas */
+  .stats-grid,
+  .dashboard-metrics {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .form-field {
+    grid-column: span 1 !important;
+  }
+
+  .content-panel {
+    padding: 14px 12px !important;
+    border-radius: 10px;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* Barras de Filtros en Móviles */
+  .filter-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .filter-bar input,
+  .filter-bar select,
+  .filter-bar button {
+    width: 100% !important;
+  }
+
+  /* Modales y Diálogos Adaptados a Móviles */
+  div[style*="position: fixed"][style*="z-index: 9999"],
+  div[style*="position: fixed"][style*="z-index: 99999"] {
+    padding: 8px !important;
+  }
+
+  div[style*="position: fixed"] > div[style*="max-width"],
+  div[style*="position: fixed"] > form[style*="max-width"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 94vh !important;
+    padding: 16px 12px !important;
+    overflow-y: auto !important;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Reglas Globales de Impresión Limpia (Print Styles) */
