@@ -222,24 +222,7 @@ export default function RegistroRentCarPage() {
 
               <div className="form-grid" style={{ marginBottom: "16px" }}>
                 <div className="form-field">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <label htmlFor="regPass" style={{ margin: 0 }}>Contraseña Deseada *</label>
-                    <button
-                      type="button"
-                      onClick={() => setMostrarPassword(!mostrarPassword)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--primary)",
-                        fontSize: "11px",
-                        cursor: "pointer",
-                        padding: 0,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {mostrarPassword ? "🙈 Ocultar" : "👁️ Ver"}
-                    </button>
-                  </div>
+                  <label htmlFor="regPass">Contraseña Deseada *</label>
                   <div style={{ position: "relative" }}>
                     <input
                       id="regPass"

@@ -27,10 +27,23 @@ async function asegurarUsuariosIniciales() {
   // 1. SuperAdmin Global (Acceso administrativo a toda la red SaaS)
   await prisma.usuario.upsert({
     where: { email: "superadmin@rentos.do" },
-    update: {},
+    update: { password: hash },
     create: {
       nombre: "SuperAdministrador Global",
       email: "superadmin@rentos.do",
+      password: hash,
+      rol: RolUsuario.SUPERADMIN,
+      rentCarId: null,
+      activo: true,
+    },
+  });
+
+  await prisma.usuario.upsert({
+    where: { email: "admin@rentos.com" },
+    update: { password: hash, rol: RolUsuario.SUPERADMIN },
+    create: {
+      nombre: "SuperAdministrador Global",
+      email: "admin@rentos.com",
       password: hash,
       rol: RolUsuario.SUPERADMIN,
       rentCarId: null,
@@ -45,6 +58,19 @@ async function asegurarUsuariosIniciales() {
     create: {
       nombre: "Administrador Santo Domingo",
       email: "admin@rentos.local",
+      password: hash,
+      rol: RolUsuario.ADMIN_RENTCAR,
+      rentCarId: 1,
+      activo: true,
+    },
+  });
+
+  await prisma.usuario.upsert({
+    where: { email: "admin@rentcar.com" },
+    update: { password: hash, rol: RolUsuario.ADMIN_RENTCAR, rentCarId: 1 },
+    create: {
+      nombre: "Administrador RentCar",
+      email: "admin@rentcar.com",
       password: hash,
       rol: RolUsuario.ADMIN_RENTCAR,
       rentCarId: 1,

@@ -170,27 +170,7 @@ export default function LoginPage() {
             </div>
 
             <div className="form-field" style={{ marginBottom: "12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                <label htmlFor="loginPass" style={{ margin: 0 }}>Contraseña *</label>
-                <button
-                  type="button"
-                  onClick={() => setMostrarPassword(!mostrarPassword)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--primary)",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    padding: 0,
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
-                >
-                  {mostrarPassword ? "🙈 Ocultar" : "👁️ Ver contraseña"}
-                </button>
-              </div>
+              <label htmlFor="loginPass">Contraseña *</label>
 
               <div style={{ position: "relative" }}>
                 <input
