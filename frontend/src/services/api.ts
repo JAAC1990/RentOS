@@ -6,8 +6,8 @@
  * tipadas para consultar vehículos, clientes, contratos, entregas y pagos.
  */
 
-// URL base dinámica con soporte para variables de entorno de producción
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+// URL base dinámica con soporte para variables de entorno de producción o proxy relativo
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 // Diccionario de endpoints de todos los micro-módulos del sistema
 export const API_URLS = {

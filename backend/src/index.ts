@@ -33,7 +33,7 @@ import vehiculosRoutes from "./routes/vehiculos.routes.js";
 const app = express();
 
 // Puerto de escucha del servidor
-const PORT = 3000;
+const PORT = process.env.PORT || 4000;
 
 // ----------------------------------------------------------------------------
 // Middlewares Globales
