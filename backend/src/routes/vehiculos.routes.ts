@@ -83,7 +83,9 @@ router.get("/vencimientos", async (req, res) => {
     await inicializarFechasDocumentos();
 
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : undefined;
-    const where: any = {};
+    const where: any = {
+      estado: { not: "INACTIVO" },
+    };
     if (rentCarId && !isNaN(rentCarId)) {
       where.rentCarId = rentCarId;
     }
@@ -213,7 +215,9 @@ router.post("/notificar-vencimientos-telegram", async (_req, res) => {
 router.get("/", async (req, res) => {
   try {
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : undefined;
-    const where: any = {};
+    const where: any = {
+      estado: { not: "INACTIVO" },
+    };
     if (rentCarId && !isNaN(rentCarId)) {
       where.rentCarId = rentCarId;
     }
@@ -476,6 +480,16 @@ router.delete("/:id", async (req, res) => {
             estado: true,
           },
         },
+        mantenimientos: {
+          select: {
+            id: true,
+          },
+        },
+        gastos: {
+          select: {
+            id: true,
+          },
+        },
       },
     });
 
@@ -502,67 +516,51 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
-    // Limpieza en cascada en una transacción atómica segura
-    await prisma.$transaction(async (tx) => {
-      // 1. Eliminar ubicaciones GPS asociadas
-      await tx.ubicacionGPS.deleteMany({
-        where: { vehiculoId: id },
-      });
+    const tieneHistorialContable =
+      vehiculo.contratos.length > 0 ||
+      vehiculo.mantenimientos.length > 0 ||
+      vehiculo.gastos.length > 0;
 
-      // 2. Eliminar órdenes de mantenimiento / taller asociadas
-      await tx.mantenimiento.deleteMany({
-        where: { vehiculoId: id },
-      });
-
-      // 3. Eliminar gastos directos asociados a este vehículo
-      await tx.gasto.deleteMany({
-        where: { vehiculoId: id },
-      });
-
-      // 4. Eliminar transferencias de flota asociadas
-      await tx.transferenciaFlota.deleteMany({
-        where: { vehiculoId: id },
-      });
-
-      // 5. Para contratos no activos (finalizados, borrador o cancelados), limpiar entregas, evidencias, pagos y contratos
-      const contratoIds = vehiculo.contratos.map((c) => c.id);
-      if (contratoIds.length > 0) {
-        const entregas = await tx.entrega.findMany({
-          where: { contratoId: { in: contratoIds } },
-          select: { id: true },
-        });
-        const entregaIds = entregas.map((e) => e.id);
-
-        if (entregaIds.length > 0) {
-          await tx.defectoVehiculo.deleteMany({
-            where: { entregaId: { in: entregaIds } },
-          });
-          await tx.evidencia.deleteMany({
-            where: { entregaId: { in: entregaIds } },
-          });
-          await tx.entrega.deleteMany({
-            where: { id: { in: entregaIds } },
-          });
-        }
-
-        await tx.pago.deleteMany({
-          where: { contratoId: { in: contratoIds } },
+    if (tieneHistorialContable) {
+      // PRESERVACIÓN CONTABLE TOTAL:
+      // El vehículo se retira de la flota activa marcándolo como 'INACTIVO' para que
+      // no aparezca en el inventario activo ni en contratos nuevos ni en el mapa satelital.
+      // SE PRESERVAN AL 100% todos los contratos pasados, ingresos, cobros, facturas NCF,
+      // mantenimientos y gastos para que la Contabilidad y P&L permanezcan íntegros.
+      await prisma.$transaction(async (tx) => {
+        await tx.ubicacionGPS.deleteMany({
+          where: { vehiculoId: id },
         });
 
-        await tx.contrato.deleteMany({
-          where: { id: { in: contratoIds } },
+        await tx.vehiculo.update({
+          where: { id },
+          data: {
+            estado: "INACTIVO",
+          },
         });
-      }
-
-      // 6. Eliminar finalmente el vehículo
-      await tx.vehiculo.delete({
-        where: { id },
       });
-    });
 
-    res.json({
-      mensaje: `🗑️ Vehículo ${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa}) eliminado exitosamente.`,
-    });
+      return res.json({
+        mensaje: `🗑️ Vehículo ${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa}) retirado y eliminado de la flota activa. Toda su facturación, ingresos, pagos y gastos contables han sido preservados intactos en el módulo de Contabilidad.`,
+      });
+    } else {
+      // Si era una unidad nueva sin historial contable ni financiero registrado, se elimina por completo.
+      await prisma.$transaction(async (tx) => {
+        await tx.ubicacionGPS.deleteMany({
+          where: { vehiculoId: id },
+        });
+        await tx.transferenciaFlota.deleteMany({
+          where: { vehiculoId: id },
+        });
+        await tx.vehiculo.delete({
+          where: { id },
+        });
+      });
+
+      return res.json({
+        mensaje: `🗑️ Vehículo ${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa}) eliminado exitosamente.`,
+      });
+    }
   } catch (error) {
     console.error("Error al eliminar vehículo:", error);
     res.status(500).json({

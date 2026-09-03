@@ -23,7 +23,10 @@ router.get("/alertas", async (req, res) => {
     const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : 1;
 
     const vehiculos = await prisma.vehiculo.findMany({
-      where: { rentCarId },
+      where: {
+        rentCarId,
+        estado: { not: "INACTIVO" },
+      },
       include: {
         mantenimientos: {
           orderBy: { fechaServicio: "desc" },
