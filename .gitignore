@@ -34,3 +34,7 @@ node_modules/
 
 # Archivos compilados
 dist/
+
+# Binarios y Túneles
+*.exe
+cloudflared.exe
