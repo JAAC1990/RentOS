@@ -455,8 +455,11 @@ export default function VehiculosPage() {
   };
 
   const eliminarVehiculo = async (id: number) => {
+    const v = vehiculos.find((x) => x.id === id);
+    const nombreVehiculo = v ? `${v.marca} ${v.modelo} (${v.placa})` : `#${id}`;
+
     const confirmar = window.confirm(
-      "¿Está seguro de que desea eliminar este vehículo? Esta acción no se puede deshacer."
+      `¿Está seguro de que desea eliminar el vehículo ${nombreVehiculo}?\n\nEsta acción eliminará el registro y su historial asociado.`
     );
     if (!confirmar) return;
 
@@ -468,11 +471,17 @@ export default function VehiculosPage() {
         method: "DELETE",
       });
 
+      const resultado = await respuesta.json().catch(() => null);
+
       if (!respuesta.ok) {
-        throw new Error("No fue posible eliminar el vehículo.");
+        throw new Error(
+          resultado?.error ||
+            resultado?.message ||
+            "No fue posible eliminar el vehículo."
+        );
       }
 
-      setMensaje("🗑️ Vehículo eliminado correctamente.");
+      setMensaje(resultado?.mensaje || "🗑️ Vehículo eliminado correctamente.");
       if (editandoId === id) limpiarFormulario();
       await cargarVehiculos();
     } catch (err) {

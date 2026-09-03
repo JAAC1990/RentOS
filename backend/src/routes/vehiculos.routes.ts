@@ -456,7 +456,7 @@ router.put("/:id", async (req, res) => {
 // ----------------------------------------------------------------------------
 // DELETE /api/vehiculos/:id
 // ----------------------------------------------------------------------------
-// Elimina un vehículo del inventario
+// Elimina un vehículo del inventario con limpieza segura de relaciones
 router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -467,12 +467,92 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
-    await prisma.vehiculo.delete({
+    const vehiculo = await prisma.vehiculo.findUnique({
       where: { id },
+      include: {
+        contratos: {
+          select: {
+            id: true,
+            estado: true,
+          },
+        },
+      },
+    });
+
+    if (!vehiculo) {
+      return res.status(404).json({
+        error: "El vehículo que intentas eliminar no existe.",
+      });
+    }
+
+    // Verificar si el vehículo tiene un contrato de renta ACTIVO
+    const contratoActivo = vehiculo.contratos.find((c) => c.estado === "ACTIVO");
+    if (contratoActivo) {
+      return res.status(400).json({
+        error: `⚠️ No es posible eliminar este vehículo (${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}) porque actualmente tiene el Contrato #${contratoActivo.id} en estado ACTIVO. Debes finalizar o cancelar el contrato antes de eliminar la unidad.`,
+      });
+    }
+
+    // Limpieza en cascada en una transacción atómica segura
+    await prisma.$transaction(async (tx) => {
+      // 1. Eliminar ubicaciones GPS asociadas
+      await tx.ubicacionGPS.deleteMany({
+        where: { vehiculoId: id },
+      });
+
+      // 2. Eliminar órdenes de mantenimiento / taller asociadas
+      await tx.mantenimiento.deleteMany({
+        where: { vehiculoId: id },
+      });
+
+      // 3. Eliminar gastos directos asociados a este vehículo
+      await tx.gasto.deleteMany({
+        where: { vehiculoId: id },
+      });
+
+      // 4. Eliminar transferencias de flota asociadas
+      await tx.transferenciaFlota.deleteMany({
+        where: { vehiculoId: id },
+      });
+
+      // 5. Para contratos no activos (finalizados, borrador o cancelados), limpiar entregas, evidencias, pagos y contratos
+      const contratoIds = vehiculo.contratos.map((c) => c.id);
+      if (contratoIds.length > 0) {
+        const entregas = await tx.entrega.findMany({
+          where: { contratoId: { in: contratoIds } },
+          select: { id: true },
+        });
+        const entregaIds = entregas.map((e) => e.id);
+
+        if (entregaIds.length > 0) {
+          await tx.defectoVehiculo.deleteMany({
+            where: { entregaId: { in: entregaIds } },
+          });
+          await tx.evidencia.deleteMany({
+            where: { entregaId: { in: entregaIds } },
+          });
+          await tx.entrega.deleteMany({
+            where: { id: { in: entregaIds } },
+          });
+        }
+
+        await tx.pago.deleteMany({
+          where: { contratoId: { in: contratoIds } },
+        });
+
+        await tx.contrato.deleteMany({
+          where: { id: { in: contratoIds } },
+        });
+      }
+
+      // 6. Eliminar finalmente el vehículo
+      await tx.vehiculo.delete({
+        where: { id },
+      });
     });
 
     res.json({
-      mensaje: "Vehículo eliminado exitosamente.",
+      mensaje: `🗑️ Vehículo ${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa}) eliminado exitosamente.`,
     });
   } catch (error) {
     console.error("Error al eliminar vehículo:", error);
