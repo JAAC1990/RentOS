@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTasaCambio } from "../context/TasaCambioContext";
 import { API_URLS } from "../services/api";
@@ -36,6 +36,8 @@ interface HeaderProps {
 }
 
 function Header({ onToggleSidebar }: HeaderProps) {
+  const location = useLocation();
+  const esModuloGlobalSaaS = location.pathname === "/solicitudes" || location.pathname === "/backups";
   const { usuario, logout, tenantActivoId, cambiarTenantSuperadmin } = useAuth();
   const { tasaCambio, tasaCompra, tasaVenta, cargandoTasa, refrescarTasa, fechaActualizacion } = useTasaCambio();
   const [rentCar, setRentCar] = useState<RentCar | null>(null);
@@ -201,13 +203,19 @@ function Header({ onToggleSidebar }: HeaderProps) {
         </div>
         <div style={{ minWidth: 0, overflow: "hidden" }}>
           <div className="topbar-title" style={{ fontSize: "15px", fontWeight: 800, color: "var(--text)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {rentCar ? rentCar.nombre : "RentOS"}
+            {location.pathname === "/solicitudes"
+              ? "👑 Solicitudes de Rent a Cars"
+              : location.pathname === "/backups"
+              ? "💾 Centro de Backups Globales"
+              : rentCar
+              ? rentCar.nombre
+              : "RentOS"}
           </div>
 
           <div className="topbar-subtitle" style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "2px", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
             {usuario?.rol === "SUPERADMIN" ? (
               <span className="badge badge-disponible" style={{ fontSize: "9px", padding: "1px 5px" }}>
-                👑 SuperAdmin
+                👑 SuperAdmin {esModuloGlobalSaaS ? "• Vista Global" : ""}
               </span>
             ) : rentCar ? (
               <span><b>{rentCar.ciudad}</b></span>
@@ -244,8 +252,8 @@ function Header({ onToggleSidebar }: HeaderProps) {
           {cargandoTasa && <span style={{ fontSize: "10px", animation: "spin 1s linear infinite" }}>🔄</span>}
         </div>
 
-        {/* Switcher de Sucursal para SUPERADMIN */}
-        {usuario?.rol === "SUPERADMIN" && listaRentCars.length > 0 && (
+        {/* Switcher de Sucursal para SUPERADMIN (Oculto en módulos globales como Solicitudes) */}
+        {usuario?.rol === "SUPERADMIN" && !esModuloGlobalSaaS && listaRentCars.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)" }}>
               🏢 EMPRESA:
