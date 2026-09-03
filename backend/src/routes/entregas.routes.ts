@@ -24,10 +24,17 @@ const usuarioSelect = {
 // ----------------------------------------------------------------------------
 // GET /api/entregas
 // ----------------------------------------------------------------------------
-// Obtiene el historial de todas las inspecciones realizadas con clientes y vehículos
-router.get("/", async (_req, res) => {
+// Obtiene el historial de todas las inspecciones realizadas con clientes y vehículos (filtrado por rentCarId)
+router.get("/", async (req, res) => {
   try {
+    const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : undefined;
+    const where: any = {};
+    if (rentCarId && !isNaN(rentCarId)) {
+      where.contrato = { rentCarId };
+    }
+
     const entregas = await prisma.entrega.findMany({
+      where,
       orderBy: {
         fechaHora: "desc",
       },

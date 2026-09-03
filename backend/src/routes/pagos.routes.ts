@@ -19,10 +19,17 @@ const estadosPagoPermitidos = Object.values(EstadoPago);
 // ----------------------------------------------------------------------------
 // GET /api/pagos
 // ----------------------------------------------------------------------------
-// Retorna todos los cobros registrados con datos de contrato, cliente y vehículo
-router.get("/", async (_req, res) => {
+// Retorna todos los cobros registrados con datos de contrato, cliente y vehículo (filtrado por rentCarId)
+router.get("/", async (req, res) => {
   try {
+    const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : undefined;
+    const where: any = {};
+    if (rentCarId && !isNaN(rentCarId)) {
+      where.contrato = { rentCarId };
+    }
+
     const pagos = await prisma.pago.findMany({
+      where,
       orderBy: {
         fecha: "desc",
       },

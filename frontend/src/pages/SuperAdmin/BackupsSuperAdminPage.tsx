@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 
 type BackupGlobal = {
@@ -45,10 +46,11 @@ type PaqueteTenant = {
 };
 
 export default function BackupsSuperAdminPage() {
+  const { tenantActivoId, cambiarTenantSuperadmin } = useAuth();
   const [pestaña, setPestaña] = useState<"TENANT" | "GLOBAL">("TENANT");
   const [backupsGlobales, setBackupsGlobales] = useState<BackupGlobal[]>([]);
   const [empresas, setEmpresas] = useState<RentCar[]>([]);
-  const [empresaSeleccionadaId, setEmpresaSeleccionadaId] = useState<string>("");
+  const [empresaSeleccionadaId, setEmpresaSeleccionadaId] = useState<string>(String(tenantActivoId || 1));
 
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
@@ -86,7 +88,9 @@ export default function BackupsSuperAdminPage() {
       setBackupsGlobales(datosBackups);
       setEmpresas(datosEmpresas);
 
-      if (datosEmpresas.length > 0 && !empresaSeleccionadaId) {
+      if (tenantActivoId) {
+        setEmpresaSeleccionadaId(String(tenantActivoId));
+      } else if (datosEmpresas.length > 0 && !empresaSeleccionadaId) {
         setEmpresaSeleccionadaId(String(datosEmpresas[0].id));
       }
     } catch (err) {
@@ -99,7 +103,13 @@ export default function BackupsSuperAdminPage() {
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+  }, [tenantActivoId]);
+
+  useEffect(() => {
+    if (tenantActivoId) {
+      setEmpresaSeleccionadaId(String(tenantActivoId));
+    }
+  }, [tenantActivoId]);
 
   const empresaActiva = empresas.find((e) => String(e.id) === empresaSeleccionadaId);
 
@@ -331,7 +341,9 @@ export default function BackupsSuperAdminPage() {
                 <select
                   value={empresaSeleccionadaId}
                   onChange={(e) => {
-                    setEmpresaSeleccionadaId(e.target.value);
+                    const newId = Number(e.target.value);
+                    setEmpresaSeleccionadaId(String(newId));
+                    cambiarTenantSuperadmin(newId);
                     setPaqueteCargado(null);
                     setNombreArchivoCargado("");
                   }}

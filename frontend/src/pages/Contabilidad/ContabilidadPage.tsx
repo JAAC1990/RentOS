@@ -248,7 +248,7 @@ export default function ContabilidadPage() {
 
       const [resContable, resVehiculos, resRentCar] = await Promise.all([
         fetch(`${API_URLS.contabilidad}/resumen?${params.toString()}`),
-        fetch(API_URLS.vehiculos),
+        fetch(`${API_URLS.vehiculos}?rentCarId=${targetTenant}`),
         fetch(`${API_URLS.rentcars}/${targetTenant}`),
       ]);
 
@@ -263,7 +263,7 @@ export default function ContabilidadPage() {
       ]);
 
       setDatosContables(datosJson);
-      setVehiculosLista(vehiculosJson);
+      setVehiculosLista(vehiculosJson.filter((v: any) => !v.rentCarId || v.rentCarId === targetTenant));
       setRentCarInfo(rentCarJson);
     } catch (err) {
       console.error(err);

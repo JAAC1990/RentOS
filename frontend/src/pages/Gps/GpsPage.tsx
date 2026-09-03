@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { API_URLS } from "../../services/api";
@@ -31,6 +32,7 @@ type TelemetriaGPS = {
 
 type VehiculoGPS = {
   vehiculoId: number;
+  rentCarId?: number;
   marca: string;
   modelo: string;
   placa: string;
@@ -72,6 +74,7 @@ const crearIconoVehiculo = (enMovimiento: boolean, bloqueado: boolean) => {
 };
 
 export default function GpsPage() {
+  const { tenantActivoId } = useAuth();
   const [flotaGps, setFlotaGps] = useState<VehiculoGPS[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -88,10 +91,11 @@ export default function GpsPage() {
   const cargarTelemetria = async () => {
     try {
       setError("");
-      const res = await fetch(API_GPS);
+      const targetTenant = tenantActivoId || 1;
+      const res = await fetch(`${API_GPS}?rentCarId=${targetTenant}`);
       if (!res.ok) throw new Error("No fue posible obtener la telemetría GPS.");
       const datos: VehiculoGPS[] = await res.json();
-      setFlotaGps(datos);
+      setFlotaGps(datos.filter((v: VehiculoGPS) => !v.rentCarId || v.rentCarId === targetTenant));
     } catch (err) {
       console.error(err);
       setError("No fue posible conectar con el servidor satelital GPS.");
@@ -104,7 +108,7 @@ export default function GpsPage() {
     cargarTelemetria();
     const interval = setInterval(cargarTelemetria, 15000); // Polling cada 15s
     return () => clearInterval(interval);
-  }, []);
+  }, [tenantActivoId]);
 
   // Inicializar Leaflet Map
   useEffect(() => {

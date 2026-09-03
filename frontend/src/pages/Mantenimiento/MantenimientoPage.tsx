@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
 import FechaInput from "../../components/FechaInput";
@@ -17,6 +18,7 @@ import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
 
 type Vehiculo = {
   id: number;
+  rentCarId?: number;
   marca: string;
   modelo: string;
   anio: number;
@@ -65,6 +67,7 @@ type ResumenAlertas = {
 const hoy = new Date().toISOString().split("T")[0];
 
 export default function MantenimientoPage() {
+  const { tenantActivoId } = useAuth();
   const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [alertas, setAlertas] = useState<AlertaMantenimiento[]>([]);
@@ -104,10 +107,11 @@ export default function MantenimientoPage() {
       setCargando(true);
       setError("");
 
+      const targetTenant = tenantActivoId || 1;
       const [resMantenimientos, resVehiculos, resAlertas] = await Promise.all([
-        fetch(API_URL),
-        fetch(API_URLS.vehiculos),
-        fetch(`${API_URL}/alertas`),
+        fetch(`${API_URL}?rentCarId=${targetTenant}`),
+        fetch(`${API_URLS.vehiculos}?rentCarId=${targetTenant}`),
+        fetch(`${API_URL}/alertas?rentCarId=${targetTenant}`),
       ]);
 
       if (!resMantenimientos.ok || !resVehiculos.ok) {
@@ -120,7 +124,7 @@ export default function MantenimientoPage() {
       ]);
 
       setMantenimientos(datosMantenimientos);
-      setVehiculos(datosVehiculos);
+      setVehiculos(datosVehiculos.filter((v: Vehiculo) => !v.rentCarId || v.rentCarId === targetTenant));
 
       if (resAlertas.ok) {
         const datosAlertas = await resAlertas.json();
@@ -137,7 +141,7 @@ export default function MantenimientoPage() {
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+  }, [tenantActivoId]);
 
   // Al seleccionar vehículo, sugerir odómetro actual y próximo (+5000 km)
   const handleSeleccionarVehiculo = (vId: string) => {
@@ -187,6 +191,7 @@ export default function MantenimientoPage() {
       }
 
       const datos = {
+        rentCarId: tenantActivoId || 1,
         vehiculoId: Number(vehiculoId),
         tipoServicio: tipoFinal,
         descripcion: descripcion.trim() || undefined,
@@ -233,7 +238,7 @@ export default function MantenimientoPage() {
       const res = await fetch(`${API_URL}/notificar-telegram`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rentCarId: 1 }),
+        body: JSON.stringify({ rentCarId: tenantActivoId || 1 }),
       });
 
       const data = await res.json();

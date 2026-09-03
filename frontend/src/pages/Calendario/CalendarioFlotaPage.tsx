@@ -66,9 +66,10 @@ export default function CalendarioFlotaPage() {
       setCargando(true);
       setError("");
 
+      const targetTenant = tenantActivoId || 1;
       const [resVehiculos, resContratos] = await Promise.all([
-        fetch(API_URLS.vehiculos),
-        fetch(API_URLS.contratos),
+        fetch(`${API_URLS.vehiculos}?rentCarId=${targetTenant}`),
+        fetch(`${API_URLS.contratos}?rentCarId=${targetTenant}`),
       ]);
 
       if (!resVehiculos.ok || !resContratos.ok) {
@@ -80,7 +81,6 @@ export default function CalendarioFlotaPage() {
         resContratos.json(),
       ]);
 
-      const targetTenant = tenantActivoId || 1;
       const vehiculosFiltrados = datosVehiculos.filter(
         (v: Vehiculo) => !v.rentCarId || v.rentCarId === targetTenant
       );

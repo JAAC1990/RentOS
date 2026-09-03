@@ -78,11 +78,18 @@ async function inicializarFechasDocumentos() {
 // GET /api/vehiculos/vencimientos
 // ----------------------------------------------------------------------------
 // Reporte de auditoría legal: días restantes de seguros, marbetes y revistas
-router.get("/vencimientos", async (_req, res) => {
+router.get("/vencimientos", async (req, res) => {
   try {
     await inicializarFechasDocumentos();
 
+    const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : undefined;
+    const where: any = {};
+    if (rentCarId && !isNaN(rentCarId)) {
+      where.rentCarId = rentCarId;
+    }
+
     const vehiculos = await prisma.vehiculo.findMany({
+      where,
       orderBy: { id: "asc" },
       include: {
         rentCar: {
@@ -202,10 +209,17 @@ router.post("/notificar-vencimientos-telegram", async (_req, res) => {
 // ----------------------------------------------------------------------------
 // GET /api/vehiculos
 // ----------------------------------------------------------------------------
-// Retorna todo el parque vehicular
-router.get("/", async (_req, res) => {
+// Retorna todo el parque vehicular (filtrado por rentCarId si se especifica)
+router.get("/", async (req, res) => {
   try {
+    const rentCarId = req.query.rentCarId ? Number(req.query.rentCarId) : undefined;
+    const where: any = {};
+    if (rentCarId && !isNaN(rentCarId)) {
+      where.rentCarId = rentCarId;
+    }
+
     const vehiculos = await prisma.vehiculo.findMany({
+      where,
       orderBy: {
         createdAt: "desc",
       },
@@ -285,6 +299,7 @@ router.post("/", async (req, res) => {
       seguroPoliza,
       seguroVencimiento,
       marbeteVencimiento,
+      rentCarId,
     } = req.body;
 
     if (
@@ -303,6 +318,7 @@ router.post("/", async (req, res) => {
     const anioNumero = Number(anio);
     const tarifaNumero = Number(tarifaDiaria);
     const kilometrajeNumero = kilometraje !== undefined ? Number(kilometraje) : 0;
+    const rentCarIdNumero = rentCarId ? Number(rentCarId) : 1;
 
     const estadoConvertido = estado
       ? convertirEstado(estado)
@@ -316,6 +332,7 @@ router.post("/", async (req, res) => {
 
     const nuevoVehiculo = await prisma.vehiculo.create({
       data: {
+        rentCarId: rentCarIdNumero,
         marca: marca.trim(),
         modelo: modelo.trim(),
         anio: anioNumero,

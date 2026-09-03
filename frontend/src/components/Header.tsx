@@ -37,7 +37,7 @@ interface HeaderProps {
 
 function Header({ onToggleSidebar }: HeaderProps) {
   const location = useLocation();
-  const esModuloGlobalSaaS = location.pathname === "/solicitudes" || location.pathname === "/backups";
+  const esModuloGlobalSaaS = location.pathname === "/solicitudes";
   const { usuario, logout, tenantActivoId, cambiarTenantSuperadmin } = useAuth();
   const { tasaCambio, tasaCompra, tasaVenta, cargandoTasa, refrescarTasa, fechaActualizacion } = useTasaCambio();
   const [rentCar, setRentCar] = useState<RentCar | null>(null);

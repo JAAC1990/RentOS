@@ -25,6 +25,7 @@ import ModalFirmaDigital from "../../components/ModalFirmaDigital";
 
 type Cliente = {
   id: number;
+  rentCarId?: number;
   nombre: string;
   apellido: string;
   telefono: string;
@@ -37,6 +38,7 @@ type Cliente = {
 
 type Vehiculo = {
   id: number;
+  rentCarId?: number;
   marca: string;
   modelo: string;
   anio: number;
@@ -67,6 +69,7 @@ type RentCarInfo = {
 
 type Contrato = {
   id: number;
+  rentCarId?: number;
   codigoVerificacion?: string | null;
   clienteId: number;
   vehiculoId: number;
@@ -186,8 +189,8 @@ export default function ContratosPage() {
       const targetRentCarId = tenantActivoId || 1;
       const [resContratos, resClientes, resVehiculos, resRentCar] = await Promise.all([
         fetch(`${API_CONTRATOS}?rentCarId=${targetRentCarId}`),
-        fetch(API_URLS.clientes),
-        fetch(API_URLS.vehiculos),
+        fetch(`${API_URLS.clientes}?rentCarId=${targetRentCarId}`),
+        fetch(`${API_URLS.vehiculos}?rentCarId=${targetRentCarId}`),
         fetch(`${API_URLS.rentcars}/${targetRentCarId}`),
       ]);
 
@@ -202,9 +205,9 @@ export default function ContratosPage() {
         resRentCar.ok ? resRentCar.json() : null,
       ]);
 
-      setContratos(datosContratos);
-      setClientes(datosClientes);
-      setVehiculos(datosVehiculos);
+      setContratos(datosContratos.filter((c: Contrato) => !c.rentCarId || c.rentCarId === targetRentCarId));
+      setClientes(datosClientes.filter((c: Cliente) => !c.rentCarId || c.rentCarId === targetRentCarId));
+      setVehiculos(datosVehiculos.filter((v: Vehiculo) => !v.rentCarId || v.rentCarId === targetRentCarId));
       setRentCarInfo(datosRentCar);
     } catch (err) {
       console.error(err);

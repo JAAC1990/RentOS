@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
 import FechaInput from "../../components/FechaInput";
@@ -125,13 +126,12 @@ function obtenerFotoDefault(v: Vehiculo): string {
     return "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&auto=format&fit=crop&q=80";
   } else if (mm.includes("sportage") || mm.includes("tucson") || mm.includes("suv") || mm.includes("seltos")) {
     return "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format&fit=crop&q=80";
-  } else if (mm.includes("explorer") || mm.includes("jeep") || mm.includes("wrangler") || mm.includes("4x4")) {
-    return "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&auto=format&fit=crop&q=80";
   }
   return "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&auto=format&fit=crop&q=80";
 }
 
 export default function VehiculosPage() {
+  const { tenantActivoId } = useAuth();
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [formulario, setFormulario] = useState<FormularioVehiculo>(formularioInicial);
 
@@ -167,9 +167,10 @@ export default function VehiculosPage() {
       setCargando(true);
       setError("");
 
+      const targetTenant = tenantActivoId || 1;
       const [resVehiculos, resVencimientos] = await Promise.all([
-        fetch(API_URL),
-        fetch(`${API_URL}/vencimientos`),
+        fetch(`${API_URL}?rentCarId=${targetTenant}`),
+        fetch(`${API_URL}/vencimientos?rentCarId=${targetTenant}`),
       ]);
 
       if (!resVehiculos.ok) {
@@ -177,7 +178,7 @@ export default function VehiculosPage() {
       }
 
       const datosVehiculos: Vehiculo[] = await resVehiculos.json();
-      setVehiculos(datosVehiculos);
+      setVehiculos(datosVehiculos.filter((v: Vehiculo) => !v.rentCarId || v.rentCarId === targetTenant));
 
       if (resVencimientos.ok) {
         const datosVenc = await resVencimientos.json();
@@ -194,7 +195,7 @@ export default function VehiculosPage() {
 
   useEffect(() => {
     cargarVehiculos();
-  }, []);
+  }, [tenantActivoId]);
 
   // Estadísticas calculadas en tiempo real
   const stats = useMemo(() => {
@@ -380,6 +381,7 @@ export default function VehiculosPage() {
         seguroPoliza: formulario.seguroPoliza.trim() || undefined,
         seguroVencimiento: formulario.seguroVencimiento || undefined,
         marbeteVencimiento: formulario.marbeteVencimiento || undefined,
+        rentCarId: tenantActivoId || 1,
       };
 
       const url = editandoId === null ? API_URL : `${API_URL}/${editandoId}`;

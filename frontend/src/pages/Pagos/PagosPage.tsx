@@ -120,8 +120,8 @@ export default function PagosPage() {
 
       const targetTenant = tenantActivoId || 1;
       const [resPagos, resContratos, resRentCar] = await Promise.all([
-        fetch(API_PAGOS),
-        fetch(API_URLS.contratos),
+        fetch(`${API_PAGOS}?rentCarId=${targetTenant}`),
+        fetch(`${API_URLS.contratos}?rentCarId=${targetTenant}`),
         fetch(`${API_URLS.rentcars}/${targetTenant}`),
       ]);
 
@@ -135,8 +135,8 @@ export default function PagosPage() {
         resRentCar.ok ? resRentCar.json() : null,
       ]);
 
-      setPagos(datosPagos);
-      setContratos(datosContratos);
+      setPagos(datosPagos.filter((p: Pago) => !p.contrato?.rentCarId || p.contrato?.rentCarId === targetTenant));
+      setContratos(datosContratos.filter((c: Contrato) => !c.rentCarId || c.rentCarId === targetTenant));
       setRentCarInfo(datosRentCar);
     } catch (err) {
       console.error(err);

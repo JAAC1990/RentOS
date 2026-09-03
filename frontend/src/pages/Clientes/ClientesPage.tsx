@@ -9,12 +9,14 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import PhoneInput, { validarTelefono } from "../../components/PhoneInput";
 import FechaInput from "../../components/FechaInput";
 import { API_URLS } from "../../services/api";
 
 type Cliente = {
   id: number;
+  rentCarId?: number;
   nombre: string;
   apellido: string;
   telefono: string;
@@ -57,6 +59,7 @@ const formularioInicial: FormularioCliente = {
 };
 
 export default function ClientesPage() {
+  const { tenantActivoId } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [formulario, setFormulario] = useState<FormularioCliente>(formularioInicial);
 
@@ -83,13 +86,14 @@ export default function ClientesPage() {
       setCargando(true);
       setError("");
 
-      const respuesta = await fetch(API_URL);
+      const targetTenant = tenantActivoId || 1;
+      const respuesta = await fetch(`${API_URL}?rentCarId=${targetTenant}`);
       if (!respuesta.ok) {
         throw new Error("No fue posible obtener los clientes.");
       }
 
       const datos: Cliente[] = await respuesta.json();
-      setClientes(datos);
+      setClientes(datos.filter((c: Cliente) => !c.rentCarId || c.rentCarId === targetTenant));
     } catch (err) {
       console.error(err);
       setError(
@@ -104,7 +108,7 @@ export default function ClientesPage() {
 
   useEffect(() => {
     cargarClientes();
-  }, []);
+  }, [tenantActivoId]);
 
   // Estadísticas en tiempo real
   const stats = useMemo(() => {
@@ -180,6 +184,7 @@ export default function ClientesPage() {
         direccion: formulario.direccion.trim() || undefined,
         fechaNacimiento: formulario.fechaNacimiento || undefined,
         estado: formulario.estado,
+        rentCarId: tenantActivoId || 1,
       };
 
       const url = editandoId === null ? API_URL : `${API_URL}/${editandoId}`;

@@ -126,9 +126,10 @@ export default function EntregasPage() {
       setCargando(true);
       setError("");
 
+      const targetTenant = tenantActivoId || 1;
       const [resEntregas, resContratos] = await Promise.all([
-        fetch(API_ENTREGAS),
-        fetch(API_URLS.contratos),
+        fetch(`${API_ENTREGAS}?rentCarId=${targetTenant}`),
+        fetch(`${API_URLS.contratos}?rentCarId=${targetTenant}`),
       ]);
 
       if (!resEntregas.ok || !resContratos.ok) {
@@ -140,12 +141,11 @@ export default function EntregasPage() {
         resContratos.json(),
       ]);
 
-      const targetTenant = tenantActivoId || 1;
       const contratosTenant = datosContratos.filter(
         (c: Contrato) => (!c.rentCarId || c.rentCarId === targetTenant) && c.estado === "ACTIVO"
       );
 
-      setEntregas(datosEntregas);
+      setEntregas(datosEntregas.filter((e: Entrega) => !e.contrato?.rentCarId || e.contrato?.rentCarId === targetTenant));
       setContratosActivos(contratosTenant);
     } catch (err) {
       console.error(err);

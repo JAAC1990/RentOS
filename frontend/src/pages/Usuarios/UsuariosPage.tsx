@@ -51,7 +51,7 @@ const formularioInicial: FormularioUsuario = {
 };
 
 export default function UsuariosPage() {
-  const { usuario: usuarioActual } = useAuth();
+  const { usuario: usuarioActual, tenantActivoId } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [solicitudes, setSolicitudes] = useState<SolicitudRentCar[]>([]);
   const [formulario, setFormulario] = useState<FormularioUsuario>(formularioInicial);
@@ -76,8 +76,9 @@ export default function UsuariosPage() {
       setCargando(true);
       setError("");
 
+      const targetTenant = tenantActivoId || 1;
       const [resUsers, resSol] = await Promise.all([
-        fetch(API_USERS),
+        fetch(`${API_USERS}?rentCarId=${targetTenant}`),
         fetch(API_SOLICITUDES).catch(() => null),
       ]);
 
@@ -99,7 +100,7 @@ export default function UsuariosPage() {
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+  }, [tenantActivoId]);
 
   const solicitudesPendientes = useMemo(() => {
     return solicitudes.filter((s) => s.estadoRegistro === "PENDIENTE" || (!s.activo && s.estadoRegistro !== "RECHAZADO"));
@@ -166,7 +167,10 @@ export default function UsuariosPage() {
       const res = await fetch(url, {
         method: metodo,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formulario),
+        body: JSON.stringify({
+          ...formulario,
+          rentCarId: tenantActivoId || 1,
+        }),
       });
 
       const data = await res.json();
