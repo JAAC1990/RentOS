@@ -10,6 +10,7 @@
  */
 
 import React from "react";
+import { useTasaCambio } from "../context/TasaCambioContext";
 
 export const TASA_CAMBIO_DEFAULT = 60.0;
 
@@ -39,7 +40,7 @@ export default function MonedaInput({
   onChange,
   moneda,
   onMonedaChange,
-  tasaCambio = TASA_CAMBIO_DEFAULT,
+  tasaCambio: tasaProp,
   min = "0",
   step = "0.01",
   placeholder,
@@ -48,17 +49,20 @@ export default function MonedaInput({
   className = "",
   style = {},
 }: MonedaInputProps) {
+  const { tasaCambio: tasaContexto } = useTasaCambio();
+  const tasaCambio = tasaProp !== undefined ? tasaProp : (tasaContexto || TASA_CAMBIO_DEFAULT);
+
   const alternarMoneda = (nuevaMoneda: "USD" | "DOP") => {
     if (nuevaMoneda === moneda || disabled) return;
 
     const valorNum = parseFloat(value);
     if (!isNaN(valorNum) && valorNum > 0) {
       if (nuevaMoneda === "DOP") {
-        // USD -> DOP: multiplicar por tasa
+        // USD -> DOP: multiplicar por tasa BCRD
         const convertido = (valorNum * tasaCambio).toFixed(2);
         onChange(convertido);
       } else {
-        // DOP -> USD: dividir entre tasa
+        // DOP -> USD: dividir entre tasa BCRD
         const convertido = (valorNum / tasaCambio).toFixed(2);
         onChange(convertido);
       }
@@ -170,13 +174,13 @@ export default function MonedaInput({
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}{" "}
-              DOP (Tasa: {tasaCambio.toFixed(2)})
+              DOP (Tasa BCRD: {tasaCambio.toFixed(2)})
             </span>
           ) : (
             <span>
               ≈ ${" "}
               {(valorNum / tasaCambio).toFixed(2)}{" "}
-              USD (Tasa: {tasaCambio.toFixed(2)})
+              USD (Tasa BCRD: {tasaCambio.toFixed(2)})
             </span>
           )}
         </div>

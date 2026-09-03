@@ -12,6 +12,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTasaCambio } from "../context/TasaCambioContext";
 import { API_URLS } from "../services/api";
 import { formatearFecha } from "../utils/dateUtils";
 
@@ -36,6 +37,7 @@ interface HeaderProps {
 
 function Header({ onToggleSidebar }: HeaderProps) {
   const { usuario, logout, tenantActivoId, cambiarTenantSuperadmin } = useAuth();
+  const { tasaCambio, tasaCompra, tasaVenta, cargandoTasa, refrescarTasa, fechaActualizacion } = useTasaCambio();
   const [rentCar, setRentCar] = useState<RentCar | null>(null);
   const [listaRentCars, setListaRentCars] = useState<RentCar[]>([]);
 
@@ -216,7 +218,32 @@ function Header({ onToggleSidebar }: HeaderProps) {
         </div>
       </div>
 
-      <div className="topbar-user" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <div className="topbar-user" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {/* Tasa Oficial BCRD en Tiempo Real */}
+        <div
+          title={`Tasa oficial del Banco Central de la República Dominicana (BCRD)\nCompra: RD$ ${tasaCompra ? tasaCompra.toFixed(2) : "--"} | Venta: RD$ ${tasaVenta ? tasaVenta.toFixed(2) : "--"}\nActualizado: ${formatearFecha(fechaActualizacion)}\nHaz clic para actualizar en vivo.`}
+          onClick={() => refrescarTasa(true)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+            backgroundColor: "var(--primary-soft)",
+            color: "var(--primary)",
+            padding: "4px 8px",
+            borderRadius: "8px",
+            border: "1px solid var(--border)",
+            fontSize: "11px",
+            fontWeight: 700,
+            cursor: "pointer",
+            userSelect: "none",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span>💵 BCRD:</span>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>RD$ {tasaCambio ? tasaCambio.toFixed(2) : "60.00"}</span>
+          {cargandoTasa && <span style={{ fontSize: "10px", animation: "spin 1s linear infinite" }}>🔄</span>}
+        </div>
+
         {/* Switcher de Sucursal para SUPERADMIN */}
         {usuario?.rol === "SUPERADMIN" && listaRentCars.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>

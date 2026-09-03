@@ -16,6 +16,7 @@ import PhoneInput, { validarTelefono } from "../../components/PhoneInput";
 type RentCar = {
   id: number;
   nombre: string;
+  slug?: string | null;
   rnc: string | null;
   telefono: string | null;
   email: string | null;
@@ -53,6 +54,7 @@ export default function ConfiguracionPage() {
 
   // Campos de Identidad & Marca
   const [nombre, setNombre] = useState("");
+  const [slug, setSlug] = useState("");
   const [eslogan, setEslogan] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [tipoEntradaLogo, setTipoEntradaLogo] = useState<"archivo" | "url">("archivo");
@@ -152,6 +154,7 @@ export default function ConfiguracionPage() {
       setRentCar(data);
 
       setNombre(data.nombre || "");
+      setSlug(data.slug || "");
       setEslogan(data.eslogan || "");
       setLogoUrl(data.logoUrl || "");
       setColorPrimario(data.colorPrimario || "#0284c7");
@@ -216,6 +219,7 @@ export default function ConfiguracionPage() {
       const targetId = tenantActivoId || 1;
       const datos = {
         nombre: nombre.trim(),
+        slug: slug.trim() ? slug.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "") : null,
         eslogan: eslogan.trim() || null,
         logoUrl: logoUrl.trim() || null,
         colorPrimario: colorPrimario.trim() || "#0284c7",
@@ -316,7 +320,7 @@ export default function ConfiguracionPage() {
       {mensaje && <div className="alert-box success">{mensaje}</div>}
       {error && <div className="alert-box error">{error}</div>}
 
-      {/* Banner de Enlace Público de Reservas */}
+      {/* Banner de Sitio Web y Portal Interactivo Independiente */}
       {rentCar && (
         <div
           style={{
@@ -329,35 +333,37 @@ export default function ConfiguracionPage() {
             justifyContent: "space-between",
             alignItems: "center",
             boxShadow: "var(--shadow)",
+            flexWrap: "wrap",
+            gap: "16px",
           }}
         >
           <div>
             <strong style={{ fontSize: "15px", display: "flex", alignItems: "center", gap: "8px" }}>
-              🌐 Tu Catálogo Público de Reservas Online
+              🌐 Tu Página Web y Portal de Reservas Oficial
             </strong>
             <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "2px" }}>
-              Tus clientes verán tu logo, eslogan y color de marca en este enlace:
+              Tus clientes verán tu marca, logo, flota exclusiva y podrán cotizar en tiempo real o reservar por WhatsApp:
             </span>
             <div style={{ marginTop: "8px" }}>
               <code style={{ fontSize: "13px", padding: "6px 10px", background: "var(--primary-soft)", color: "var(--primary)", borderRadius: "6px", fontWeight: 700 }}>
-                {`${window.location.origin}/reservar?rentcar=${rentCar.id}`}
+                {`${window.location.origin}/portal/${slug || rentCar.slug || rentCar.id}`}
               </code>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <button
               type="button"
               className="secondary-button"
               onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/reservar?rentcar=${rentCar.id}`);
-                setMensaje("📋 ¡Enlace copiado al portapapeles!");
+                navigator.clipboard.writeText(`${window.location.origin}/portal/${slug || rentCar.slug || rentCar.id}`);
+                setMensaje("📋 ¡Enlace copiado al portapapeles! Compártelo con tus clientes o en tus redes sociales.");
               }}
             >
               📋 Copiar Enlace
             </button>
             <a
-              href={`/reservar?rentcar=${rentCar.id}`}
+              href={`/portal/${slug || rentCar.slug || rentCar.id}`}
               target="_blank"
               rel="noreferrer"
               className="primary-button"
@@ -370,7 +376,7 @@ export default function ConfiguracionPage() {
                 backgroundColor: colorPrimario || "var(--primary)",
               }}
             >
-              👁️ Ver Portal con mi Marca ↗
+              🚀 Abrir Mi Sitio Web ↗
             </a>
           </div>
         </div>
@@ -646,6 +652,23 @@ export default function ConfiguracionPage() {
                   onChange={(e) => setNombre(e.target.value)}
                   required
                 />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="slugEmpresa">Enlace URL de tu Sitio Web (Slug)</label>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{ padding: "8px 10px", background: "var(--background)", border: "1px solid var(--border)", borderRight: "none", borderRadius: "8px 0 0 8px", fontSize: "12px", color: "var(--text-secondary)", fontWeight: 600 }}>
+                    /portal/
+                  </span>
+                  <input
+                    id="slugEmpresa"
+                    type="text"
+                    placeholder="ej. caribe-rentals"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                    style={{ borderRadius: "0 8px 8px 0" }}
+                  />
+                </div>
               </div>
 
               <div className="form-field">

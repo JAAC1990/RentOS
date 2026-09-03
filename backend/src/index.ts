@@ -26,6 +26,7 @@ import pagosRoutes from "./routes/pagos.routes.js";
 import redRoutes from "./routes/red.routes.js";
 import rentcarsRoutes from "./routes/rentcars.routes.js";
 import solicitudesRoutes from "./routes/solicitudes.routes.js";
+import tasaCambioRoutes from "./routes/tasaCambio.routes.js";
 import usersRoutes from "./routes/users.routes.js";
 import vehiculosRoutes from "./routes/vehiculos.routes.js";
 
@@ -94,6 +95,9 @@ app.use("/api/rentcars", rentcarsRoutes);
 
 // Panel SuperAdmin para aprobar o rechazar nuevas empresas solicitantes
 app.use("/api/solicitudes", solicitudesRoutes);
+
+// Tasa de cambio oficial del Banco Central (BCRD) dinámica
+app.use("/api/tasa-cambio", tasaCambioRoutes);
 
 // Gestión de empleados, roles y accesos de cada empresa
 app.use("/api/users", usersRoutes);

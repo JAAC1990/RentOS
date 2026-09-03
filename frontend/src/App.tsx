@@ -9,6 +9,7 @@
 
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { TasaCambioProvider } from "./context/TasaCambioContext";
 import MainLayout from "./layouts/MainLayout";
 
 // Importación de Páginas Operativas
@@ -26,6 +27,7 @@ import UsuariosPage from "./pages/Usuarios/UsuariosPage";
 import ConfiguracionPage from "./pages/Configuracion/ConfiguracionPage";
 import RedAliadaPage from "./pages/RedAliada/RedAliadaPage";
 import ReservasPublicasPage from "./pages/Publico/ReservasPublicasPage";
+import PortalEmpresaPage from "./pages/Publico/PortalEmpresaPage";
 import SolicitudesPage from "./pages/SuperAdmin/SolicitudesPage";
 import BackupsSuperAdminPage from "./pages/SuperAdmin/BackupsSuperAdminPage";
 import LoginPage from "./pages/Auth/LoginPage";
@@ -60,6 +62,10 @@ function AppRoutes() {
       {/* Catálogo Público de Reservas para Arrendatarios y Turistas */}
       <Route path="/reservar" element={<ReservasPublicasPage />} />
 
+      {/* Páginas Web Independientes e Interactivas por Empresa Rent a Car */}
+      <Route path="/portal/:slug" element={<PortalEmpresaPage />} />
+      <Route path="/empresa/:slug" element={<PortalEmpresaPage />} />
+
       {/* Portal Público de Verificación de Autenticidad de Contrato QR */}
       <Route path="/verificar/:codigo" element={<VerificarContratoPage />} />
 
@@ -86,14 +92,16 @@ function AppRoutes() {
 }
 
 /**
- * Punto de Entrada de la Aplicación con Proveedor Global de Autenticación
+ * Punto de Entrada de la Aplicación con Proveedores Globales de Autenticación y Tasa BCRD
  */
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <TasaCambioProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </TasaCambioProvider>
     </AuthProvider>
   );
 }

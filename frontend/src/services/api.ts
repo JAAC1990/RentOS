@@ -27,6 +27,7 @@ export const API_URLS = {
   rentcars: `${API_BASE_URL}/rentcars`,
   solicitudes: `${API_BASE_URL}/solicitudes`,
   backup: `${API_BASE_URL}/backups`,
+  tasaCambio: `${API_BASE_URL}/tasa-cambio`,
 };
 
 /**

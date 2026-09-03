@@ -23,6 +23,7 @@
 | **2.3** | 2026-08-26 | Clientes & Teléfonos | Validación estricta de teléfonos por país: límite máximo de **10 dígitos para República Dominicana (809/829/849)** con máscara de guiones automática e impedimento de números incompletos. | Seguridad & Datos |
 | **2.4** | 2026-08-26 | Pagos, Contratos & Monedas | Conmutador universal de moneda **Dólares (US$) ⇄ Pesos Dominicanos (RD$)** con cálculo en tiempo real en todos los cobros, contratos, depósitos y tarifas. Teléfono de referencia familiar con formato y guiones automáticos. | Operaciones & Finanzas |
 | **2.5** | 2026-08-27 | Módulo de Contabilidad & Finanzas | Lanzamiento del **Módulo Integral de Contabilidad (`/contabilidad`)**: Estado de Resultados (P&L), análisis financiero por cliente (cuánto gastó y en qué), ROI de flota por vehículo, registro de egresos operativos y emisión de Estados de Cuenta imprimibles en PDF. | Dirección Financiera / IT |
+| **2.6** | 2026-09-02 | Tasa BCRD Dinámica & Sitios Web de Rent a Car | Integración de la **Tasa de Cambio Oficial Dinámica del Banco Central (BCRD)** con actualización diaria en tiempo real para todas las conversiones monetarias, y lanzamiento de los **Sitios Web y Portales Interactivos Independientes (`/portal/:slug`)** personalizados para cada empresa Rent a Car con cotizador en vivo y reserva por WhatsApp. | Dirección RentOS / IT |
 
 ---
 

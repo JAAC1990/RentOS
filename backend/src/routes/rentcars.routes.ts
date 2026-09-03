@@ -44,6 +44,70 @@ router.get("/", async (_req, res) => {
 });
 
 // ----------------------------------------------------------------------------
+// GET /api/rentcars/portal/:slug
+// ----------------------------------------------------------------------------
+// Endpoint público para cargar el sitio web independiente de una empresa Rent a Car
+router.get("/portal/:slug", async (req, res) => {
+  try {
+    const slugParam = req.params.slug.trim().toLowerCase();
+
+    // Intentar buscar por slug único o por ID numérico si aplica
+    let rentcar = await prisma.rentCar.findUnique({
+      where: { slug: slugParam },
+      include: {
+        vehiculos: {
+          where: {
+            estado: { in: ["DISPONIBLE", "ALQUILADO"] },
+          },
+          orderBy: { tarifaDiaria: "asc" },
+        },
+      },
+    });
+
+    if (!rentcar && !isNaN(Number(slugParam))) {
+      rentcar = await prisma.rentCar.findUnique({
+        where: { id: Number(slugParam) },
+        include: {
+          vehiculos: {
+            where: {
+              estado: { in: ["DISPONIBLE", "ALQUILADO"] },
+            },
+            orderBy: { tarifaDiaria: "asc" },
+          },
+        },
+      });
+    }
+
+    if (!rentcar) {
+      return res.status(404).json({ error: "Empresa Rent a Car no encontrada o portal inactivo." });
+    }
+
+    res.json({
+      id: rentcar.id,
+      nombre: rentcar.nombre,
+      slug: rentcar.slug,
+      rnc: rentcar.rnc,
+      telefono: rentcar.telefono,
+      whatsapp: rentcar.whatsapp || rentcar.telefono,
+      email: rentcar.email,
+      direccion: rentcar.direccion,
+      ciudad: rentcar.ciudad,
+      logoUrl: rentcar.logoUrl,
+      eslogan: rentcar.eslogan,
+      colorPrimario: rentcar.colorPrimario || "#0284c7",
+      moneda: rentcar.moneda || "USD",
+      limiteKilometrajeDiario: rentcar.limiteKilometrajeDiario || 200,
+      cargoKmExtra: rentcar.cargoKmExtra || 0.25,
+      depositoEstandar: rentcar.depositoEstandar || 200.0,
+      vehiculos: rentcar.vehiculos,
+    });
+  } catch (error) {
+    console.error("Error al cargar portal público de Rent a Car:", error);
+    res.status(500).json({ error: "Error al cargar la información del portal web." });
+  }
+});
+
+// ----------------------------------------------------------------------------
 // GET /api/rentcars/:id
 // ----------------------------------------------------------------------------
 // Obtiene el perfil y la configuración de marca de un RentCar específico
@@ -169,6 +233,14 @@ router.put("/:id", async (req, res) => {
     const dataToUpdate: Record<string, unknown> = {};
 
     if (nombre !== undefined) dataToUpdate.nombre = nombre.trim();
+    if (req.body.slug !== undefined) {
+      dataToUpdate.slug = req.body.slug
+        ? String(req.body.slug)
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9-]+/g, "")
+        : null;
+    }
     if (rnc !== undefined) dataToUpdate.rnc = rnc ? rnc.trim() : null;
     if (telefono !== undefined) dataToUpdate.telefono = telefono ? telefono.trim() : null;
     if (email !== undefined) dataToUpdate.email = email ? email.trim() : null;

@@ -83,6 +83,7 @@ enum CategoriaGasto {
 model RentCar {
   id        Int      @id @default(autoincrement())
   nombre    String   // Nombre comercial (ej. "RentCar Santo Domingo")
+  slug      String?  @unique // Identificador URL único para su portal web (ej. "caribe-rentcar")
   rnc       String?  @unique // RNC o identificación fiscal
   telefono  String?
   email     String?
