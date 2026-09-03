@@ -485,11 +485,20 @@ router.delete("/:id", async (req, res) => {
       });
     }
 
-    // Verificar si el vehículo tiene un contrato de renta ACTIVO
-    const contratoActivo = vehiculo.contratos.find((c) => c.estado === "ACTIVO");
+    // 1. REGLA ESTRICTA: No permitir eliminar si el vehículo está en estado ALQUILADO
+    if (vehiculo.estado === "ALQUILADO" || String(vehiculo.estado).toUpperCase() === "ALQUILADO") {
+      return res.status(400).json({
+        error: `🛑 ACCIÓN BLOQUEADA: El vehículo ${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.placa}) se encuentra actualmente en estado ALQUILADO en manos de un cliente. Por seguridad operativa y trazabilidad legal, un vehículo en alquiler NO se puede eliminar de la flota hasta que esté de regreso y se complete el proceso de devolución (Check-In).`,
+      });
+    }
+
+    // 2. REGLA ESTRICTA: No permitir eliminar si tiene un contrato ACTIVO o en BORRADOR
+    const contratoActivo = vehiculo.contratos.find(
+      (c) => c.estado === "ACTIVO" || c.estado === "BORRADOR"
+    );
     if (contratoActivo) {
       return res.status(400).json({
-        error: `⚠️ No es posible eliminar este vehículo (${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}) porque actualmente tiene el Contrato #${contratoActivo.id} en estado ACTIVO. Debes finalizar o cancelar el contrato antes de eliminar la unidad.`,
+        error: `🛑 ACCIÓN BLOQUEADA: No es posible eliminar este vehículo (${vehiculo.marca} ${vehiculo.modelo} - ${vehiculo.placa}) porque actualmente tiene el Contrato #${contratoActivo.id} en estado ${contratoActivo.estado}. Debes finalizar o cancelar el contrato y recibir el vehículo antes de eliminarlo.`,
       });
     }
 

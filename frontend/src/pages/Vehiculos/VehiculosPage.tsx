@@ -458,8 +458,16 @@ export default function VehiculosPage() {
     const v = vehiculos.find((x) => x.id === id);
     const nombreVehiculo = v ? `${v.marca} ${v.modelo} (${v.placa})` : `#${id}`;
 
+    // Bloqueo estricto: Si el vehículo está alquilado, no permitir la eliminación
+    if (v && (v.estado === "ALQUILADO" || String(v.estado).toUpperCase() === "ALQUILADO")) {
+      alert(
+        `🛑 ACCIÓN DENEGADA:\n\nEl vehículo ${nombreVehiculo} está actualmente ALQUILADO en manos de un cliente.\n\nPor seguridad operativa y trazabilidad legal, un vehículo en renta NO puede ser eliminado de la flota hasta que esté de regreso y se complete la devolución (Check-In).`
+      );
+      return;
+    }
+
     const confirmar = window.confirm(
-      `¿Está seguro de que desea eliminar el vehículo ${nombreVehiculo}?\n\nEsta acción eliminará el registro y su historial asociado.`
+      `¿Está seguro de que desea eliminar permanentemente el vehículo ${nombreVehiculo}?\n\nEsta acción eliminará el registro y su historial asociado.`
     );
     if (!confirmar) return;
 
@@ -1368,16 +1376,37 @@ export default function VehiculosPage() {
                           >
                             ✏️ Editar
                           </button>
-                          <button
-                            type="button"
-                            className="btn-action-delete"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              eliminarVehiculo(vehiculo.id);
-                            }}
-                          >
-                            🗑️
-                          </button>
+                          {vehiculo.estado === "ALQUILADO" ? (
+                            <button
+                              type="button"
+                              className="btn-action-delete"
+                              style={{
+                                opacity: 0.5,
+                                cursor: "not-allowed",
+                                background: "rgba(239, 68, 68, 0.1)",
+                                borderColor: "rgba(239, 68, 68, 0.3)",
+                              }}
+                              title="Vehículo actualmente ALQUILADO: No se puede eliminar hasta que sea devuelto a la agencia (Check-In)"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                eliminarVehiculo(vehiculo.id);
+                              }}
+                            >
+                              🔒
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn-action-delete"
+                              title="Eliminar vehículo disponible o fuera de servicio"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                eliminarVehiculo(vehiculo.id);
+                              }}
+                            >
+                              🗑️
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
