@@ -32,10 +32,6 @@ export default function LoginPage() {
     return localStorage.getItem("rentos_remember_active") === "true";
   });
 
-  const [mostrarModalRecuperar, setMostrarModalRecuperar] = useState(false);
-  const [emailRecuperacion, setEmailRecuperacion] = useState("");
-  const [mensajeRecuperacion, setMensajeRecuperacion] = useState("");
-
   const [error, setError] = useState("");
   const [iniciando, setIniciando] = useState(false);
   const [cuentasDemo, setCuentasDemo] = useState<CuentaDemo[]>([]);
@@ -110,15 +106,6 @@ export default function LoginPage() {
     }
   };
 
-  const solicitarRecuperacion = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailRecuperacion.trim()) return;
-
-    setMensajeRecuperacion(
-      `✅ Se ha enviado una instrucción de restablecimiento a ${emailRecuperacion} y un aviso al SuperAdministrador.`
-    );
-  };
-
   return (
     <div className="login-page-container">
       <div className="login-card-container">
@@ -154,7 +141,21 @@ export default function LoginPage() {
             Ingresa tus credenciales para acceder a tu panel de control.
           </p>
 
-          {error && <div className="alert-box error" style={{ marginBottom: "16px" }}>{error}</div>}
+          {error && (
+            <div className="alert-box error" style={{ marginBottom: "16px", lineHeight: "1.5" }}>
+              <div>{error}</div>
+              {(error.includes("bloquead") || error.includes("recuperación") || error.includes("intento")) && (
+                <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed rgba(239, 68, 68, 0.4)" }}>
+                  <Link
+                    to="/recuperar-password"
+                    style={{ color: "#b91c1c", fontWeight: 700, fontSize: "12px", textDecoration: "underline" }}
+                  >
+                    🔑 ¿Olvidaste tu contraseña? Restablécela de forma segura aquí →
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="form-field" style={{ marginBottom: "14px" }}>
@@ -222,25 +223,18 @@ export default function LoginPage() {
                 <span>Recordar contraseña</span>
               </label>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setEmailRecuperacion(email);
-                  setMensajeRecuperacion("");
-                  setMostrarModalRecuperar(true);
-                }}
+              <Link
+                to="/recuperar-password"
                 style={{
-                  background: "none",
-                  border: "none",
                   color: "var(--primary)",
-                  cursor: "pointer",
+                  textDecoration: "none",
                   fontSize: "12px",
                   fontWeight: 600,
                   padding: 0,
                 }}
               >
                 ¿Olvidaste tu contraseña?
-              </button>
+              </Link>
             </div>
 
             <button
@@ -328,96 +322,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
-      {/* Modal de Recuperación de Contraseña */}
-      {mostrarModalRecuperar && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.7)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "var(--surface)",
-              borderRadius: "14px",
-              maxWidth: "460px",
-              width: "100%",
-              padding: "28px",
-              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)",
-              color: "var(--text)",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-              <h2 style={{ margin: 0, fontSize: "17px" }}>🔐 Recuperación de Contraseña</h2>
-              <button
-                className="secondary-button"
-                style={{ padding: "4px 8px" }}
-                onClick={() => setMostrarModalRecuperar(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "0 0 16px 0", lineHeight: "1.5" }}>
-              Ingresa tu correo electrónico registrado para solicitar el restablecimiento de tu contraseña al SuperAdministrador.
-            </p>
-
-            {mensajeRecuperacion ? (
-              <div className="alert-box success" style={{ marginBottom: "16px" }}>
-                {mensajeRecuperacion}
-              </div>
-            ) : (
-              <form onSubmit={solicitarRecuperacion}>
-                <div className="form-field" style={{ marginBottom: "16px" }}>
-                  <label htmlFor="recEmail">Correo Electrónico *</label>
-                  <input
-                    id="recEmail"
-                    type="email"
-                    placeholder="tu@correo.com"
-                    value={emailRecuperacion}
-                    onChange={(e) => setEmailRecuperacion(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => setMostrarModalRecuperar(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button type="submit" className="primary-button">
-                    Solicitar Restablecimiento
-                  </button>
-                </div>
-              </form>
-            )}
-
-            <div style={{ marginTop: "18px", borderTop: "1px solid var(--border)", paddingTop: "14px", textAlign: "center" }}>
-              <a
-                href={`https://wa.me/18095550199?text=${encodeURIComponent("Hola SuperAdmin de RentOS, necesito asistencia para restablecer la contraseña de mi cuenta.")}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ fontSize: "12px", color: "#22c55e", textDecoration: "none", fontWeight: 700 }}
-              >
-                💬 Contactar al SuperAdmin por WhatsApp
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

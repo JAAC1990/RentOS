@@ -32,6 +32,10 @@ router.get("/", async (req, res) => {
         email: true,
         rol: true,
         activo: true,
+        intentosFallidos: true,
+        bloqueosConsecutivos: true,
+        bloqueadoHasta: true,
+        requiereRecuperacion: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -170,6 +174,57 @@ router.delete("/:id", async (req, res) => {
     console.error("Error eliminando usuario:", error);
     res.status(500).json({
       error: "No fue posible eliminar el usuario.",
+      detalle: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// PATCH /api/users/:id/desbloquear
+// ----------------------------------------------------------------------------
+// Desbloquea manualmente una cuenta de usuario
+router.patch("/:id/desbloquear", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    const usuario = await prisma.usuario.update({
+      where: { id },
+      data: {
+        intentosFallidos: 0,
+        bloqueosConsecutivos: 0,
+        bloqueadoHasta: null,
+        requiereRecuperacion: false,
+      },
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        rol: true,
+        activo: true,
+        intentosFallidos: true,
+        bloqueosConsecutivos: true,
+        bloqueadoHasta: true,
+        requiereRecuperacion: true,
+      },
+    });
+
+    await prisma.auditoriaSeguridad.create({
+      data: {
+        evento: "DESBLOQUEO_MANUAL",
+        email: usuario.email,
+        usuarioId: usuario.id,
+        detalles: "Desbloqueo manual de cuenta ejecutado desde el panel de gestión de usuarios.",
+      },
+    });
+
+    res.json({
+      mensaje: `La cuenta de ${usuario.nombre} ha sido desbloqueada exitosamente.`,
+      usuario,
+    });
+  } catch (error) {
+    console.error("Error desbloqueando usuario:", error);
+    res.status(500).json({
+      error: "No fue posible desbloquear el usuario.",
       detalle: error instanceof Error ? error.message : String(error),
     });
   }

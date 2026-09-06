@@ -32,6 +32,8 @@ import SolicitudesPage from "./pages/SuperAdmin/SolicitudesPage";
 import BackupsSuperAdminPage from "./pages/SuperAdmin/BackupsSuperAdminPage";
 import LoginPage from "./pages/Auth/LoginPage";
 import RegistroRentCarPage from "./pages/Auth/RegistroRentCarPage";
+import RecuperarPasswordPage from "./pages/Auth/RecuperarPasswordPage";
+import RestablecerPasswordPage from "./pages/Auth/RestablecerPasswordPage";
 import VerificarContratoPage from "./pages/Publico/VerificarContratoPage";
 import "./App.css";
 
@@ -58,6 +60,8 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/registro" element={<RegistroRentCarPage />} />
+      <Route path="/recuperar-password" element={<RecuperarPasswordPage />} />
+      <Route path="/restablecer-password" element={<RestablecerPasswordPage />} />
 
       {/* Catálogo Público de Reservas para Arrendatarios y Turistas */}
       <Route path="/reservar" element={<ReservasPublicasPage />} />

@@ -19,6 +19,10 @@ type Usuario = {
   email: string;
   rol: "SUPERADMIN" | "ADMIN_RENTCAR" | "EMPLEADO";
   activo: boolean;
+  intentosFallidos?: number;
+  bloqueosConsecutivos?: number;
+  bloqueadoHasta?: string | null;
+  requiereRecuperacion?: boolean;
   createdAt: string;
 };
 
@@ -217,6 +221,26 @@ export default function UsuariosPage() {
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Error al cambiar estado.");
+    }
+  };
+
+  const desbloquearUsuario = async (u: Usuario) => {
+    try {
+      setError("");
+      setMensaje("");
+
+      const res = await fetch(`${API_USERS}/${u.id}/desbloquear`, {
+        method: "PATCH",
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No fue posible desbloquear el usuario.");
+
+      setMensaje(`🎉 ${data.mensaje}`);
+      await cargarDatos();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Error al desbloquear usuario.");
     }
   };
 
@@ -625,9 +649,36 @@ export default function UsuariosPage() {
                       </span>
                     </td>
                     <td>
-                      <span className={`badge ${u.activo ? "badge-disponible" : "badge-inactivo"}`}>
-                        {u.activo ? "Activo" : "Inactivo"}
-                      </span>
+                      {u.bloqueadoHasta && new Date(u.bloqueadoHasta).getTime() > Date.now() ? (
+                        <span
+                          className="badge"
+                          style={{
+                            background: "#fee2e2",
+                            color: "#991b1b",
+                            border: "1px solid #f87171",
+                            fontWeight: 700,
+                          }}
+                          title={`Bloqueado hasta ${new Date(u.bloqueadoHasta).toLocaleTimeString()}`}
+                        >
+                          🔒 Bloqueado ({u.bloqueosConsecutivos ? `${u.bloqueosConsecutivos}° nivel` : "Seguridad"})
+                        </span>
+                      ) : u.requiereRecuperacion ? (
+                        <span
+                          className="badge"
+                          style={{
+                            background: "#fef3c7",
+                            color: "#92400e",
+                            border: "1px solid #f59e0b",
+                            fontWeight: 700,
+                          }}
+                        >
+                          ⚠️ Requiere Recuperación
+                        </span>
+                      ) : (
+                        <span className={`badge ${u.activo ? "badge-disponible" : "badge-inactivo"}`}>
+                          {u.activo ? "Activo" : "Inactivo"}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <small style={{ color: "var(--text-secondary)" }}>
@@ -635,7 +686,26 @@ export default function UsuariosPage() {
                       </small>
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <div className="actions-cell" style={{ justifyContent: "flex-end" }}>
+                      <div className="actions-cell" style={{ justifyContent: "flex-end", gap: "6px" }}>
+                        {usuarioActual?.rol === "SUPERADMIN" &&
+                          ((u.bloqueadoHasta && new Date(u.bloqueadoHasta).getTime() > Date.now()) ||
+                            u.requiereRecuperacion ||
+                            (u.bloqueosConsecutivos && u.bloqueosConsecutivos > 0)) && (
+                            <button
+                              type="button"
+                              className="btn-action-edit"
+                              style={{
+                                background: "#ecfdf5",
+                                color: "#065f46",
+                                border: "1px solid #34d399",
+                                fontWeight: 700,
+                              }}
+                              title="Desbloquear cuenta de usuario manualmente"
+                              onClick={() => desbloquearUsuario(u)}
+                            >
+                              🔓 Desbloquear
+                            </button>
+                          )}
                         <button
                           type="button"
                           className="btn-action-edit"

@@ -126,13 +126,24 @@ model Usuario {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  rentCar             RentCar?           @relation(fields: [rentCarId], references: [id])
+  rentCar             RentCar?             @relation(fields: [rentCarId], references: [id])
   clientesRegistrados UsuarioCliente[]
   consultasCredito    ConsultaCredito[]
   documentos          DocumentoCliente[]
   entregas            Entrega[]
   pagos               Pago[]
   gastos              Gasto[]
+
+  // Control de Bloqueo Progresivo y Seguridad
+  intentosFallidos      Int                  @default(0)
+  bloqueosConsecutivos  Int                  @default(0)
+  bloqueadoHasta        DateTime?
+  requiereRecuperacion  Boolean              @default(false)
+  tokenVersion          Int                  @default(1)
+  passwordChangedAt     DateTime?
+
+  tokensRecuperacion    TokenRecuperacion[]
+  auditoriasSeguridad   AuditoriaSeguridad[]
 
   @@index([rentCarId])
 }
@@ -440,3 +451,36 @@ model Gasto {
   @@index([fecha])
 }
 
+model TokenRecuperacion {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  tokenHash String   @unique // Hash SHA-256 criptográfico, nunca en texto plano
+  expiraEn  DateTime // Máximo 15 minutos
+  usado     Boolean  @default(false)
+  usadoEn   DateTime?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([tokenHash])
+}
+
+model AuditoriaSeguridad {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int?
+  email     String
+  evento    String   // LOGIN_FALLIDO, CUENTA_BLOQUEADA, BLOQUEO_PROGRESIVO, DESBLOQUEO_MANUAL, SOLICITUD_RECUPERACION, PASSWORD_RESTABLECIDO, LOGIN_EXITOSO, SESION_INVALIDADA
+  ip        String?
+  userAgent String?
+  detalles  String?
+  createdAt DateTime @default(now())
+
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([usuarioId])
+  @@index([email])
+  @@index([evento])
+  @@index([createdAt])
+}
