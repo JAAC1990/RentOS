@@ -36,12 +36,76 @@ export default function LoginPage() {
 
   const [error, setError] = useState("");
   const [iniciando, setIniciando] = useState(false);
+  const [animandoDerrape, setAnimandoDerrape] = useState(false);
+
+  // Síntesis de sonido de derrape de llanta con Web Audio API nativo
+  const playSkidSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+
+      // Ruido blanco de fricción y humo de neumático quemando caucho
+      const bufferSize = ctx.sampleRate * 1.5;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 1.1));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(1300, ctx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(750, ctx.currentTime + 1.2);
+      filter.Q.value = 2.5;
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.2, ctx.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.35);
+
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+
+      // Chirrido de derrape (frecuencia modulada)
+      const osc = ctx.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(900, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1550, ctx.currentTime + 0.35);
+      osc.frequency.exponentialRampToValueAtTime(550, ctx.currentTime + 1.15);
+
+      const oscGain = ctx.createGain();
+      oscGain.gain.setValueAtTime(0.07, ctx.currentTime);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.15);
+
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+
+      osc.start();
+      noise.start();
+      osc.stop(ctx.currentTime + 1.2);
+      noise.stop(ctx.currentTime + 1.4);
+    } catch {
+      // Ignorar si el navegador bloquea audio por políticas de interacción
+    }
+  };
+
+  // Botón de prueba para que el usuario pueda ver el derrape sin ingresar contraseña
+  const probarDerrape = () => {
+    setAnimandoDerrape(true);
+    playSkidSound();
+    setTimeout(() => {
+      setAnimandoDerrape(false);
+    }, 2200);
+  };
 
   useEffect(() => {
-    if (usuario) {
+    if (usuario && !animandoDerrape) {
       navigate("/dashboard");
     }
-  }, [usuario, navigate]);
+  }, [usuario, navigate, animandoDerrape]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +129,13 @@ export default function LoginPage() {
       }
 
       await login(email, password);
-      navigate("/dashboard");
+
+      // ¡Animación de llanta derrapando antes de entrar a la plataforma!
+      setAnimandoDerrape(true);
+      playSkidSound();
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1900);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
@@ -76,7 +146,7 @@ export default function LoginPage() {
 
   return (
     <div style={{ position: "relative", minHeight: "100vh", backgroundColor: diseno === "neon" ? "#070b14" : diseno === "showcase" ? "#0b1324" : "#0a0f1d" }}>
-      {/* Estilos CSS Inyectados para Animaciones Elegantes */}
+      {/* Estilos CSS Inyectados para Animaciones Elegantes y Derrape de Llanta */}
       <style>{`
         @keyframes floatSlow {
           0%, 100% { transform: translateY(0px); }
@@ -108,6 +178,54 @@ export default function LoginPage() {
           top: 0; left: 0; width: 40%; height: 100%;
           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
           animation: shimmerLine 3s infinite;
+        }
+
+        /* ANIMACIONES DE LLANTA DERRAPANDO */
+        @keyframes spinTireFast {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(2160deg); }
+        }
+        @keyframes tireBurnoutVibe {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          25% { transform: translate(-2px, -3px) rotate(-1deg); }
+          50% { transform: translate(2px, 1px) rotate(1.5deg); }
+          75% { transform: translate(-1px, 2px) rotate(-0.5deg); }
+        }
+        @keyframes roadSpeedAnim {
+          from { background-position: 0px 0; }
+          to { background-position: -800px 0; }
+        }
+        @keyframes skidBurnAnim {
+          0% { width: 0%; opacity: 0; }
+          30% { width: 60%; opacity: 0.9; }
+          100% { width: 100%; opacity: 1; }
+        }
+        @keyframes smokePuff1 {
+          0% { transform: translate(0, 0) scale(0.2); opacity: 0.9; }
+          50% { opacity: 0.7; }
+          100% { transform: translate(-140px, -60px) scale(2.8); opacity: 0; }
+        }
+        @keyframes smokePuff2 {
+          0% { transform: translate(0, 0) scale(0.3); opacity: 0.95; }
+          50% { opacity: 0.8; }
+          100% { transform: translate(-180px, -30px) scale(3.5); opacity: 0; }
+        }
+        @keyframes smokePuff3 {
+          0% { transform: translate(0, 0) scale(0.2); opacity: 0.85; }
+          50% { opacity: 0.6; }
+          100% { transform: translate(-120px, -90px) scale(2.4); opacity: 0; }
+        }
+        @keyframes sparkFlyAnim {
+          0% { transform: translate(0, 0) scale(1); opacity: 1; }
+          100% { transform: translate(-150px, -40px) scale(0.2); opacity: 0; }
+        }
+        @keyframes speedBarFill {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+        @keyframes revTextPulse {
+          0%, 100% { transform: scale(1); text-shadow: 0 0 10px rgba(239,68,68,0.5); }
+          50% { transform: scale(1.05); text-shadow: 0 0 25px rgba(239,68,68,0.9); }
         }
       `}</style>
 
@@ -197,8 +315,311 @@ export default function LoginPage() {
           >
             3. Showcase Corporativo
           </button>
+
+          {/* BOTÓN PARA PROBAR EL DERRAPE DE LLANTA DIRECTAMENTE */}
+          <button
+            type="button"
+            onClick={probarDerrape}
+            title="Haz clic para ver cómo queda la animación de la llanta derrapando"
+            style={{
+              padding: "6px 14px",
+              borderRadius: "8px",
+              fontSize: "11px",
+              fontWeight: 800,
+              border: "1px solid rgba(249, 115, 22, 0.4)",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              backgroundColor: "rgba(249, 115, 22, 0.15)",
+              color: "#fb923c",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              marginLeft: "4px",
+              boxShadow: "0 2px 8px rgba(249, 115, 22, 0.25)",
+            }}
+          >
+            <span>🏎️💨</span> Probar Derrape
+          </button>
         </div>
       </aside>
+
+      {/* ========================================================================= */}
+      {/* MODAL / OVERLAY EN PANTALLA COMPLETA: LLANTA DERRAPANDO AL INICIAR SESIÓN */}
+      {/* ========================================================================= */}
+      {animandoDerrape && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(3, 7, 18, 0.96)",
+            backdropFilter: "blur(20px)",
+            zIndex: 99999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            color: "#ffffff",
+          }}
+        >
+          {/* Luz ambiental de fricción */}
+          <div
+            style={{
+              position: "absolute",
+              width: "480px",
+              height: "480px",
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(239, 68, 68, 0.25) 0%, rgba(249, 115, 22, 0.15) 50%, transparent 70%)",
+              filter: "blur(60px)",
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* CONTENEDOR DE LA RUEDA Y EL DERRAPE */}
+          <div style={{ position: "relative", width: "320px", height: "230px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            
+            {/* Nubes de Humo de Derrape Billowing */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "55px",
+                left: "80px",
+                width: "60px",
+                height: "60px",
+                borderRadius: "50%",
+                backgroundColor: "rgba(226, 232, 240, 0.75)",
+                filter: "blur(14px)",
+                animation: "smokePuff1 0.75s infinite ease-out",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                bottom: "50px",
+                left: "70px",
+                width: "70px",
+                height: "70px",
+                borderRadius: "50%",
+                backgroundColor: "rgba(203, 213, 225, 0.8)",
+                filter: "blur(16px)",
+                animation: "smokePuff2 0.85s infinite ease-out 0.2s",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                bottom: "65px",
+                left: "90px",
+                width: "50px",
+                height: "50px",
+                borderRadius: "50%",
+                backgroundColor: "rgba(241, 245, 249, 0.7)",
+                filter: "blur(12px)",
+                animation: "smokePuff3 0.65s infinite ease-out 0.4s",
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Chispas de Fricción */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "48px",
+                left: "95px",
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                backgroundColor: "#f59e0b",
+                boxShadow: "0 0 10px #f59e0b",
+                animation: "sparkFlyAnim 0.45s infinite linear",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                bottom: "52px",
+                left: "85px",
+                width: "5px",
+                height: "5px",
+                borderRadius: "50%",
+                backgroundColor: "#ef4444",
+                boxShadow: "0 0 10px #ef4444",
+                animation: "sparkFlyAnim 0.5s infinite linear 0.2s",
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* RUEDA DEPORTIVA CON VIBRACIÓN DE BURNOUT */}
+            <div
+              style={{
+                position: "relative",
+                width: "150px",
+                height: "150px",
+                animation: "tireBurnoutVibe 0.08s infinite",
+                zIndex: 10,
+              }}
+            >
+              {/* Caliper de Freno Rojo Deportivo BREMBO */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "22px",
+                  right: "18px",
+                  width: "36px",
+                  height: "22px",
+                  backgroundColor: "#dc2626",
+                  borderRadius: "6px",
+                  border: "1px solid #ef4444",
+                  boxShadow: "0 0 12px rgba(220,38,38,0.7)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "8px",
+                  fontWeight: 900,
+                  color: "#ffffff",
+                  letterSpacing: "0.5px",
+                  zIndex: 12,
+                  transform: "rotate(35deg)",
+                }}
+              >
+                BREMBO
+              </div>
+
+              {/* SVG de la Llanta Girando a Alta Velocidad */}
+              <svg
+                viewBox="0 0 160 160"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  animation: "spinTireFast 0.75s linear infinite",
+                  filter: "drop-shadow(0 15px 25px rgba(0,0,0,0.8))",
+                }}
+              >
+                {/* Neumático exterior de caucho */}
+                <circle cx="80" cy="80" r="76" fill="#171717" stroke="#0a0a0a" strokeWidth="6" />
+                <circle cx="80" cy="80" r="66" fill="#262626" stroke="#404040" strokeWidth="2" strokeDasharray="8 6" />
+
+                {/* Rin de aleación deportivo (Alloy Rim) */}
+                <circle cx="80" cy="80" r="54" fill="#0f172a" stroke="#64748b" strokeWidth="4" />
+                <circle cx="80" cy="80" r="48" fill="#1e293b" />
+
+                {/* Radios Dobles Deportivos */}
+                <g stroke="#cbd5e1" strokeWidth="6" strokeLinecap="round">
+                  <line x1="80" y1="80" x2="80" y2="34" />
+                  <line x1="80" y1="80" x2="124" y2="65" />
+                  <line x1="80" y1="80" x2="107" y2="122" />
+                  <line x1="80" y1="80" x2="53" y2="122" />
+                  <line x1="80" y1="80" x2="36" y2="65" />
+                </g>
+
+                {/* Tapa Central con Logo RentOS */}
+                <circle cx="80" cy="80" r="18" fill="#0284c7" stroke="#38bdf8" strokeWidth="2.5" />
+                <text x="80" y="86" textAnchor="middle" fill="#ffffff" fontSize="16" fontWeight="900" fontFamily="sans-serif">
+                  R
+                </text>
+              </svg>
+            </div>
+
+            {/* Asfalto y Huella de Quemado de Goma */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "38px",
+                left: 0,
+                width: "100%",
+                height: "14px",
+                borderRadius: "7px",
+                backgroundColor: "#090d16",
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              {/* Líneas de asfalto pasando a toda marcha */}
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  backgroundImage: "repeating-linear-gradient(90deg, #facc15 0px, #facc15 25px, transparent 25px, transparent 60px)",
+                  opacity: 0.35,
+                  animation: "roadSpeedAnim 0.3s linear infinite",
+                }}
+              />
+              {/* Huella negra de derrape quemando el piso */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: "2px",
+                  left: "20px",
+                  height: "10px",
+                  backgroundColor: "#020617",
+                  boxShadow: "0 0 10px rgba(0,0,0,0.9)",
+                  borderRadius: "4px",
+                  animation: "skidBurnAnim 0.5s ease-out forwards",
+                }}
+              />
+            </div>
+
+          </div>
+
+          {/* MENSAJES Y TACÓMETRO DE VELOCIDAD */}
+          <div style={{ textAlign: "center", marginTop: "16px", zIndex: 20 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "6px 16px",
+                borderRadius: "999px",
+                backgroundColor: "rgba(239, 68, 68, 0.15)",
+                border: "1px solid rgba(239, 68, 68, 0.4)",
+                color: "#f87171",
+                fontSize: "12px",
+                fontWeight: 900,
+                letterSpacing: "1px",
+                marginBottom: "10px",
+                animation: "revTextPulse 0.6s infinite ease-in-out",
+              }}
+            >
+              <span>🔥</span> ¡QUEMANDO NEUMÁTICOS • 7,500 RPM!
+            </div>
+
+            <h3 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 6px 0", letterSpacing: "-0.5px", color: "#ffffff" }}>
+              Iniciando Sesión en RentOS...
+            </h3>
+            <p style={{ fontSize: "13px", color: "#94a3b8", margin: "0 0 20px 0" }}>
+              Verificando token de seguridad SHA-256 y acelerando al panel.
+            </p>
+
+            {/* Barra de Aceleración Digital */}
+            <div
+              style={{
+                width: "280px",
+                height: "8px",
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderRadius: "999px",
+                overflow: "hidden",
+                margin: "0 auto",
+                border: "1px solid rgba(255,255,255,0.15)",
+                boxShadow: "0 0 15px rgba(2,132,199,0.3)",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  background: "linear-gradient(90deg, #38bdf8 0%, #f59e0b 60%, #ef4444 100%)",
+                  animation: "speedBarFill 1.8s ease-in-out forwards",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* VISTA 1: SPLIT-SCREEN TECNOLÓGICO Y FLOTA (RECOMENDADO)                     */}
