@@ -139,6 +139,7 @@ router.get("/identificar-empresa", async (req, res) => {
           select: {
             id: true,
             nombre: true,
+            slug: true,
             logoUrl: true,
             eslogan: true,
             colorPrimario: true,
@@ -172,6 +173,7 @@ router.get("/identificar-empresa", async (req, res) => {
     return res.json({
       tipo: "EMPRESA",
       nombreEmpresa: usuario.rentCar.nombre,
+      slug: usuario.rentCar.slug || (usuario.rentCar.id === 1 ? "rentcar-santo-domingo" : String(usuario.rentCar.id)),
       logoUrl: usuario.rentCar.logoUrl,
       eslogan: usuario.rentCar.eslogan || `Portal Operativo • ${usuario.rentCar.ciudad || "República Dominicana"}`,
       colorPrimario: usuario.rentCar.colorPrimario || "#0284c7",

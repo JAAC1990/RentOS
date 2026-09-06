@@ -16,6 +16,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useTasaCambio } from "../../context/TasaCambioContext";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
 import FechaInput from "../../components/FechaInput";
@@ -90,9 +91,6 @@ type ResumenVencimientos = {
   alDia: number;
 };
 
-// Tasa de cambio de referencia (1 USD = 60.00 DOP)
-const TASA_DOLAR_PESO_DEFAULT = 60.00;
-
 const formularioInicial: FormularioVehiculo = {
   marca: "",
   modelo: "",
@@ -132,6 +130,7 @@ function obtenerFotoDefault(v: Vehiculo): string {
 
 export default function VehiculosPage() {
   const { tenantActivoId, usuario } = useAuth();
+  const { tasaCambio: tasaCambioBCRD } = useTasaCambio();
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [formulario, setFormulario] = useState<FormularioVehiculo>(formularioInicial);
 
@@ -139,9 +138,15 @@ export default function VehiculosPage() {
   const [mostrarModalCatalogo, setMostrarModalCatalogo] = useState(false);
   const [copiadoCatalogo, setCopiadoCatalogo] = useState(false);
 
-  // Control de tasa de cambio y visualización
-  const [tasaCambio, setTasaCambio] = useState<number>(TASA_DOLAR_PESO_DEFAULT);
+  // Control de tasa de cambio y visualización vinculada al BCRD
+  const [tasaCambio, setTasaCambio] = useState<number>(() => tasaCambioBCRD || 0);
   const [monedaVisualizacion, setMonedaVisualizacion] = useState<"USD" | "DOP">("USD");
+
+  useEffect(() => {
+    if (tasaCambioBCRD && tasaCambioBCRD > 0) {
+      setTasaCambio(tasaCambioBCRD);
+    }
+  }, [tasaCambioBCRD]);
 
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -666,13 +671,14 @@ export default function VehiculosPage() {
               </button>
             </div>
             <span style={{ fontSize: "11px", color: "var(--text-secondary)", marginLeft: "4px", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-              Tasa: 1$ =
+              💵 BCRD: 1$ =
               <input
                 type="number"
                 min="1"
-                step="0.5"
-                value={tasaCambio}
-                onChange={(e) => setTasaCambio(parseFloat(e.target.value) || TASA_DOLAR_PESO_DEFAULT)}
+                step="0.1"
+                value={tasaCambio && tasaCambio > 0 ? tasaCambio : ""}
+                placeholder="BCRD"
+                onChange={(e) => setTasaCambio(parseFloat(e.target.value) || tasaCambioBCRD)}
                 style={{
                   width: "55px",
                   padding: "2px 4px",
@@ -683,7 +689,7 @@ export default function VehiculosPage() {
                   color: "var(--text)",
                   textAlign: "center",
                 }}
-                title="Tasa de cambio USD a DOP (editable)"
+                title="Tasa oficial del día del Banco Central (BCRD)"
               />
               RD$
             </span>

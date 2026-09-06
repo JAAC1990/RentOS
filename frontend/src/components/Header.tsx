@@ -248,7 +248,7 @@ function Header({ onToggleSidebar }: HeaderProps) {
           }}
         >
           <span>💵 BCRD:</span>
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>RD$ {tasaCambio ? tasaCambio.toFixed(2) : "60.00"}</span>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>RD$ {tasaCambio && tasaCambio > 0 ? tasaCambio.toFixed(2) : "--.--"}</span>
           {cargandoTasa && <span style={{ fontSize: "10px", animation: "spin 1s linear infinite" }}>🔄</span>}
         </div>
 

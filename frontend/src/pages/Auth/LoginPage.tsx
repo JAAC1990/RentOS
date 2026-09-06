@@ -12,12 +12,14 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useTasaCambio } from "../../context/TasaCambioContext";
 
 type DisenoTipo = "split" | "neon" | "showcase";
 
 interface EmpresaBranding {
   tipo: "DEFAULT" | "SUPERADMIN" | "EMPRESA" | "DESCONOCIDO";
   nombreEmpresa: string;
+  slug?: string;
   logoUrl: string | null;
   eslogan: string;
   colorPrimario: string;
@@ -26,6 +28,7 @@ interface EmpresaBranding {
 
 export default function LoginPage() {
   const { login, usuario } = useAuth();
+  const { tasaCambio } = useTasaCambio();
   const navigate = useNavigate();
 
   const [diseno, setDiseno] = useState<DisenoTipo>(() => {
@@ -420,7 +423,7 @@ export default function LoginPage() {
                     </div>
                   </div>
                   <span style={{ padding: "4px 10px", borderRadius: "8px", backgroundColor: "rgba(14,165,233,0.2)", color: "#38bdf8", fontSize: "11px", fontWeight: 700, border: "1px solid rgba(14,165,233,0.3)" }}>
-                    1 USD = 60.85 DOP
+                    {tasaCambio && tasaCambio > 0 ? `1 USD = ${tasaCambio.toFixed(2)} DOP (BCRD)` : "Sincronizando BCRD..."}
                   </span>
                 </div>
               </div>
@@ -662,9 +665,16 @@ export default function LoginPage() {
                   <Link to="/registro" style={{ fontSize: "13px", fontWeight: 700, color: primaryColor, textDecoration: "none" }}>
                     🚀 ¿Eres dueño de un Rent a Car? Solicita tu empresa ↗
                   </Link>
-                  <a href="/reservar" target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "#94a3b8", textDecoration: "none" }}>
-                    🌐 Catálogo Público de Reservas ↗
-                  </a>
+                  {empresaInfo.tipo === "EMPRESA" && (
+                    <a
+                      href={`/portal/${empresaInfo.slug || "rentcar-santo-domingo"}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize: "12px", color: primaryColor, fontWeight: 700, textDecoration: "none" }}
+                    >
+                      🌐 Explorar Catálogo de Autos Públicos ({empresaInfo.nombreEmpresa}) ↗
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
@@ -870,9 +880,16 @@ export default function LoginPage() {
               <Link to="/registro" style={{ fontSize: "12px", fontWeight: 700, color: "#38bdf8", textDecoration: "none" }}>
                 🚀 Registrar mi Rent a Car en la Red ↗
               </Link>
-              <a href="/reservar" target="_blank" rel="noreferrer" style={{ fontSize: "11px", color: "#64748b", textDecoration: "none" }}>
-                🌐 Explorar Catálogo de Autos Públicos ↗
-              </a>
+              {empresaInfo.tipo === "EMPRESA" && (
+                <a
+                  href={`/portal/${empresaInfo.slug || "rentcar-santo-domingo"}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: "12px", color: "#38bdf8", fontWeight: 700, textDecoration: "none" }}
+                >
+                  🌐 Explorar Catálogo de Autos Públicos ({empresaInfo.nombreEmpresa}) ↗
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -1082,9 +1099,16 @@ export default function LoginPage() {
                   <Link to="/registro" style={{ fontSize: "12px", fontWeight: 700, color: "#38bdf8", textDecoration: "none" }}>
                     🚀 Solicitar Afiliación de Empresa ↗
                   </Link>
-                  <a href="/reservar" target="_blank" rel="noreferrer" style={{ fontSize: "11px", color: "#64748b", textDecoration: "none" }}>
-                    🌐 Catálogo de Vehículos en Renta ↗
-                  </a>
+                  {empresaInfo.tipo === "EMPRESA" && (
+                    <a
+                      href={`/portal/${empresaInfo.slug || "rentcar-santo-domingo"}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize: "11px", color: "#38bdf8", fontWeight: 700, textDecoration: "none" }}
+                    >
+                      🌐 Explorar Catálogo de Autos Públicos ({empresaInfo.nombreEmpresa}) ↗
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

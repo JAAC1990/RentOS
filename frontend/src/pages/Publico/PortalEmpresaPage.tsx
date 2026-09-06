@@ -172,7 +172,7 @@ export default function PortalEmpresaPage() {
     if (entregaAeropuerto) extrasUSD += 30; // Cargo fijo
 
     const totalUSD = costoBaseUSD + extrasUSD;
-    const totalDOP = totalUSD * (tasaCambio || 60.0);
+    const totalDOP = totalUSD * (tasaCambio > 0 ? tasaCambio : 1);
 
     return {
       costoBaseUSD,
@@ -185,7 +185,7 @@ export default function PortalEmpresaPage() {
   // Convertir tarifa unitaria
   const formatearMonto = (montoUSD: number) => {
     if (monedaVisual === "DOP") {
-      const enDOP = montoUSD * (tasaCambio || 60.0);
+      const enDOP = montoUSD * (tasaCambio > 0 ? tasaCambio : 1);
       return `RD$ ${enDOP.toLocaleString("es-DO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return `$ ${montoUSD.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;

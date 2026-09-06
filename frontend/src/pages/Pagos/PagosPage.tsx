@@ -13,7 +13,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
-import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
+import MonedaInput from "../../components/MonedaInput";
+import { useTasaCambio } from "../../context/TasaCambioContext";
 
 type Cliente = {
   id: number;
@@ -97,7 +98,15 @@ export default function PagosPage() {
   const [formulario, setFormulario] = useState<FormularioPago>(formularioInicial);
   const [monedaVisualizacion, setMonedaVisualizacion] = useState<"USD" | "DOP">("USD");
   const [monedaFormulario, setMonedaFormulario] = useState<"USD" | "DOP">("USD");
-  const [tasaCambio, setTasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
+  const { tasaCambio: tasaCambioBCRD } = useTasaCambio();
+  const [tasaCambio, setTasaCambio] = useState<number>(() => tasaCambioBCRD || 0);
+
+  useEffect(() => {
+    if (tasaCambioBCRD && tasaCambioBCRD > 0) {
+      setTasaCambio(tasaCambioBCRD);
+    }
+  }, [tasaCambioBCRD]);
+
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -302,13 +311,14 @@ export default function PagosPage() {
               </button>
             </div>
             <div style={{ borderLeft: "1px solid var(--border)", paddingLeft: "6px", marginLeft: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Tasa:</span>
+              <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>BCRD:</span>
               <input
                 type="number"
-                value={tasaCambio}
-                onChange={(e) => setTasaCambio(Math.max(1, parseFloat(e.target.value) || 60))}
-                style={{ width: "52px", padding: "2px 4px", fontSize: "11px", borderRadius: "4px", border: "1px solid var(--border)" }}
-                title="Tasa de cambio USD a DOP"
+                value={tasaCambio && tasaCambio > 0 ? tasaCambio : ""}
+                onChange={(e) => setTasaCambio(parseFloat(e.target.value) || tasaCambioBCRD || 0)}
+                style={{ width: "56px", padding: "2px 4px", fontSize: "11px", borderRadius: "4px", border: "1px solid var(--border)" }}
+                title="Tasa oficial del día del Banco Central (BCRD)"
+                placeholder="BCRD"
               />
             </div>
           </div>

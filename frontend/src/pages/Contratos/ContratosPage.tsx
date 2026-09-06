@@ -19,7 +19,8 @@ import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
 import FechaInput from "../../components/FechaInput";
 import PhoneInput from "../../components/PhoneInput";
-import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
+import MonedaInput from "../../components/MonedaInput";
+import { useTasaCambio } from "../../context/TasaCambioContext";
 import ContratoDominicanoImprimible, { type DatosContratoImpresion } from "../../components/ContratoDominicanoImprimible";
 import ModalFirmaDigital from "../../components/ModalFirmaDigital";
 
@@ -157,7 +158,7 @@ export default function ContratosPage() {
 
   const [formulario, setFormulario] = useState<FormularioContrato>(formularioInicial);
   const [monedaFormulario, setMonedaFormulario] = useState<"USD" | "DOP">("USD");
-  const [tasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
+  const { tasaCambio } = useTasaCambio();
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);

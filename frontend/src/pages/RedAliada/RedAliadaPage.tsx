@@ -11,7 +11,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
-import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
+import MonedaInput from "../../components/MonedaInput";
+import { useTasaCambio } from "../../context/TasaCambioContext";
 
 type RentCarAliado = {
   id: number;
@@ -68,7 +69,7 @@ export default function RedAliadaPage() {
 
   const [tarifaPactada, setTarifaPactada] = useState("50.00");
   const [monedaPactada, setMonedaPactada] = useState<"USD" | "DOP">("USD");
-  const [tasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
+  const { tasaCambio } = useTasaCambio();
   const [notas, setNotas] = useState("");
 
   const [filtroCiudad, setFiltroCiudad] = useState("TODAS");

@@ -14,7 +14,8 @@ import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
 import FechaInput from "../../components/FechaInput";
-import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
+import MonedaInput from "../../components/MonedaInput";
+import { useTasaCambio } from "../../context/TasaCambioContext";
 
 type Vehiculo = {
   id: number;
@@ -78,7 +79,7 @@ export default function MantenimientoPage() {
   const [otroTipoServicio, setOtroTipoServicio] = useState("");
   const [costo, setCosto] = useState("65.00");
   const [monedaCosto, setMonedaCosto] = useState<"USD" | "DOP">("USD");
-  const [tasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
+  const { tasaCambio } = useTasaCambio();
   const [kilometrajeServicio, setKilometrajeServicio] = useState("");
   const [proximoKilometraje, setProximoKilometraje] = useState("");
   const [proximaFechaServicio, setProximaFechaServicio] = useState(

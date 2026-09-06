@@ -37,10 +37,23 @@ interface TasaCambioContextType {
   restaurarModoDinamico: () => Promise<void>;
 }
 
+const TASA_CACHE_KEY = "rentos_bcrd_tasa_cache";
+
+function obtenerTasaCacheada(): InfoTasaCambio | null {
+  try {
+    const raw = sessionStorage.getItem(TASA_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.tasa > 0) return parsed;
+    }
+  } catch {}
+  return null;
+}
+
 const TasaCambioContext = createContext<TasaCambioContextType>({
-  tasaCambio: 60.0,
-  tasaCompra: 59.8,
-  tasaVenta: 60.25,
+  tasaCambio: 0,
+  tasaCompra: 0,
+  tasaVenta: 0,
   fuente: "Banco Central de la República Dominicana (BCRD)",
   fechaActualizacion: new Date().toISOString(),
   esDinamica: true,
@@ -51,16 +64,20 @@ const TasaCambioContext = createContext<TasaCambioContextType>({
 });
 
 export function TasaCambioProvider({ children }: { children: React.ReactNode }) {
-  const [infoTasa, setInfoTasa] = useState<InfoTasaCambio>({
-    monedaBase: "USD",
-    monedaDestino: "DOP",
-    tasa: 60.0,
-    tasaCompra: 59.8,
-    tasaVenta: 60.25,
-    fuente: "Banco Central de la República Dominicana (BCRD)",
-    fechaActualizacion: new Date().toISOString(),
-    esDinamica: true,
-    modoManual: false,
+  const [infoTasa, setInfoTasa] = useState<InfoTasaCambio>(() => {
+    const cache = obtenerTasaCacheada();
+    if (cache) return cache;
+    return {
+      monedaBase: "USD",
+      monedaDestino: "DOP",
+      tasa: 0,
+      tasaCompra: 0,
+      tasaVenta: 0,
+      fuente: "Banco Central de la República Dominicana (BCRD)",
+      fechaActualizacion: new Date().toISOString(),
+      esDinamica: true,
+      modoManual: false,
+    };
   });
   const [cargandoTasa, setCargandoTasa] = useState(true);
 
@@ -73,6 +90,9 @@ export function TasaCambioProvider({ children }: { children: React.ReactNode }) 
         const data: InfoTasaCambio = await res.json();
         if (data && typeof data.tasa === "number" && data.tasa > 0) {
           setInfoTasa(data);
+          try {
+            sessionStorage.setItem(TASA_CACHE_KEY, JSON.stringify(data));
+          } catch {}
         }
       }
     } catch (err) {

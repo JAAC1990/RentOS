@@ -12,7 +12,7 @@
 import React from "react";
 import { useTasaCambio } from "../context/TasaCambioContext";
 
-export const TASA_CAMBIO_DEFAULT = 60.0;
+export const TASA_CAMBIO_DEFAULT = 0;
 
 interface MonedaInputProps {
   id?: string;
@@ -50,7 +50,7 @@ export default function MonedaInput({
   style = {},
 }: MonedaInputProps) {
   const { tasaCambio: tasaContexto } = useTasaCambio();
-  const tasaCambio = tasaProp !== undefined ? tasaProp : (tasaContexto || TASA_CAMBIO_DEFAULT);
+  const tasaCambio = (tasaProp !== undefined && tasaProp > 0) ? tasaProp : (tasaContexto > 0 ? tasaContexto : 1);
 
   const alternarMoneda = (nuevaMoneda: "USD" | "DOP") => {
     if (nuevaMoneda === moneda || disabled) return;

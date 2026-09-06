@@ -15,10 +15,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
-import { formatearFecha } from "../../utils/dateUtils";
 import FechaInput from "../../components/FechaInput";
-import MonedaInput, { TASA_CAMBIO_DEFAULT } from "../../components/MonedaInput";
+import MonedaInput from "../../components/MonedaInput";
+import { useTasaCambio } from "../../context/TasaCambioContext";
 import EstadoCuentaClienteImprimible from "../../components/EstadoCuentaClienteImprimible";
+import { formatearFecha } from "../../utils/dateUtils";
 
 type CategoriaGasto =
   | "MANTENIMIENTO_TALLER"
@@ -155,9 +156,16 @@ export default function ContabilidadPage() {
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
 
-  // Configuración de Moneda y Tasa de Cambio
+  // Configuración de Moneda y Tasa de Cambio Oficial BCRD
+  const { tasaCambio: tasaCambioBCRD } = useTasaCambio();
   const [moneda, setMoneda] = useState<"USD" | "DOP">("USD");
-  const [tasaCambio, setTasaCambio] = useState<number>(TASA_CAMBIO_DEFAULT);
+  const [tasaCambio, setTasaCambio] = useState<number>(() => tasaCambioBCRD || 0);
+
+  useEffect(() => {
+    if (tasaCambioBCRD && tasaCambioBCRD > 0) {
+      setTasaCambio(tasaCambioBCRD);
+    }
+  }, [tasaCambioBCRD]);
 
   // Control de Pestañas
   const [tabActiva, setTabActiva] = useState<"PL" | "CLIENTES" | "FLOTA" | "GASTOS">("PL");
@@ -505,10 +513,11 @@ export default function ContabilidadPage() {
               <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>Tasa:</span>
               <input
                 type="number"
-                value={tasaCambio}
-                onChange={(e) => setTasaCambio(Math.max(1, parseFloat(e.target.value) || 60))}
+                value={tasaCambio && tasaCambio > 0 ? tasaCambio : ""}
+                placeholder="BCRD"
+                onChange={(e) => setTasaCambio(Math.max(1, parseFloat(e.target.value) || tasaCambioBCRD || 1))}
                 style={{ width: "52px", padding: "2px 4px", fontSize: "11px", borderRadius: "4px", border: "1px solid var(--border)" }}
-                title="Tasa de cambio USD a DOP"
+                title="Tasa oficial del día del Banco Central (BCRD)"
               />
             </div>
           </div>
