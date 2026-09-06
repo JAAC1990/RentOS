@@ -38,55 +38,72 @@ export default function LoginPage() {
   const [iniciando, setIniciando] = useState(false);
   const [animandoDerrape, setAnimandoDerrape] = useState(false);
 
-  // Síntesis de sonido de derrape de llanta con Web Audio API nativo
+  // Síntesis de sonido de motor V8 y derrape de llanta con Web Audio API nativo
   const playSkidSound = () => {
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
 
-      // Ruido blanco de fricción y humo de neumático quemando caucho
-      const bufferSize = ctx.sampleRate * 1.5;
+      // 1. Rugido del motor en aceleración a fondo (V8 Twin-Turbo Launch Control)
+      const engineOsc = ctx.createOscillator();
+      engineOsc.type = "sawtooth";
+      engineOsc.frequency.setValueAtTime(80, ctx.currentTime);
+      engineOsc.frequency.exponentialRampToValueAtTime(260, ctx.currentTime + 0.8);
+      engineOsc.frequency.exponentialRampToValueAtTime(360, ctx.currentTime + 1.4);
+
+      const engineGain = ctx.createGain();
+      engineGain.gain.setValueAtTime(0.12, ctx.currentTime);
+      engineGain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.7);
+      engineGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.6);
+
+      engineOsc.connect(engineGain);
+      engineGain.connect(ctx.destination);
+      engineOsc.start();
+      engineOsc.stop(ctx.currentTime + 1.6);
+
+      // 2. Ruido blanco de fricción y humo de neumático quemando caucho
+      const bufferSize = ctx.sampleRate * 1.6;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 1.1));
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 1.2));
       }
       const noise = ctx.createBufferSource();
       noise.buffer = buffer;
 
       const filter = ctx.createBiquadFilter();
       filter.type = "bandpass";
-      filter.frequency.setValueAtTime(1300, ctx.currentTime);
-      filter.frequency.exponentialRampToValueAtTime(750, ctx.currentTime + 1.2);
-      filter.Q.value = 2.5;
+      filter.frequency.setValueAtTime(1350, ctx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(780, ctx.currentTime + 1.3);
+      filter.Q.value = 2.8;
 
       const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.2, ctx.currentTime);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.35);
+      noiseGain.gain.setValueAtTime(0.22, ctx.currentTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
 
       noise.connect(filter);
       filter.connect(noiseGain);
       noiseGain.connect(ctx.destination);
 
-      // Chirrido de derrape (frecuencia modulada)
+      // 3. Chirrido agudo de derrape sobre asfalto caliente
       const osc = ctx.createOscillator();
       osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(900, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1550, ctx.currentTime + 0.35);
-      osc.frequency.exponentialRampToValueAtTime(550, ctx.currentTime + 1.15);
+      osc.frequency.setValueAtTime(950, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1650, ctx.currentTime + 0.35);
+      osc.frequency.exponentialRampToValueAtTime(580, ctx.currentTime + 1.2);
 
       const oscGain = ctx.createGain();
-      oscGain.gain.setValueAtTime(0.07, ctx.currentTime);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.15);
+      oscGain.gain.setValueAtTime(0.08, ctx.currentTime);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
 
       osc.connect(oscGain);
       oscGain.connect(ctx.destination);
 
       osc.start();
       noise.start();
-      osc.stop(ctx.currentTime + 1.2);
-      noise.stop(ctx.currentTime + 1.4);
+      osc.stop(ctx.currentTime + 1.25);
+      noise.stop(ctx.currentTime + 1.5);
     } catch {
       // Ignorar si el navegador bloquea audio por políticas de interacción
     }
@@ -98,7 +115,7 @@ export default function LoginPage() {
     playSkidSound();
     setTimeout(() => {
       setAnimandoDerrape(false);
-    }, 2200);
+    }, 2300);
   };
 
   useEffect(() => {
@@ -130,12 +147,12 @@ export default function LoginPage() {
 
       await login(email, password);
 
-      // ¡Animación de llanta derrapando antes de entrar a la plataforma!
+      // ¡Animación de llanta derrapando fotorrealista antes de entrar a la plataforma!
       setAnimandoDerrape(true);
       playSkidSound();
       setTimeout(() => {
         navigate("/dashboard");
-      }, 1900);
+      }, 2000);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
@@ -146,7 +163,7 @@ export default function LoginPage() {
 
   return (
     <div style={{ position: "relative", minHeight: "100vh", backgroundColor: diseno === "neon" ? "#070b14" : diseno === "showcase" ? "#0b1324" : "#0a0f1d" }}>
-      {/* Estilos CSS Inyectados para Animaciones Elegantes y Derrape de Llanta */}
+      {/* Estilos CSS Inyectados para Animaciones Elegantes y Derrape Fotorrealista */}
       <style>{`
         @keyframes floatSlow {
           0%, 100% { transform: translateY(0px); }
@@ -180,52 +197,43 @@ export default function LoginPage() {
           animation: shimmerLine 3s infinite;
         }
 
-        /* ANIMACIONES DE LLANTA DERRAPANDO */
-        @keyframes spinTireFast {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(2160deg); }
+        /* ANIMACIONES DE DERRAPE FOTORREALISTA */
+        @keyframes intenseBurnoutVibe {
+          0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+          20% { transform: translate(-2px, -3px) rotate(-0.5deg) scale(1.006); }
+          40% { transform: translate(3px, 2px) rotate(0.6deg) scale(0.996); }
+          60% { transform: translate(-2px, 3px) rotate(-0.4deg) scale(1.008); }
+          80% { transform: translate(3px, -2px) rotate(0.5deg) scale(0.998); }
         }
-        @keyframes tireBurnoutVibe {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          25% { transform: translate(-2px, -3px) rotate(-1deg); }
-          50% { transform: translate(2px, 1px) rotate(1.5deg); }
-          75% { transform: translate(-1px, 2px) rotate(-0.5deg); }
+        @keyframes thermoGlowAnim {
+          0% { transform: scale(0.92); opacity: 0.65; filter: blur(12px); }
+          100% { transform: scale(1.18); opacity: 1; filter: blur(20px); }
         }
-        @keyframes roadSpeedAnim {
-          from { background-position: 0px 0; }
-          to { background-position: -800px 0; }
+        @keyframes wheelSpinBlurAnim {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
-        @keyframes skidBurnAnim {
-          0% { width: 0%; opacity: 0; }
-          30% { width: 60%; opacity: 0.9; }
-          100% { width: 100%; opacity: 1; }
-        }
-        @keyframes smokePuff1 {
-          0% { transform: translate(0, 0) scale(0.2); opacity: 0.9; }
-          50% { opacity: 0.7; }
-          100% { transform: translate(-140px, -60px) scale(2.8); opacity: 0; }
-        }
-        @keyframes smokePuff2 {
-          0% { transform: translate(0, 0) scale(0.3); opacity: 0.95; }
-          50% { opacity: 0.8; }
-          100% { transform: translate(-180px, -30px) scale(3.5); opacity: 0; }
-        }
-        @keyframes smokePuff3 {
-          0% { transform: translate(0, 0) scale(0.2); opacity: 0.85; }
+        @keyframes smokeDriftReal1 {
+          0% { transform: translate(0, 0) scale(0.4); opacity: 0.8; }
           50% { opacity: 0.6; }
-          100% { transform: translate(-120px, -90px) scale(2.4); opacity: 0; }
+          100% { transform: translate(-90px, -70px) scale(2.2); opacity: 0; }
         }
-        @keyframes sparkFlyAnim {
+        @keyframes smokeDriftReal2 {
+          0% { transform: translate(0, 0) scale(0.5); opacity: 0.9; }
+          50% { opacity: 0.7; }
+          100% { transform: translate(80px, -90px) scale(2.6); opacity: 0; }
+        }
+        @keyframes sparkFlyReal {
           0% { transform: translate(0, 0) scale(1); opacity: 1; }
-          100% { transform: translate(-150px, -40px) scale(0.2); opacity: 0; }
+          100% { transform: translate(-170px, 45px) scale(0.2); opacity: 0; }
         }
         @keyframes speedBarFill {
           0% { width: 0%; }
           100% { width: 100%; }
         }
         @keyframes revTextPulse {
-          0%, 100% { transform: scale(1); text-shadow: 0 0 10px rgba(239,68,68,0.5); }
-          50% { transform: scale(1.05); text-shadow: 0 0 25px rgba(239,68,68,0.9); }
+          0%, 100% { transform: scale(1); text-shadow: 0 0 12px rgba(239,68,68,0.6); }
+          50% { transform: scale(1.06); text-shadow: 0 0 30px rgba(239,68,68,1); }
         }
       `}</style>
 
@@ -344,7 +352,7 @@ export default function LoginPage() {
       </aside>
 
       {/* ========================================================================= */}
-      {/* MODAL / OVERLAY EN PANTALLA COMPLETA: LLANTA DERRAPANDO AL INICIAR SESIÓN */}
+      {/* MODAL / OVERLAY EN PANTALLA COMPLETA: LLANTA DERRAPANDO FOTORREALISTA     */}
       {/* ========================================================================= */}
       {animandoDerrape && (
         <div
@@ -355,220 +363,196 @@ export default function LoginPage() {
             width: "100vw",
             height: "100vh",
             backgroundColor: "rgba(3, 7, 18, 0.96)",
-            backdropFilter: "blur(20px)",
+            backdropFilter: "blur(24px)",
             zIndex: 99999,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
             overflow: "hidden",
+            padding: "20px",
             color: "#ffffff",
           }}
         >
-          {/* Luz ambiental de fricción */}
+          {/* Resplandor térmico de fondo */}
           <div
             style={{
               position: "absolute",
-              width: "480px",
-              height: "480px",
+              width: "600px",
+              height: "600px",
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(239, 68, 68, 0.25) 0%, rgba(249, 115, 22, 0.15) 50%, transparent 70%)",
-              filter: "blur(60px)",
+              background: "radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(249, 115, 22, 0.15) 50%, transparent 70%)",
+              filter: "blur(80px)",
               pointerEvents: "none",
             }}
           />
 
-          {/* CONTENEDOR DE LA RUEDA Y EL DERRAPE */}
-          <div style={{ position: "relative", width: "320px", height: "230px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            
-            {/* Nubes de Humo de Derrape Billowing */}
+          {/* TARJETA CINEMÁTICA CON LA LLANTA FOTORREALISTA EN BURNOUT */}
+          <div
+            className="anim-burnout-vibe"
+            style={{
+              position: "relative",
+              maxWidth: "420px",
+              width: "100%",
+              aspectRatio: "1 / 1",
+              borderRadius: "28px",
+              overflow: "hidden",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              boxShadow: "0 30px 70px -15px rgba(0,0,0,0.9), 0 0 50px rgba(239,68,68,0.4)",
+              backgroundColor: "#000000",
+            }}
+          >
+            {/* Imagen Fotorrealista de la Llanta en Burnout */}
+            <img
+              src="/drift-burnout.jpg"
+              alt="Llanta deportiva quemando caucho"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+                filter: "contrast(1.08) saturate(1.15)",
+              }}
+            />
+
+            {/* Efecto de Fricción Térmica Pulsante en el Disco de Freno al Rojo Vivo */}
             <div
               style={{
                 position: "absolute",
-                bottom: "55px",
-                left: "80px",
-                width: "60px",
-                height: "60px",
+                top: "37%",
+                left: "39%",
+                width: "28%",
+                height: "28%",
                 borderRadius: "50%",
-                backgroundColor: "rgba(226, 232, 240, 0.75)",
+                background: "radial-gradient(circle, rgba(255, 50, 0, 0.6) 0%, rgba(255, 140, 0, 0.4) 45%, transparent 75%)",
                 filter: "blur(14px)",
-                animation: "smokePuff1 0.75s infinite ease-out",
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                bottom: "50px",
-                left: "70px",
-                width: "70px",
-                height: "70px",
-                borderRadius: "50%",
-                backgroundColor: "rgba(203, 213, 225, 0.8)",
-                filter: "blur(16px)",
-                animation: "smokePuff2 0.85s infinite ease-out 0.2s",
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                bottom: "65px",
-                left: "90px",
-                width: "50px",
-                height: "50px",
-                borderRadius: "50%",
-                backgroundColor: "rgba(241, 245, 249, 0.7)",
-                filter: "blur(12px)",
-                animation: "smokePuff3 0.65s infinite ease-out 0.4s",
+                mixBlendMode: "screen",
+                animation: "thermoGlowAnim 0.4s infinite alternate ease-in-out",
                 pointerEvents: "none",
               }}
             />
 
-            {/* Chispas de Fricción */}
+            {/* Overlay de Giro a Alta Velocidad sobre el Rin (Motion Blur) */}
             <div
               style={{
                 position: "absolute",
-                bottom: "48px",
-                left: "95px",
+                top: "32%",
+                left: "34%",
+                width: "38%",
+                height: "38%",
+                borderRadius: "50%",
+                background: "conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,0.12) 30deg, transparent 60deg, rgba(255,255,255,0.14) 90deg, transparent 120deg, rgba(255,255,255,0.12) 150deg, transparent 180deg, rgba(255,255,255,0.15) 210deg, transparent 240deg, rgba(255,255,255,0.12) 270deg, transparent 300deg, rgba(255,255,255,0.15) 330deg, transparent 360deg)",
+                animation: "wheelSpinBlurAnim 0.12s linear infinite",
+                pointerEvents: "none",
+                mixBlendMode: "overlay",
+              }}
+            />
+
+            {/* Nubes de Humo Volumétrico Superpuestas */}
+            <div
+              style={{
+                position: "absolute",
+                top: "20%",
+                left: "-10%",
+                width: "120px",
+                height: "120px",
+                borderRadius: "50%",
+                backgroundColor: "rgba(241, 245, 249, 0.45)",
+                filter: "blur(22px)",
+                animation: "smokeDriftReal1 1.2s infinite ease-out",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                bottom: "10%",
+                right: "-5%",
+                width: "140px",
+                height: "140px",
+                borderRadius: "50%",
+                backgroundColor: "rgba(226, 232, 240, 0.5)",
+                filter: "blur(26px)",
+                animation: "smokeDriftReal2 1.4s infinite ease-out 0.2s",
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Chispas Volantes Dinámicas */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "12%",
+                left: "42%",
                 width: "6px",
                 height: "6px",
                 borderRadius: "50%",
-                backgroundColor: "#f59e0b",
-                boxShadow: "0 0 10px #f59e0b",
-                animation: "sparkFlyAnim 0.45s infinite linear",
+                backgroundColor: "#fef08a",
+                boxShadow: "0 0 12px #f59e0b, 0 0 20px #ef4444",
+                animation: "sparkFlyReal 0.4s infinite linear",
                 pointerEvents: "none",
               }}
             />
             <div
               style={{
                 position: "absolute",
-                bottom: "52px",
-                left: "85px",
+                bottom: "10%",
+                left: "38%",
                 width: "5px",
                 height: "5px",
                 borderRadius: "50%",
-                backgroundColor: "#ef4444",
-                boxShadow: "0 0 10px #ef4444",
-                animation: "sparkFlyAnim 0.5s infinite linear 0.2s",
+                backgroundColor: "#f97316",
+                boxShadow: "0 0 10px #f97316",
+                animation: "sparkFlyReal 0.45s infinite linear 0.15s",
                 pointerEvents: "none",
               }}
             />
 
-            {/* RUEDA DEPORTIVA CON VIBRACIÓN DE BURNOUT */}
-            <div
-              style={{
-                position: "relative",
-                width: "150px",
-                height: "150px",
-                animation: "tireBurnoutVibe 0.08s infinite",
-                zIndex: 10,
-              }}
-            >
-              {/* Caliper de Freno Rojo Deportivo BREMBO */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "22px",
-                  right: "18px",
-                  width: "36px",
-                  height: "22px",
-                  backgroundColor: "#dc2626",
-                  borderRadius: "6px",
-                  border: "1px solid #ef4444",
-                  boxShadow: "0 0 12px rgba(220,38,38,0.7)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "8px",
-                  fontWeight: 900,
-                  color: "#ffffff",
-                  letterSpacing: "0.5px",
-                  zIndex: 12,
-                  transform: "rotate(35deg)",
-                }}
-              >
-                BREMBO
-              </div>
-
-              {/* SVG de la Llanta Girando a Alta Velocidad */}
-              <svg
-                viewBox="0 0 160 160"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  animation: "spinTireFast 0.75s linear infinite",
-                  filter: "drop-shadow(0 15px 25px rgba(0,0,0,0.8))",
-                }}
-              >
-                {/* Neumático exterior de caucho */}
-                <circle cx="80" cy="80" r="76" fill="#171717" stroke="#0a0a0a" strokeWidth="6" />
-                <circle cx="80" cy="80" r="66" fill="#262626" stroke="#404040" strokeWidth="2" strokeDasharray="8 6" />
-
-                {/* Rin de aleación deportivo (Alloy Rim) */}
-                <circle cx="80" cy="80" r="54" fill="#0f172a" stroke="#64748b" strokeWidth="4" />
-                <circle cx="80" cy="80" r="48" fill="#1e293b" />
-
-                {/* Radios Dobles Deportivos */}
-                <g stroke="#cbd5e1" strokeWidth="6" strokeLinecap="round">
-                  <line x1="80" y1="80" x2="80" y2="34" />
-                  <line x1="80" y1="80" x2="124" y2="65" />
-                  <line x1="80" y1="80" x2="107" y2="122" />
-                  <line x1="80" y1="80" x2="53" y2="122" />
-                  <line x1="80" y1="80" x2="36" y2="65" />
-                </g>
-
-                {/* Tapa Central con Logo RentOS */}
-                <circle cx="80" cy="80" r="18" fill="#0284c7" stroke="#38bdf8" strokeWidth="2.5" />
-                <text x="80" y="86" textAnchor="middle" fill="#ffffff" fontSize="16" fontWeight="900" fontFamily="sans-serif">
-                  R
-                </text>
-              </svg>
-            </div>
-
-            {/* Asfalto y Huella de Quemado de Goma */}
+            {/* Badges de Telemetría Deportiva */}
             <div
               style={{
                 position: "absolute",
-                bottom: "38px",
-                left: 0,
-                width: "100%",
-                height: "14px",
-                borderRadius: "7px",
-                backgroundColor: "#090d16",
-                overflow: "hidden",
-                border: "1px solid rgba(255,255,255,0.08)",
+                top: "16px",
+                left: "16px",
+                zIndex: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                backgroundColor: "rgba(15, 23, 42, 0.8)",
+                backdropFilter: "blur(12px)",
+                padding: "6px 14px",
+                borderRadius: "999px",
+                border: "1px solid rgba(255,255,255,0.2)",
               }}
             >
-              {/* Líneas de asfalto pasando a toda marcha */}
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  backgroundImage: "repeating-linear-gradient(90deg, #facc15 0px, #facc15 25px, transparent 25px, transparent 60px)",
-                  opacity: 0.35,
-                  animation: "roadSpeedAnim 0.3s linear infinite",
-                }}
-              />
-              {/* Huella negra de derrape quemando el piso */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: "2px",
-                  left: "20px",
-                  height: "10px",
-                  backgroundColor: "#020617",
-                  boxShadow: "0 0 10px rgba(0,0,0,0.9)",
-                  borderRadius: "4px",
-                  animation: "skidBurnAnim 0.5s ease-out forwards",
-                }}
-              />
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#ef4444", boxShadow: "0 0 10px #ef4444" }} />
+              <span style={{ fontSize: "11px", fontWeight: 900, letterSpacing: "1px", color: "#f8fafc" }}>
+                LAUNCH CONTROL • 8,200 RPM
+              </span>
             </div>
 
+            <div
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                zIndex: 20,
+                backgroundColor: "rgba(239, 68, 68, 0.25)",
+                backdropFilter: "blur(12px)",
+                padding: "6px 12px",
+                borderRadius: "999px",
+                border: "1px solid rgba(239,68,68,0.5)",
+                fontSize: "11px",
+                fontWeight: 900,
+                color: "#fca5a5",
+              }}
+            >
+              TURBO BOOST +2.1 BAR
+            </div>
           </div>
 
-          {/* MENSAJES Y TACÓMETRO DE VELOCIDAD */}
-          <div style={{ textAlign: "center", marginTop: "16px", zIndex: 20 }}>
+          {/* HUD INFERIOR: TACÓMETRO Y MENSAJE DE ENTRADA */}
+          <div style={{ textAlign: "center", marginTop: "20px", zIndex: 30, maxWidth: "420px", width: "100%" }}>
             <div
               style={{
                 display: "inline-flex",
@@ -576,43 +560,42 @@ export default function LoginPage() {
                 gap: "8px",
                 padding: "6px 16px",
                 borderRadius: "999px",
-                backgroundColor: "rgba(239, 68, 68, 0.15)",
-                border: "1px solid rgba(239, 68, 68, 0.4)",
+                backgroundColor: "rgba(239, 68, 68, 0.2)",
+                border: "1px solid rgba(239, 68, 68, 0.5)",
                 color: "#f87171",
                 fontSize: "12px",
                 fontWeight: 900,
                 letterSpacing: "1px",
-                marginBottom: "10px",
-                animation: "revTextPulse 0.6s infinite ease-in-out",
+                marginBottom: "8px",
+                animation: "revTextPulse 0.5s infinite alternate",
               }}
             >
-              <span>🔥</span> ¡QUEMANDO NEUMÁTICOS • 7,500 RPM!
+              <span>🔥</span> ¡QUEMANDO NEUMÁTICOS EN PISTA!
             </div>
 
-            <h3 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 6px 0", letterSpacing: "-0.5px", color: "#ffffff" }}>
+            <h3 style={{ fontSize: "22px", fontWeight: 900, margin: "0 0 4px 0", letterSpacing: "-0.5px", color: "#ffffff" }}>
               Iniciando Sesión en RentOS...
             </h3>
-            <p style={{ fontSize: "13px", color: "#94a3b8", margin: "0 0 20px 0" }}>
-              Verificando token de seguridad SHA-256 y acelerando al panel.
+            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 14px 0" }}>
+              Tracción verificada en las 4 ruedas. Acelerando al panel de control.
             </p>
 
-            {/* Barra de Aceleración Digital */}
+            {/* Barra de Progreso Digital */}
             <div
               style={{
-                width: "280px",
+                width: "100%",
                 height: "8px",
                 backgroundColor: "rgba(255,255,255,0.1)",
                 borderRadius: "999px",
                 overflow: "hidden",
-                margin: "0 auto",
                 border: "1px solid rgba(255,255,255,0.15)",
-                boxShadow: "0 0 15px rgba(2,132,199,0.3)",
+                boxShadow: "0 0 15px rgba(239,68,68,0.4)",
               }}
             >
               <div
                 style={{
                   height: "100%",
-                  background: "linear-gradient(90deg, #38bdf8 0%, #f59e0b 60%, #ef4444 100%)",
+                  background: "linear-gradient(90deg, #38bdf8 0%, #f59e0b 50%, #ef4444 100%)",
                   animation: "speedBarFill 1.8s ease-in-out forwards",
                 }}
               />
