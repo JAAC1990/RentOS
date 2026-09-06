@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 import { formatearFecha } from "../../utils/dateUtils";
@@ -55,7 +56,8 @@ const formularioInicial: FormularioUsuario = {
 };
 
 export default function UsuariosPage() {
-  const { usuario: usuarioActual, tenantActivoId } = useAuth();
+  const navigate = useNavigate();
+  const { usuario: usuarioActual, tenantActivoId, impersonarUsuario } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [solicitudes, setSolicitudes] = useState<SolicitudRentCar[]>([]);
   const [formulario, setFormulario] = useState<FormularioUsuario>(formularioInicial);
@@ -241,6 +243,18 @@ export default function UsuariosPage() {
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Error al desbloquear usuario.");
+    }
+  };
+
+  const entrarComoUsuario = async (u: Usuario) => {
+    try {
+      setError("");
+      setMensaje("");
+      await impersonarUsuario(u.id);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "No fue posible acceder como este usuario.");
     }
   };
 
@@ -687,6 +701,24 @@ export default function UsuariosPage() {
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div className="actions-cell" style={{ justifyContent: "flex-end", gap: "6px" }}>
+                        {/* Control de SuperAdmin para ingresar como este usuario */}
+                        {usuarioActual?.rol === "SUPERADMIN" && u.id !== usuarioActual?.id && (
+                          <button
+                            type="button"
+                            className="btn-action-edit"
+                            style={{
+                              background: "#f0f9ff",
+                              color: "#0369a1",
+                              border: "1px solid #7dd3fc",
+                              fontWeight: 700,
+                            }}
+                            title={`Ingresar y operar el sistema como ${u.nombre} (${u.rol})`}
+                            onClick={() => entrarComoUsuario(u)}
+                          >
+                            👤 Entrar como usuario
+                          </button>
+                        )}
+
                         {usuarioActual?.rol === "SUPERADMIN" &&
                           ((u.bloqueadoHasta && new Date(u.bloqueadoHasta).getTime() > Date.now()) ||
                             u.requiereRecuperacion ||

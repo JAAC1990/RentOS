@@ -42,39 +42,12 @@ const JWT_SECRET = process.env.JWT_SECRET || "rentos_super_secret_jwt_key_2026";
 async function asegurarUsuariosIniciales() {
   const hash = await bcrypt.hash("admin123", 10);
 
-  // 1. SuperAdmin Global Principal
-  await prisma.usuario.upsert({
-    where: { email: "admin@rentos.com" },
-    update: {},
-    create: {
-      nombre: "SuperAdministrador Global",
-      email: "admin@rentos.com",
-      password: hash,
-      rol: RolUsuario.SUPERADMIN,
-      rentCarId: null,
-      activo: true,
-    },
-  });
-
-  await prisma.usuario.upsert({
-    where: { email: "superadmin@rentos.do" },
-    update: {},
-    create: {
-      nombre: "SuperAdministrador Global",
-      email: "superadmin@rentos.do",
-      password: hash,
-      rol: RolUsuario.SUPERADMIN,
-      rentCarId: null,
-      activo: true,
-    },
-  });
-
-  // Alias oficial autorizado de recuperación para SuperAdmin
+  // 1. SuperAdmin Global Único y Oficial
   await prisma.usuario.upsert({
     where: { email: CORREO_RECUPERACION_SUPERADMIN },
-    update: {},
+    update: { rol: RolUsuario.SUPERADMIN, activo: true },
     create: {
-      nombre: "SuperAdministrador (Canal Recuperación)",
+      nombre: "SuperAdministrador Global",
       email: CORREO_RECUPERACION_SUPERADMIN,
       password: hash,
       rol: RolUsuario.SUPERADMIN,
@@ -141,49 +114,6 @@ async function asegurarUsuariosIniciales() {
     },
   });
 }
-
-// ----------------------------------------------------------------------------
-// GET /api/auth/cuentas-demo
-// ----------------------------------------------------------------------------
-router.get("/cuentas-demo", async (_req, res) => {
-  try {
-    await asegurarUsuariosIniciales();
-
-    res.json([
-      {
-        rol: "SUPERADMIN",
-        etiqueta: "👑 SuperAdministrador (SaaS Global)",
-        email: "admin@rentos.com",
-        password: "••••••••",
-        descripcion: "Control de todas las empresas, métricas globales y configuración SaaS",
-      },
-      {
-        rol: "ADMIN_RENTCAR",
-        etiqueta: "🏢 Administrador (Santo Domingo)",
-        email: "admin@rentcar.com",
-        password: "••••••••",
-        descripcion: "Gestión completa de flota, contratos y tarifas de Santo Domingo",
-      },
-      {
-        rol: "ADMIN_RENTCAR",
-        etiqueta: "🏖️ Administrador (Punta Cana)",
-        email: "puntacana@rentos.do",
-        password: "••••••••",
-        descripcion: "Gestión de sucursal turística Punta Cana & Bávaro",
-      },
-      {
-        rol: "EMPLEADO",
-        etiqueta: "👤 Empleado / Asesor",
-        email: "juan@rentos.do",
-        password: "••••••••",
-        descripcion: "Creación de contratos y entregas en mostrador",
-      },
-    ]);
-  } catch (error) {
-    console.error("Error al obtener cuentas demo:", error);
-    res.status(500).json({ error: "No fue posible obtener cuentas demo." });
-  }
-});
 
 // ----------------------------------------------------------------------------
 // POST /api/auth/login
@@ -675,6 +605,146 @@ router.get("/auditoria-seguridad", async (req, res) => {
   } catch (error) {
     console.error("Error al consultar auditoría de seguridad:", error);
     res.status(500).json({ error: "No fue posible obtener la auditoría de seguridad." });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// POST /api/auth/impersonar/:id
+// ----------------------------------------------------------------------------
+// Permite al SuperAdmin asumir temporalmente el rol y cuenta de cualquier usuario (Admin o Empleado)
+router.post("/impersonar/:id", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Token de autorización requerido." });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    const superadminId = decoded.impersonadoPor?.id || decoded.id;
+    const superadmin = await prisma.usuario.findUnique({
+      where: { id: superadminId },
+    });
+
+    if (!superadmin || superadmin.rol !== "SUPERADMIN") {
+      return res.status(403).json({ error: "Solo el SuperAdministrador tiene permisos para impersonar usuarios." });
+    }
+
+    const targetUserId = Number(req.params.id);
+    if (!targetUserId || isNaN(targetUserId)) {
+      return res.status(400).json({ error: "ID de usuario objetivo inválido." });
+    }
+
+    const targetUsuario = await prisma.usuario.findUnique({
+      where: { id: targetUserId },
+      include: { rentCar: true },
+    });
+
+    if (!targetUsuario) {
+      return res.status(404).json({ error: "El usuario objetivo no fue encontrado." });
+    }
+
+    // Registrar evento de seguridad
+    await registrarAuditoria("IMPERSONACION_INICIADA", targetUsuario.email, {
+      usuarioId: targetUsuario.id,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      detalles: `SuperAdmin ${superadmin.email} ha asumido el control de la cuenta de ${targetUsuario.nombre} (${targetUsuario.email}, Rol: ${targetUsuario.rol}, Empresa: ${targetUsuario.rentCarId || "Global"}).`,
+    });
+
+    const payload = {
+      id: targetUsuario.id,
+      nombre: targetUsuario.nombre,
+      email: targetUsuario.email,
+      rol: targetUsuario.rol,
+      rentCarId: targetUsuario.rentCarId,
+      tokenVersion: targetUsuario.tokenVersion,
+      impersonadoPor: {
+        id: superadmin.id,
+        nombre: superadmin.nombre,
+        email: superadmin.email,
+      },
+    };
+
+    const impersonationToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
+
+    res.json({
+      mensaje: `Sesión cambiada a ${targetUsuario.nombre} (${targetUsuario.rol})`,
+      token: impersonationToken,
+      usuario: {
+        ...payload,
+        rentCarNombre: targetUsuario.rentCar?.nombre || (targetUsuario.rol === "SUPERADMIN" ? "RentOS SaaS Global" : "RentOS Principal"),
+      },
+    });
+  } catch (error) {
+    console.error("Error al impersonar usuario:", error);
+    res.status(500).json({ error: "No fue posible acceder como este usuario." });
+  }
+});
+
+// ----------------------------------------------------------------------------
+// POST /api/auth/revertir-impersonacion
+// ----------------------------------------------------------------------------
+// Restaura la sesión original de SuperAdmin (rentosrd@gmail.com)
+router.post("/revertir-impersonacion", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Token de autorización requerido." });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    const superadminId = decoded.impersonadoPor?.id;
+    let superadmin = null;
+
+    if (superadminId) {
+      superadmin = await prisma.usuario.findUnique({
+        where: { id: superadminId },
+        include: { rentCar: true },
+      });
+    } else {
+      superadmin = await prisma.usuario.findUnique({
+        where: { email: CORREO_RECUPERACION_SUPERADMIN },
+        include: { rentCar: true },
+      });
+    }
+
+    if (!superadmin || superadmin.rol !== "SUPERADMIN") {
+      return res.status(403).json({ error: "No se encontró la cuenta SuperAdministrador a restaurar." });
+    }
+
+    await registrarAuditoria("IMPERSONACION_REVERTIDA", superadmin.email, {
+      usuarioId: superadmin.id,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      detalles: `SuperAdmin ${superadmin.email} ha retornado a su sesión de control total SaaS.`,
+    });
+
+    const payload = {
+      id: superadmin.id,
+      nombre: superadmin.nombre,
+      email: superadmin.email,
+      rol: superadmin.rol,
+      rentCarId: superadmin.rentCarId,
+      tokenVersion: superadmin.tokenVersion,
+    };
+
+    const superadminToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+
+    res.json({
+      mensaje: "Has regresado exitosamente a tu cuenta de SuperAdministrador.",
+      token: superadminToken,
+      usuario: {
+        ...payload,
+        rentCarNombre: "RentOS SaaS Global",
+      },
+    });
+  } catch (error) {
+    console.error("Error al revertir impersonación:", error);
+    res.status(500).json({ error: "No fue posible restaurar la sesión de SuperAdmin." });
   }
 });
 

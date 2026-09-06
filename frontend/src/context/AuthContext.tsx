@@ -1,10 +1,11 @@
 /**
  * ============================================================================
- * RentOS - Contexto Global de Autenticación y Control Multi-Tenant
+ * RentOS - Contexto Global de Autenticación, Control Multi-Tenant e Impersonación
  * ============================================================================
  * Maneja el estado global del usuario logueado, roles (SUPERADMIN, ADMIN_RENTCAR,
- * EMPLEADO), tokens JWT en sessionStorage para garantizar inicio de sesión en
- * cada arranque y cambio dinámico de tenant activo para el SuperAdministrador.
+ * EMPLEADO), tokens JWT, cambio dinámico de tenant activo y la capacidad de que
+ * el SuperAdmin (rentosrd@gmail.com) ingrese temporalmente como cualquier usuario
+ * y regrese a su sesión original con un solo clic.
  */
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
@@ -21,6 +22,11 @@ export type UsuarioAuth = {
   rol: Rol;
   rentCarId: number | null;
   rentCarNombre?: string;
+  impersonadoPor?: {
+    id: number;
+    nombre: string;
+    email: string;
+  };
 };
 
 // Métodos y propiedades expuestas por el contexto
@@ -32,18 +38,15 @@ type AuthContextType = {
   logout: () => void;
   cambiarTenantSuperadmin: (tenantId: number) => void;
   tenantActivoId: number;
+  impersonarUsuario: (targetUserId: number) => Promise<void>;
+  volverASuperadmin: () => Promise<void>;
+  esImpersonado: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Proveedor de Autenticación:
- * Almacena el usuario y el token exclusivamente en sessionStorage para exigir
- * login cada vez que el usuario inicia la aplicación o abre una nueva ventana.
- */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioAuth | null>(() => {
-    // Limpiar restos antiguos de localStorage para forzar inicio de sesión limpio
     localStorage.removeItem("rentos_auth_user");
     localStorage.removeItem("rentos_auth_token");
 
@@ -69,7 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [cargando, setCargando] = useState(false);
 
-  // Mantener sincronizado en sessionStorage durante la sesión activa
+  // Determinar si actualmente se está navegando en modo impersonación
+  const esImpersonado = Boolean(
+    usuario?.impersonadoPor || sessionStorage.getItem("rentos_original_token")
+  );
+
   useEffect(() => {
     if (usuario) {
       sessionStorage.setItem("rentos_auth_user", JSON.stringify(usuario));
@@ -89,7 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
-  // Verificar y refrescar la sesión en segundo plano al iniciar
   useEffect(() => {
     const verificarSesion = async () => {
       const savedToken = sessionStorage.getItem("rentos_auth_token");
@@ -102,14 +108,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (res.ok) {
           const perfil = await res.json();
-          setUsuario({
+          setUsuario((prev) => ({
             id: perfil.id,
             nombre: perfil.nombre,
             email: perfil.email,
             rol: perfil.rol,
             rentCarId: perfil.rentCarId,
-            rentCarNombre: perfil.rentCar?.nombre || "RentOS",
-          });
+            rentCarNombre: perfil.rentCar?.nombre || (perfil.rol === "SUPERADMIN" ? "RentOS SaaS Global" : "RentOS"),
+            impersonadoPor: prev?.impersonadoPor,
+          }));
         }
       } catch (err) {
         console.warn("Error al verificar perfil de sesión:", err);
@@ -120,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /**
-   * Realiza la petición de login al backend y almacena credenciales activas.
+   * Realiza la petición de login al backend.
    */
   const login = async (email: string, pass: string) => {
     setCargando(true);
@@ -148,7 +155,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Cierra la sesión activa y purga cualquier dato de autenticación.
+   * Permite al SuperAdmin ingresar como cualquier usuario (Admin o Empleado).
+   */
+  const impersonarUsuario = async (targetUserId: number) => {
+    if (!token) throw new Error("No hay sesión activa.");
+
+    setCargando(true);
+    try {
+      const res = await fetch(`${API_URLS.auth}/impersonar/${targetUserId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No fue posible acceder como este usuario.");
+      }
+
+      // Guardar sesión original de SuperAdmin para poder regresar
+      if (!sessionStorage.getItem("rentos_original_token")) {
+        sessionStorage.setItem("rentos_original_token", token);
+        sessionStorage.setItem("rentos_original_user", JSON.stringify(usuario));
+      }
+
+      setToken(data.token);
+      setUsuario(data.usuario);
+      if (data.usuario.rentCarId) {
+        setTenantActivoId(data.usuario.rentCarId);
+        sessionStorage.setItem("rentos_active_tenant", String(data.usuario.rentCarId));
+      }
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  /**
+   * Restaura la sesión original del SuperAdmin (rentosrd@gmail.com).
+   */
+  const volverASuperadmin = async () => {
+    setCargando(true);
+    try {
+      const originalToken = sessionStorage.getItem("rentos_original_token");
+      const originalUser = sessionStorage.getItem("rentos_original_user");
+
+      if (originalToken && originalUser) {
+        sessionStorage.removeItem("rentos_original_token");
+        sessionStorage.removeItem("rentos_original_user");
+
+        setToken(originalToken);
+        setUsuario(JSON.parse(originalUser));
+        setTenantActivoId(1);
+        return;
+      }
+
+      // Si no estuviera en storage, solicitar token fresco al backend
+      const res = await fetch(`${API_URLS.auth}/revertir-impersonacion`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        sessionStorage.removeItem("rentos_original_token");
+        sessionStorage.removeItem("rentos_original_user");
+        setToken(data.token);
+        setUsuario(data.usuario);
+        setTenantActivoId(1);
+      }
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  /**
+   * Cierra la sesión activa y purga datos de autenticación.
    */
   const logout = () => {
     setUsuario(null);
@@ -156,6 +241,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem("rentos_auth_user");
     sessionStorage.removeItem("rentos_auth_token");
     sessionStorage.removeItem("rentos_active_tenant");
+    sessionStorage.removeItem("rentos_original_token");
+    sessionStorage.removeItem("rentos_original_user");
     localStorage.removeItem("rentos_auth_user");
     localStorage.removeItem("rentos_auth_token");
   };
@@ -178,6 +265,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         cambiarTenantSuperadmin,
         tenantActivoId,
+        impersonarUsuario,
+        volverASuperadmin,
+        esImpersonado,
       }}
     >
       {children}
