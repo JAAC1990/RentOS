@@ -28,6 +28,7 @@ export const API_URLS = {
   solicitudes: `${API_BASE_URL}/solicitudes`,
   backup: `${API_BASE_URL}/backups`,
   tasaCambio: `${API_BASE_URL}/tasa-cambio`,
+  superadminConfig: `${API_BASE_URL}/superadmin/configuracion`,
 };
 
 /**

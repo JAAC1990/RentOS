@@ -9,9 +9,11 @@
  */
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { API_URLS } from "../../services/api";
 import PhoneInput, { validarTelefono } from "../../components/PhoneInput";
+import SuperAdminConfigSection from "../../components/SuperAdminConfigSection";
 
 type RentCar = {
   id: number;
@@ -47,6 +49,19 @@ const COLORES_PRESET = [
 
 export default function ConfiguracionPage() {
   const { tenantActivoId, usuario } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tabActivo, setTabActivo] = useState<"SUPERADMIN" | "RENTCAR">(() => {
+    const param = searchParams.get("tab");
+    if (param === "rentcar") return "RENTCAR";
+    if (param === "superadmin") return "SUPERADMIN";
+    return usuario?.rol === "SUPERADMIN" ? "SUPERADMIN" : "RENTCAR";
+  });
+
+  const cambiarTab = (nuevoTab: "SUPERADMIN" | "RENTCAR") => {
+    setTabActivo(nuevoTab);
+    setSearchParams({ tab: nuevoTab.toLowerCase() });
+  };
+
   const [rentCar, setRentCar] = useState<RentCar | null>(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -316,9 +331,86 @@ export default function ConfiguracionPage() {
         )}
       </div>
 
-      {/* Alertas */}
-      {mensaje && <div className="alert-box success">{mensaje}</div>}
-      {error && <div className="alert-box error">{error}</div>}
+      {/* Selector de Pestañas Exclusivo para SuperAdmin */}
+      {usuario?.rol === "SUPERADMIN" && (
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginBottom: "24px",
+            borderBottom: "1px solid var(--border)",
+            paddingBottom: "14px",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => cambiarTab("SUPERADMIN")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "11px 22px",
+              borderRadius: "10px",
+              border: tabActivo === "SUPERADMIN" ? "2px solid #a855f7" : "1px solid var(--border)",
+              backgroundColor: tabActivo === "SUPERADMIN" ? "rgba(168,85,247,0.12)" : "var(--surface)",
+              color: tabActivo === "SUPERADMIN" ? "#c084fc" : "var(--text)",
+              fontWeight: 800,
+              fontSize: "14px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              boxShadow: tabActivo === "SUPERADMIN" ? "0 4px 14px rgba(168,85,247,0.25)" : "none",
+            }}
+          >
+            <span style={{ fontSize: "16px" }}>👑</span>
+            <span>Plataforma Global & Marca SuperAdmin</span>
+            <span
+              style={{
+                fontSize: "10px",
+                backgroundColor: "#7c3aed",
+                color: "#ffffff",
+                padding: "2px 7px",
+                borderRadius: "10px",
+                fontWeight: 900,
+              }}
+            >
+              GLOBAL
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => cambiarTab("RENTCAR")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "11px 22px",
+              borderRadius: "10px",
+              border: tabActivo === "RENTCAR" ? "2px solid var(--primary)" : "1px solid var(--border)",
+              backgroundColor: tabActivo === "RENTCAR" ? "var(--primary-soft)" : "var(--surface)",
+              color: tabActivo === "RENTCAR" ? "var(--primary)" : "var(--text)",
+              fontWeight: 800,
+              fontSize: "14px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              boxShadow: tabActivo === "RENTCAR" ? "0 4px 14px var(--primary-soft)" : "none",
+            }}
+          >
+            <span style={{ fontSize: "16px" }}>🏢</span>
+            <span>Personalización de Rent Car ({rentCar?.nombre || "Tenant Activo"})</span>
+          </button>
+        </div>
+      )}
+
+      {/* RENDERIZADO SEGÚN PESTAÑA SELECCIONADA */}
+      {usuario?.rol === "SUPERADMIN" && tabActivo === "SUPERADMIN" ? (
+        <SuperAdminConfigSection />
+      ) : (
+        <>
+          {/* Alertas */}
+          {mensaje && <div className="alert-box success">{mensaje}</div>}
+          {error && <div className="alert-box error">{error}</div>}
 
       {/* Banner de Sitio Web y Portal Interactivo Independiente */}
       {rentCar && (
@@ -941,6 +1033,8 @@ export default function ConfiguracionPage() {
           </div>
         </form>
       )}
-    </div>
+    </>
+  )}
+</div>
   );
 }

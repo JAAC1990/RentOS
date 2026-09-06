@@ -29,6 +29,7 @@ import solicitudesRoutes from "./routes/solicitudes.routes.js";
 import tasaCambioRoutes from "./routes/tasaCambio.routes.js";
 import usersRoutes from "./routes/users.routes.js";
 import vehiculosRoutes from "./routes/vehiculos.routes.js";
+import configuracionGlobalRoutes from "./routes/configuracionGlobal.routes.js";
 
 // Instancia de la aplicación Express
 const app = express();
@@ -98,6 +99,9 @@ app.use("/api/solicitudes", solicitudesRoutes);
 
 // Tasa de cambio oficial del Banco Central (BCRD) dinámica
 app.use("/api/tasa-cambio", tasaCambioRoutes);
+
+// Configuración global del SuperAdmin y marca de la plataforma RentOS
+app.use("/api/superadmin/configuracion", configuracionGlobalRoutes);
 
 // Gestión de empleados, roles y accesos de cada empresa
 app.use("/api/users", usersRoutes);

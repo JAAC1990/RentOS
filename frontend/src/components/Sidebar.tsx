@@ -138,6 +138,17 @@ function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               <span className="nav-icon">💾</span>
               <span>Centro de Backups</span>
             </NavLink>
+            <NavLink
+              to="/configuracion?tab=superadmin"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `nav-item ${isActive ? "active" : ""}`
+              }
+              style={{ color: "#c084fc" }}
+            >
+              <span className="nav-icon">⚙️</span>
+              <span>Marca & Ajustes SuperAdmin</span>
+            </NavLink>
           </>
         )}
 

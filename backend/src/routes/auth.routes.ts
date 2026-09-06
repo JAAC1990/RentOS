@@ -28,6 +28,7 @@ import {
 } from "../services/security.service.js";
 import { despacharEnlaceRecuperacion } from "../services/email.service.js";
 import { enviarAlerta } from "../services/alert.service.js";
+import { obtenerConfiguracionGlobal } from "./configuracionGlobal.routes.js";
 
 const router = Router();
 
@@ -122,13 +123,15 @@ async function asegurarUsuariosIniciales() {
 router.get("/identificar-empresa", async (req, res) => {
   try {
     const email = String(req.query.email || "").trim().toLowerCase();
+    const configGlobal = await obtenerConfiguracionGlobal();
+
     if (!email || !email.includes("@")) {
       return res.json({
         tipo: "DEFAULT",
-        nombreEmpresa: "RentOS",
-        logoUrl: null,
-        eslogan: "Rent Operating System • Acceso Seguro",
-        colorPrimario: "#0284c7",
+        nombreEmpresa: configGlobal.nombrePlataforma || "RentOS",
+        logoUrl: configGlobal.logoUrl || null,
+        eslogan: configGlobal.esloganPlataforma || "Rent Operating System • Acceso Seguro",
+        colorPrimario: configGlobal.colorPrimario || "#0284c7",
       });
     }
 
@@ -152,20 +155,20 @@ router.get("/identificar-empresa", async (req, res) => {
     if (!usuario) {
       return res.json({
         tipo: "DESCONOCIDO",
-        nombreEmpresa: "RentOS",
-        logoUrl: null,
-        eslogan: "Rent Operating System • Acceso Seguro",
-        colorPrimario: "#0284c7",
+        nombreEmpresa: configGlobal.nombrePlataforma || "RentOS",
+        logoUrl: configGlobal.logoUrl || null,
+        eslogan: configGlobal.esloganPlataforma || "Rent Operating System • Acceso Seguro",
+        colorPrimario: configGlobal.colorPrimario || "#0284c7",
       });
     }
 
     if (usuario.rol === RolUsuario.SUPERADMIN || !usuario.rentCar) {
       return res.json({
         tipo: "SUPERADMIN",
-        nombreEmpresa: "RentOS Global",
-        logoUrl: null,
-        eslogan: "Consola de Administración Central Multi-Tenant",
-        colorPrimario: "#0284c7",
+        nombreEmpresa: configGlobal.nombrePlataforma || "RentOS Global",
+        logoUrl: configGlobal.logoUrl || null,
+        eslogan: configGlobal.esloganPlataforma || "Consola de Administración Central Multi-Tenant",
+        colorPrimario: configGlobal.colorPrimario || "#0284c7",
         rol: usuario.rol,
       });
     }

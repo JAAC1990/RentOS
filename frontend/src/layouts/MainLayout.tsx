@@ -8,7 +8,7 @@
  * - Contenedor principal dinámico (Outlet) donde se renderizan las páginas.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
@@ -17,6 +17,34 @@ import { useAuth } from "../context/AuthContext";
 function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { esImpersonado, usuario, volverASuperadmin } = useAuth();
+  const [anuncio, setAnuncio] = useState<{
+    activo: boolean;
+    mensaje: string;
+    tipo: string;
+    nombrePlataforma?: string;
+  } | null>(null);
+  const [anuncioOculto, setAnuncioOculto] = useState(false);
+
+  useEffect(() => {
+    const consultarAnuncio = async () => {
+      try {
+        const res = await fetch("/api/superadmin/configuracion/anuncio");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.activo && data.mensaje) {
+            setAnuncio(data);
+          } else {
+            setAnuncio(null);
+          }
+        }
+      } catch {
+        // silente
+      }
+    };
+    consultarAnuncio();
+    const interval = setInterval(consultarAnuncio, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="app-shell">
@@ -82,6 +110,65 @@ function MainLayout() {
 
         {/* Barra Superior con botón Hamburguesa en móviles */}
         <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
+
+        {/* Megáfono / Anuncio Global Broadcast de SuperAdmin para Toda la Red */}
+        {anuncio && !anuncioOculto && (
+          <div
+            style={{
+              backgroundColor:
+                anuncio.tipo === "DANGER"
+                  ? "#991b1b"
+                  : anuncio.tipo === "WARNING"
+                  ? "#92400e"
+                  : anuncio.tipo === "SUCCESS"
+                  ? "#166534"
+                  : "#0369a1",
+              color: "#ffffff",
+              padding: "10px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              fontSize: "13px",
+              fontWeight: 600,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              borderBottom: "1px solid rgba(255,255,255,0.2)",
+              zIndex: 90,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "16px" }}>
+                {anuncio.tipo === "DANGER"
+                  ? "🚨"
+                  : anuncio.tipo === "WARNING"
+                  ? "⚠️"
+                  : anuncio.tipo === "SUCCESS"
+                  ? "🎉"
+                  : "📢"}
+              </span>
+              <span>
+                <strong>{anuncio.nombrePlataforma || "RentOS Global"}:</strong> {anuncio.mensaje}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAnuncioOculto(true)}
+              style={{
+                background: "rgba(255,255,255,0.2)",
+                border: "none",
+                borderRadius: "4px",
+                color: "#ffffff",
+                cursor: "pointer",
+                padding: "3px 8px",
+                fontSize: "11px",
+                fontWeight: 700,
+              }}
+              title="Ocultar para esta sesión"
+            >
+              ✕ Cerrar
+            </button>
+          </div>
+        )}
 
         {/* Área de Contenido Principal Dinámico */}
         <main className="page-content">
