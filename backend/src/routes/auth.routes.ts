@@ -116,6 +116,80 @@ async function asegurarUsuariosIniciales() {
 }
 
 // ----------------------------------------------------------------------------
+// GET /api/auth/identificar-empresa
+// ----------------------------------------------------------------------------
+// Detección dinámica y pública de empresa/logo para el formulario de login
+router.get("/identificar-empresa", async (req, res) => {
+  try {
+    const email = String(req.query.email || "").trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      return res.json({
+        tipo: "DEFAULT",
+        nombreEmpresa: "RentOS",
+        logoUrl: null,
+        eslogan: "Rent Operating System • Acceso Seguro",
+        colorPrimario: "#0284c7",
+      });
+    }
+
+    const usuario = await prisma.usuario.findUnique({
+      where: { email },
+      include: {
+        rentCar: {
+          select: {
+            id: true,
+            nombre: true,
+            logoUrl: true,
+            eslogan: true,
+            colorPrimario: true,
+            ciudad: true,
+          },
+        },
+      },
+    });
+
+    if (!usuario) {
+      return res.json({
+        tipo: "DESCONOCIDO",
+        nombreEmpresa: "RentOS",
+        logoUrl: null,
+        eslogan: "Rent Operating System • Acceso Seguro",
+        colorPrimario: "#0284c7",
+      });
+    }
+
+    if (usuario.rol === RolUsuario.SUPERADMIN || !usuario.rentCar) {
+      return res.json({
+        tipo: "SUPERADMIN",
+        nombreEmpresa: "RentOS Global",
+        logoUrl: null,
+        eslogan: "Consola de Administración Central Multi-Tenant",
+        colorPrimario: "#0284c7",
+        rol: usuario.rol,
+      });
+    }
+
+    return res.json({
+      tipo: "EMPRESA",
+      nombreEmpresa: usuario.rentCar.nombre,
+      logoUrl: usuario.rentCar.logoUrl,
+      eslogan: usuario.rentCar.eslogan || `Portal Operativo • ${usuario.rentCar.ciudad || "República Dominicana"}`,
+      colorPrimario: usuario.rentCar.colorPrimario || "#0284c7",
+      rol: usuario.rol,
+    });
+  } catch (error) {
+    console.error("Error al identificar empresa para login:", error);
+    return res.json({
+      tipo: "DEFAULT",
+      nombreEmpresa: "RentOS",
+      logoUrl: null,
+      eslogan: "Rent Operating System • Acceso Seguro",
+      colorPrimario: "#0284c7",
+    });
+  }
+});
+
+// ----------------------------------------------------------------------------
 // POST /api/auth/login
 // ----------------------------------------------------------------------------
 // Inicio de sesión protegido con Bloqueo Progresivo en Backend

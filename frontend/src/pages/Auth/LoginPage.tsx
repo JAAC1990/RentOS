@@ -1,11 +1,12 @@
 /**
  * ============================================================================
- * RentOS - Portal de Inicio de Sesión y Autenticación (LoginPage)
+ * RentOS - Portal de Inicio de Sesión y Autenticación Multi-Tenant (LoginPage)
  * ============================================================================
- * Soporta previsualización dinámica interactiva de los 3 estilos solicitados:
- * 1. Split-Screen Tecnológico (Visual satelital/telemetría + formulario blanco limpio)
- * 2. Glassmorphism Neón (Fondo oscuro con orbes luminosos flotantes + tarjeta esmerilada)
- * 3. Showcase Corporativo (Resumen de ecosistema RentOS + portal administrativo slate)
+ * - Diseño Recomendado: Split-Screen Tecnológico con telemetría en vivo.
+ * - Detección Dinámica de Empresa & Logo: Al escribir el usuario/correo,
+ *   detecta automáticamente su Rent a Car y carga su logo oficial, nombre y colores.
+ * - Soporte para SuperAdmin Global (rentosrd@gmail.com) con consola central.
+ * - Protección contra fuerza bruta con bloqueo progresivo y recuperación de 15 min.
  */
 
 import { useEffect, useState } from "react";
@@ -13,6 +14,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 type DisenoTipo = "split" | "neon" | "showcase";
+
+interface EmpresaBranding {
+  tipo: "DEFAULT" | "SUPERADMIN" | "EMPRESA" | "DESCONOCIDO";
+  nombreEmpresa: string;
+  logoUrl: string | null;
+  eslogan: string;
+  colorPrimario: string;
+  rol?: string;
+}
 
 export default function LoginPage() {
   const { login, usuario } = useAuth();
@@ -36,93 +46,55 @@ export default function LoginPage() {
 
   const [error, setError] = useState("");
   const [iniciando, setIniciando] = useState(false);
-  const [animandoDerrape, setAnimandoDerrape] = useState(false);
 
-  // Síntesis de sonido de motor V8 y derrape de llanta con Web Audio API nativo
-  const playSkidSound = () => {
-    try {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+  // Estado para la detección dinámica del Logo y Empresa
+  const [empresaInfo, setEmpresaInfo] = useState<EmpresaBranding>({
+    tipo: "DEFAULT",
+    nombreEmpresa: "RentOS",
+    logoUrl: null,
+    eslogan: "Rent Operating System • Acceso Seguro",
+    colorPrimario: "#0284c7",
+  });
+  const [buscandoEmpresa, setBuscandoEmpresa] = useState(false);
 
-      // 1. Rugido del motor en aceleración a fondo (V8 Twin-Turbo Launch Control)
-      const engineOsc = ctx.createOscillator();
-      engineOsc.type = "sawtooth";
-      engineOsc.frequency.setValueAtTime(80, ctx.currentTime);
-      engineOsc.frequency.exponentialRampToValueAtTime(260, ctx.currentTime + 0.8);
-      engineOsc.frequency.exponentialRampToValueAtTime(360, ctx.currentTime + 1.4);
-
-      const engineGain = ctx.createGain();
-      engineGain.gain.setValueAtTime(0.12, ctx.currentTime);
-      engineGain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.7);
-      engineGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.6);
-
-      engineOsc.connect(engineGain);
-      engineGain.connect(ctx.destination);
-      engineOsc.start();
-      engineOsc.stop(ctx.currentTime + 1.6);
-
-      // 2. Ruido blanco de fricción y humo de neumático quemando caucho
-      const bufferSize = ctx.sampleRate * 1.6;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 1.2));
-      }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-
-      const filter = ctx.createBiquadFilter();
-      filter.type = "bandpass";
-      filter.frequency.setValueAtTime(1350, ctx.currentTime);
-      filter.frequency.exponentialRampToValueAtTime(780, ctx.currentTime + 1.3);
-      filter.Q.value = 2.8;
-
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.22, ctx.currentTime);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
-
-      noise.connect(filter);
-      filter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-
-      // 3. Chirrido agudo de derrape sobre asfalto caliente
-      const osc = ctx.createOscillator();
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(950, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1650, ctx.currentTime + 0.35);
-      osc.frequency.exponentialRampToValueAtTime(580, ctx.currentTime + 1.2);
-
-      const oscGain = ctx.createGain();
-      oscGain.gain.setValueAtTime(0.08, ctx.currentTime);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
-
-      osc.connect(oscGain);
-      oscGain.connect(ctx.destination);
-
-      osc.start();
-      noise.start();
-      osc.stop(ctx.currentTime + 1.25);
-      noise.stop(ctx.currentTime + 1.5);
-    } catch {
-      // Ignorar si el navegador bloquea audio por políticas de interacción
-    }
-  };
-
-  // Botón de prueba para que el usuario pueda ver el derrape sin ingresar contraseña
-  const probarDerrape = () => {
-    setAnimandoDerrape(true);
-    playSkidSound();
-    setTimeout(() => {
-      setAnimandoDerrape(false);
-    }, 2300);
-  };
-
+  // Redireccionar si ya está autenticado
   useEffect(() => {
-    if (usuario && !animandoDerrape) {
+    if (usuario) {
       navigate("/dashboard");
     }
-  }, [usuario, navigate, animandoDerrape]);
+  }, [usuario, navigate]);
+
+  // Detección en tiempo real de la empresa según el correo escrito
+  useEffect(() => {
+    const emailLimpio = email.trim().toLowerCase();
+    if (!emailLimpio || !emailLimpio.includes("@")) {
+      setEmpresaInfo({
+        tipo: "DEFAULT",
+        nombreEmpresa: "RentOS",
+        logoUrl: null,
+        eslogan: "Rent Operating System • Acceso Seguro",
+        colorPrimario: "#0284c7",
+      });
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setBuscandoEmpresa(true);
+        const res = await fetch(`/api/auth/identificar-empresa?email=${encodeURIComponent(emailLimpio)}`);
+        if (res.ok) {
+          const data: EmpresaBranding = await res.json();
+          setEmpresaInfo(data);
+        }
+      } catch (err) {
+        console.error("Error al identificar empresa:", err);
+      } finally {
+        setBuscandoEmpresa(false);
+      }
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,13 +118,7 @@ export default function LoginPage() {
       }
 
       await login(email, password);
-
-      // ¡Animación de llanta derrapando fotorrealista antes de entrar a la plataforma!
-      setAnimandoDerrape(true);
-      playSkidSound();
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 2000);
+      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
@@ -161,9 +127,11 @@ export default function LoginPage() {
     }
   };
 
+  const primaryColor = empresaInfo.colorPrimario || "#0284c7";
+
   return (
-    <div style={{ position: "relative", minHeight: "100vh", backgroundColor: diseno === "neon" ? "#070b14" : diseno === "showcase" ? "#0b1324" : "#0a0f1d" }}>
-      {/* Estilos CSS Inyectados para Animaciones Elegantes y Derrape Fotorrealista */}
+    <div style={{ position: "relative", minHeight: "100vh", backgroundColor: diseno === "neon" ? "#070b14" : diseno === "showcase" ? "#0b1324" : "#090e1a" }}>
+      {/* Estilos CSS Inyectados para Animaciones Elegantes */}
       <style>{`
         @keyframes floatSlow {
           0%, 100% { transform: translateY(0px); }
@@ -181,10 +149,15 @@ export default function LoginPage() {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(250%); }
         }
+        @keyframes logoFadeIn {
+          0% { opacity: 0; transform: scale(0.92); }
+          100% { opacity: 1; transform: scale(1); }
+        }
         .anim-float { animation: floatSlow 5s ease-in-out infinite; }
         .anim-float-delayed { animation: floatSlow 6s ease-in-out infinite 2s; }
         .anim-orb-1 { animation: pulseGlow 10s ease-in-out infinite; }
         .anim-orb-2 { animation: pulseGlow2 12s ease-in-out infinite; }
+        .anim-logo { animation: logoFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .btn-shimmer {
           position: relative;
           overflow: hidden;
@@ -196,48 +169,9 @@ export default function LoginPage() {
           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
           animation: shimmerLine 3s infinite;
         }
-
-        /* ANIMACIONES DE DERRAPE FOTORREALISTA */
-        @keyframes intenseBurnoutVibe {
-          0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
-          20% { transform: translate(-2px, -3px) rotate(-0.5deg) scale(1.006); }
-          40% { transform: translate(3px, 2px) rotate(0.6deg) scale(0.996); }
-          60% { transform: translate(-2px, 3px) rotate(-0.4deg) scale(1.008); }
-          80% { transform: translate(3px, -2px) rotate(0.5deg) scale(0.998); }
-        }
-        @keyframes thermoGlowAnim {
-          0% { transform: scale(0.92); opacity: 0.65; filter: blur(12px); }
-          100% { transform: scale(1.18); opacity: 1; filter: blur(20px); }
-        }
-        @keyframes wheelSpinBlurAnim {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes smokeDriftReal1 {
-          0% { transform: translate(0, 0) scale(0.4); opacity: 0.8; }
-          50% { opacity: 0.6; }
-          100% { transform: translate(-90px, -70px) scale(2.2); opacity: 0; }
-        }
-        @keyframes smokeDriftReal2 {
-          0% { transform: translate(0, 0) scale(0.5); opacity: 0.9; }
-          50% { opacity: 0.7; }
-          100% { transform: translate(80px, -90px) scale(2.6); opacity: 0; }
-        }
-        @keyframes sparkFlyReal {
-          0% { transform: translate(0, 0) scale(1); opacity: 1; }
-          100% { transform: translate(-170px, 45px) scale(0.2); opacity: 0; }
-        }
-        @keyframes speedBarFill {
-          0% { width: 0%; }
-          100% { width: 100%; }
-        }
-        @keyframes revTextPulse {
-          0%, 100% { transform: scale(1); text-shadow: 0 0 12px rgba(239,68,68,0.6); }
-          50% { transform: scale(1.06); text-shadow: 0 0 30px rgba(239,68,68,1); }
-        }
       `}</style>
 
-      {/* BARRA SUPERIOR FLOTANTE DE SELECCIÓN DE DISEÑO */}
+      {/* BARRA SUPERIOR FLOTANTE DE OPCIONES DE DISEÑO */}
       <aside
         aria-label="Selector de diseño"
         style={{
@@ -245,25 +179,35 @@ export default function LoginPage() {
           top: 0,
           zIndex: 50,
           backdropFilter: "blur(16px)",
-          backgroundColor: "rgba(15, 23, 42, 0.85)",
+          backgroundColor: "rgba(15, 23, 42, 0.9)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-          padding: "10px 16px",
+          padding: "10px 18px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flexWrap: "wrap",
           gap: "12px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "16px" }}>🎨</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "16px" }}>⚡</span>
           <div>
             <div style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc" }}>
-              Previsualizador de Diseños de Login • RentOS
+              RentOS • Login Multi-Empresa con Detección Automática de Logo
             </div>
             <div style={{ fontSize: "11px", color: "#94a3b8" }}>
-              Haz clic en cada botón para ver en pantalla completa cómo luce y se siente cada opción:
+              {empresaInfo.tipo === "EMPRESA" ? (
+                <span style={{ color: "#38bdf8", fontWeight: 700 }}>
+                  🏢 Detectado: {empresaInfo.nombreEmpresa}
+                </span>
+              ) : empresaInfo.tipo === "SUPERADMIN" ? (
+                <span style={{ color: "#fbbf24", fontWeight: 700 }}>
+                  👑 Detectado: SuperAdmin Global
+                </span>
+              ) : (
+                "Escribe tu correo abajo y mira cómo carga automáticamente el logo de tu Rent a Car:"
+              )}
             </div>
           </div>
         </div>
@@ -280,12 +224,12 @@ export default function LoginPage() {
               border: "none",
               cursor: "pointer",
               transition: "all 0.2s",
-              backgroundColor: diseno === "split" ? "#0284c7" : "transparent",
+              backgroundColor: diseno === "split" ? primaryColor : "transparent",
               color: diseno === "split" ? "#ffffff" : "#94a3b8",
-              boxShadow: diseno === "split" ? "0 2px 8px rgba(2,132,199,0.5)" : "none",
+              boxShadow: diseno === "split" ? `0 2px 10px ${primaryColor}66` : "none",
             }}
           >
-            1. Split-Screen Tecnológico ⭐
+            1. Split-Screen (Recomendado) ⭐
           </button>
           <button
             type="button"
@@ -300,10 +244,9 @@ export default function LoginPage() {
               transition: "all 0.2s",
               backgroundColor: diseno === "neon" ? "#6366f1" : "transparent",
               color: diseno === "neon" ? "#ffffff" : "#94a3b8",
-              boxShadow: diseno === "neon" ? "0 2px 8px rgba(99,102,241,0.5)" : "none",
             }}
           >
-            2. Glassmorphism Neón
+            2. Neón Glass
           </button>
           <button
             type="button"
@@ -318,316 +261,37 @@ export default function LoginPage() {
               transition: "all 0.2s",
               backgroundColor: diseno === "showcase" ? "#2563eb" : "transparent",
               color: diseno === "showcase" ? "#ffffff" : "#94a3b8",
-              boxShadow: diseno === "showcase" ? "0 2px 8px rgba(37,99,235,0.5)" : "none",
             }}
           >
-            3. Showcase Corporativo
-          </button>
-
-          {/* BOTÓN PARA PROBAR EL DERRAPE DE LLANTA DIRECTAMENTE */}
-          <button
-            type="button"
-            onClick={probarDerrape}
-            title="Haz clic para ver cómo queda la animación de la llanta derrapando"
-            style={{
-              padding: "6px 14px",
-              borderRadius: "8px",
-              fontSize: "11px",
-              fontWeight: 800,
-              border: "1px solid rgba(249, 115, 22, 0.4)",
-              cursor: "pointer",
-              transition: "all 0.2s",
-              backgroundColor: "rgba(249, 115, 22, 0.15)",
-              color: "#fb923c",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              marginLeft: "4px",
-              boxShadow: "0 2px 8px rgba(249, 115, 22, 0.25)",
-            }}
-          >
-            <span>🏎️💨</span> Probar Derrape
+            3. Corporativo
           </button>
         </div>
       </aside>
 
       {/* ========================================================================= */}
-      {/* MODAL / OVERLAY EN PANTALLA COMPLETA: LLANTA DERRAPANDO FOTORREALISTA     */}
-      {/* ========================================================================= */}
-      {animandoDerrape && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(3, 7, 18, 0.96)",
-            backdropFilter: "blur(24px)",
-            zIndex: 99999,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-            padding: "20px",
-            color: "#ffffff",
-          }}
-        >
-          {/* Resplandor térmico de fondo */}
-          <div
-            style={{
-              position: "absolute",
-              width: "600px",
-              height: "600px",
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(249, 115, 22, 0.15) 50%, transparent 70%)",
-              filter: "blur(80px)",
-              pointerEvents: "none",
-            }}
-          />
-
-          {/* TARJETA CINEMÁTICA CON LA LLANTA FOTORREALISTA EN BURNOUT */}
-          <div
-            className="anim-burnout-vibe"
-            style={{
-              position: "relative",
-              maxWidth: "420px",
-              width: "100%",
-              aspectRatio: "1 / 1",
-              borderRadius: "28px",
-              overflow: "hidden",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              boxShadow: "0 30px 70px -15px rgba(0,0,0,0.9), 0 0 50px rgba(239,68,68,0.4)",
-              backgroundColor: "#000000",
-            }}
-          >
-            {/* Imagen Fotorrealista de la Llanta en Burnout */}
-            <img
-              src="/drift-burnout.jpg"
-              alt="Llanta deportiva quemando caucho"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                display: "block",
-                filter: "contrast(1.08) saturate(1.15)",
-              }}
-            />
-
-            {/* Efecto de Fricción Térmica Pulsante en el Disco de Freno al Rojo Vivo */}
-            <div
-              style={{
-                position: "absolute",
-                top: "37%",
-                left: "39%",
-                width: "28%",
-                height: "28%",
-                borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(255, 50, 0, 0.6) 0%, rgba(255, 140, 0, 0.4) 45%, transparent 75%)",
-                filter: "blur(14px)",
-                mixBlendMode: "screen",
-                animation: "thermoGlowAnim 0.4s infinite alternate ease-in-out",
-                pointerEvents: "none",
-              }}
-            />
-
-            {/* Overlay de Giro a Alta Velocidad sobre el Rin (Motion Blur) */}
-            <div
-              style={{
-                position: "absolute",
-                top: "32%",
-                left: "34%",
-                width: "38%",
-                height: "38%",
-                borderRadius: "50%",
-                background: "conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,0.12) 30deg, transparent 60deg, rgba(255,255,255,0.14) 90deg, transparent 120deg, rgba(255,255,255,0.12) 150deg, transparent 180deg, rgba(255,255,255,0.15) 210deg, transparent 240deg, rgba(255,255,255,0.12) 270deg, transparent 300deg, rgba(255,255,255,0.15) 330deg, transparent 360deg)",
-                animation: "wheelSpinBlurAnim 0.12s linear infinite",
-                pointerEvents: "none",
-                mixBlendMode: "overlay",
-              }}
-            />
-
-            {/* Nubes de Humo Volumétrico Superpuestas */}
-            <div
-              style={{
-                position: "absolute",
-                top: "20%",
-                left: "-10%",
-                width: "120px",
-                height: "120px",
-                borderRadius: "50%",
-                backgroundColor: "rgba(241, 245, 249, 0.45)",
-                filter: "blur(22px)",
-                animation: "smokeDriftReal1 1.2s infinite ease-out",
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                bottom: "10%",
-                right: "-5%",
-                width: "140px",
-                height: "140px",
-                borderRadius: "50%",
-                backgroundColor: "rgba(226, 232, 240, 0.5)",
-                filter: "blur(26px)",
-                animation: "smokeDriftReal2 1.4s infinite ease-out 0.2s",
-                pointerEvents: "none",
-              }}
-            />
-
-            {/* Chispas Volantes Dinámicas */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: "12%",
-                left: "42%",
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
-                backgroundColor: "#fef08a",
-                boxShadow: "0 0 12px #f59e0b, 0 0 20px #ef4444",
-                animation: "sparkFlyReal 0.4s infinite linear",
-                pointerEvents: "none",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                bottom: "10%",
-                left: "38%",
-                width: "5px",
-                height: "5px",
-                borderRadius: "50%",
-                backgroundColor: "#f97316",
-                boxShadow: "0 0 10px #f97316",
-                animation: "sparkFlyReal 0.45s infinite linear 0.15s",
-                pointerEvents: "none",
-              }}
-            />
-
-            {/* Badges de Telemetría Deportiva */}
-            <div
-              style={{
-                position: "absolute",
-                top: "16px",
-                left: "16px",
-                zIndex: 20,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                backgroundColor: "rgba(15, 23, 42, 0.8)",
-                backdropFilter: "blur(12px)",
-                padding: "6px 14px",
-                borderRadius: "999px",
-                border: "1px solid rgba(255,255,255,0.2)",
-              }}
-            >
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#ef4444", boxShadow: "0 0 10px #ef4444" }} />
-              <span style={{ fontSize: "11px", fontWeight: 900, letterSpacing: "1px", color: "#f8fafc" }}>
-                LAUNCH CONTROL • 8,200 RPM
-              </span>
-            </div>
-
-            <div
-              style={{
-                position: "absolute",
-                top: "16px",
-                right: "16px",
-                zIndex: 20,
-                backgroundColor: "rgba(239, 68, 68, 0.25)",
-                backdropFilter: "blur(12px)",
-                padding: "6px 12px",
-                borderRadius: "999px",
-                border: "1px solid rgba(239,68,68,0.5)",
-                fontSize: "11px",
-                fontWeight: 900,
-                color: "#fca5a5",
-              }}
-            >
-              TURBO BOOST +2.1 BAR
-            </div>
-          </div>
-
-          {/* HUD INFERIOR: TACÓMETRO Y MENSAJE DE ENTRADA */}
-          <div style={{ textAlign: "center", marginTop: "20px", zIndex: 30, maxWidth: "420px", width: "100%" }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "6px 16px",
-                borderRadius: "999px",
-                backgroundColor: "rgba(239, 68, 68, 0.2)",
-                border: "1px solid rgba(239, 68, 68, 0.5)",
-                color: "#f87171",
-                fontSize: "12px",
-                fontWeight: 900,
-                letterSpacing: "1px",
-                marginBottom: "8px",
-                animation: "revTextPulse 0.5s infinite alternate",
-              }}
-            >
-              <span>🔥</span> ¡QUEMANDO NEUMÁTICOS EN PISTA!
-            </div>
-
-            <h3 style={{ fontSize: "22px", fontWeight: 900, margin: "0 0 4px 0", letterSpacing: "-0.5px", color: "#ffffff" }}>
-              Iniciando Sesión en RentOS...
-            </h3>
-            <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 14px 0" }}>
-              Tracción verificada en las 4 ruedas. Acelerando al panel de control.
-            </p>
-
-            {/* Barra de Progreso Digital */}
-            <div
-              style={{
-                width: "100%",
-                height: "8px",
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderRadius: "999px",
-                overflow: "hidden",
-                border: "1px solid rgba(255,255,255,0.15)",
-                boxShadow: "0 0 15px rgba(239,68,68,0.4)",
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  background: "linear-gradient(90deg, #38bdf8 0%, #f59e0b 50%, #ef4444 100%)",
-                  animation: "speedBarFill 1.8s ease-in-out forwards",
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* VISTA 1: SPLIT-SCREEN TECNOLÓGICO Y FLOTA (RECOMENDADO)                     */}
+      {/* VISTA 1: SPLIT-SCREEN TECNOLÓGICO (RECOMENDACIÓN PRINCIPAL)               */}
       {/* ========================================================================= */}
       {diseno === "split" && (
-        <div style={{ minHeight: "calc(100vh - 65px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px" }}>
+        <div style={{ minHeight: "calc(100vh - 65px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 16px" }}>
           <div
             style={{
-              maxWidth: "1060px",
+              maxWidth: "1080px",
               width: "100%",
               borderRadius: "28px",
               overflow: "hidden",
-              boxShadow: "0 25px 60px -15px rgba(0,0,0,0.6)",
+              boxShadow: "0 30px 70px -15px rgba(0,0,0,0.65)",
               border: "1px solid rgba(255,255,255,0.08)",
               display: "flex",
               flexWrap: "wrap",
               backgroundColor: "#0d1527",
             }}
           >
-            {/* LADO IZQUIERDO: Visual Satelital, Telemetría & Métricas */}
+            {/* LADO IZQUIERDO: Visual Satelital, Telemetría & Identidad de Empresa */}
             <div
               style={{
                 flex: "1 1 520px",
-                background: "linear-gradient(145deg, #070c18 0%, #0d172e 50%, #092347 100%)",
-                padding: "48px 40px",
+                background: "linear-gradient(145deg, #070c18 0%, #0c162c 50%, #092347 100%)",
+                padding: "48px 42px",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
@@ -636,14 +300,14 @@ export default function LoginPage() {
                 borderRight: "1px solid rgba(255,255,255,0.06)",
               }}
             >
-              {/* Radar glow ambient */}
+              {/* Resplandor ambiental de radar */}
               <div
                 style={{
                   position: "absolute",
                   top: "-100px",
                   right: "-100px",
-                  width: "320px",
-                  height: "320px",
+                  width: "340px",
+                  height: "340px",
                   borderRadius: "50%",
                   background: "radial-gradient(circle, rgba(14,165,233,0.18) 0%, transparent 70%)",
                   pointerEvents: "none",
@@ -676,18 +340,30 @@ export default function LoginPage() {
                       boxShadow: "0 0 10px #38bdf8",
                     }}
                   />
-                  SISTEMA EN VIVO • V4.2 SAAS MULTI-TENANT
+                  {empresaInfo.tipo === "EMPRESA" ? (
+                    <span>INSTANCIA DEDICADA • {empresaInfo.nombreEmpresa.toUpperCase()}</span>
+                  ) : empresaInfo.tipo === "SUPERADMIN" ? (
+                    <span>CONSOLA GLOBAL • SUPERADMIN CENTRAL</span>
+                  ) : (
+                    <span>SISTEMA EN VIVO • V4.2 SAAS MULTI-TENANT</span>
+                  )}
                 </div>
 
                 <h1 style={{ fontSize: "32px", fontWeight: 800, color: "#ffffff", lineHeight: 1.25, margin: "0 0 14px 0", letterSpacing: "-0.5px" }}>
-                  Control inteligente y telemetría de tu flota.
+                  {empresaInfo.tipo === "EMPRESA" ? (
+                    <>Panel operativo de <span style={{ color: "#38bdf8" }}>{empresaInfo.nombreEmpresa}</span>.</>
+                  ) : (
+                    <>Control inteligente y telemetría de tu flota.</>
+                  )}
                 </h1>
                 <p style={{ fontSize: "14px", color: "#94a3b8", lineHeight: 1.6, margin: 0, maxWidth: "460px" }}>
-                  Monitoreo satelital GPS en tiempo real, corte de ignición antirrobo, contratos digitales y facturación fiscal NCF automatizada en República Dominicana.
+                  {empresaInfo.tipo === "EMPRESA"
+                    ? empresaInfo.eslogan
+                    : "Monitoreo satelital GPS en tiempo real, corte de ignición antirrobo, contratos digitales y facturación fiscal NCF automatizada en República Dominicana."}
                 </p>
               </div>
 
-              {/* Tarjetas Flotantes con Datos del Sistema */}
+              {/* Tarjetas Flotantes con Datos del Sistema y Telemetría */}
               <div style={{ margin: "36px 0", display: "flex", flexDirection: "column", gap: "14px" }}>
                 <div
                   className="anim-float"
@@ -708,7 +384,9 @@ export default function LoginPage() {
                       🛰️
                     </div>
                     <div>
-                      <div style={{ fontSize: "13px", fontWeight: 700, color: "#f8fafc" }}>Telemetría GPS y Anti-Robo</div>
+                      <div style={{ fontSize: "13px", fontWeight: 700, color: "#f8fafc" }}>
+                        {empresaInfo.tipo === "EMPRESA" ? `Flota de ${empresaInfo.nombreEmpresa}` : "Telemetría GPS y Anti-Robo"}
+                      </div>
                       <div style={{ fontSize: "11px", color: "#94a3b8" }}>Corte de ignición remoto y geocercas activas</div>
                     </div>
                   </div>
@@ -753,7 +431,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* LADO DERECHO: Formulario Limpio, Elegante y Luminoso */}
+            {/* LADO DERECHO: Formulario Limpio con LOGO DINÁMICO DE EMPRESA */}
             <div
               style={{
                 flex: "1 1 380px",
@@ -765,39 +443,100 @@ export default function LoginPage() {
               }}
             >
               <div style={{ maxWidth: "360px", width: "100%", margin: "0 auto" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "26px" }}>
-                  <div
-                    style={{
-                      width: "44px",
-                      height: "44px",
-                      background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
-                      color: "white",
-                      borderRadius: "14px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 900,
-                      fontSize: "22px",
-                      boxShadow: "0 6px 16px rgba(2,132,199,0.35)",
-                    }}
-                  >
-                    R
+                
+                {/* CABECERA DINÁMICA CON LOGO DE LA EMPRESA */}
+                <div style={{ marginBottom: "26px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px", minHeight: "54px" }}>
+                    {empresaInfo.logoUrl ? (
+                      /* LOGO REAL CARGADO DE LA EMPRESA */
+                      <div className="anim-logo" style={{ display: "flex", alignItems: "center", maxWidth: "160px" }}>
+                        <img
+                          src={empresaInfo.logoUrl}
+                          alt={empresaInfo.nombreEmpresa}
+                          style={{
+                            maxHeight: "52px",
+                            maxWidth: "100%",
+                            objectFit: "contain",
+                            borderRadius: "10px",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      /* AVATAR/LOGO INSIGNIA */
+                      <div
+                        className="anim-logo"
+                        style={{
+                          width: "48px",
+                          height: "48px",
+                          background: empresaInfo.tipo === "SUPERADMIN"
+                            ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                            : `linear-gradient(135deg, ${primaryColor} 0%, #0369a1 100%)`,
+                          color: "white",
+                          borderRadius: "14px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 900,
+                          fontSize: "22px",
+                          boxShadow: `0 6px 16px ${primaryColor}40`,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {empresaInfo.tipo === "EMPRESA" ? empresaInfo.nombreEmpresa.charAt(0).toUpperCase() : "R"}
+                      </div>
+                    )}
+
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <h2 style={{ fontSize: "20px", margin: 0, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.5px" }}>
+                          {empresaInfo.nombreEmpresa}
+                        </h2>
+                        {buscandoEmpresa && (
+                          <span style={{ fontSize: "11px", color: "#94a3b8" }} title="Buscando logo...">🔄</span>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 600, marginTop: "2px" }}>
+                        {empresaInfo.tipo === "EMPRESA" ? (
+                          <span style={{ color: primaryColor, fontWeight: 700 }}>
+                            🏢 Acceso Oficial de Rent a Car
+                          </span>
+                        ) : empresaInfo.tipo === "SUPERADMIN" ? (
+                          <span style={{ color: "#d97706", fontWeight: 700 }}>
+                            👑 Consola Central SuperAdmin
+                          </span>
+                        ) : (
+                          "Rent Operating System • Acceso Seguro"
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h2 style={{ fontSize: "22px", margin: 0, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.5px" }}>
-                      RentOS
-                    </h2>
-                    <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>
-                      Rent Operating System • Acceso Seguro
-                    </span>
-                  </div>
+
+                  {empresaInfo.tipo === "EMPRESA" && (
+                    <div
+                      className="anim-logo"
+                      style={{
+                        marginTop: "12px",
+                        padding: "6px 12px",
+                        backgroundColor: "#f0f9ff",
+                        borderRadius: "8px",
+                        border: "1px solid #bae6fd",
+                        fontSize: "11px",
+                        color: "#0369a1",
+                        fontWeight: 600,
+                      }}
+                    >
+                      ✨ Bienvenido al portal de {empresaInfo.nombreEmpresa}
+                    </div>
+                  )}
                 </div>
 
                 <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a", margin: "0 0 6px 0" }}>
                   Iniciar Sesión
                 </h3>
-                <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 24px 0", lineHeight: 1.4 }}>
-                  Introduce tus credenciales para acceder a tu panel.
+                <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 22px 0", lineHeight: 1.4 }}>
+                  Introduce tus credenciales para acceder al panel.
                 </p>
 
                 {error && (
@@ -808,12 +547,19 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit}>
                   <div style={{ marginBottom: "16px" }}>
-                    <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-                      Correo Electrónico *
-                    </label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                      <label style={{ fontSize: "12px", fontWeight: 700, color: "#334155" }}>
+                        Correo Electrónico *
+                      </label>
+                      {empresaInfo.tipo === "EMPRESA" && (
+                        <span style={{ fontSize: "11px", color: primaryColor, fontWeight: 700 }}>
+                          ✓ Empresa Reconocida
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="email"
-                      placeholder="rentosrd@gmail.com o tu correo"
+                      placeholder="rentosrd@gmail.com o correo de tu empresa"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -821,7 +567,7 @@ export default function LoginPage() {
                         width: "100%",
                         padding: "11px 14px",
                         borderRadius: "10px",
-                        border: "1px solid #cbd5e1",
+                        border: empresaInfo.tipo === "EMPRESA" ? `2px solid ${primaryColor}` : "1px solid #cbd5e1",
                         fontSize: "13px",
                         color: "#0f172a",
                         backgroundColor: "#f8fafc",
@@ -884,7 +630,7 @@ export default function LoginPage() {
                       />
                       <span>Recordar credenciales</span>
                     </label>
-                    <Link to="/recuperar-password" style={{ color: "#0284c7", fontWeight: 700, textDecoration: "none" }}>
+                    <Link to="/recuperar-password" style={{ color: primaryColor, fontWeight: 700, textDecoration: "none" }}>
                       ¿Olvidaste tu contraseña?
                     </Link>
                   </div>
@@ -897,22 +643,22 @@ export default function LoginPage() {
                       width: "100%",
                       padding: "13px",
                       borderRadius: "12px",
-                      background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                      background: `linear-gradient(135deg, ${primaryColor} 0%, #0369a1 100%)`,
                       color: "#ffffff",
                       fontSize: "14px",
                       fontWeight: 700,
                       border: "none",
                       cursor: "pointer",
-                      boxShadow: "0 8px 20px rgba(2,132,199,0.35)",
-                      transition: "transform 0.15s, box-shadow 0.15s",
+                      boxShadow: `0 8px 20px ${primaryColor}50`,
+                      transition: "all 0.2s",
                     }}
                   >
-                    {iniciando ? "Verificando acceso..." : "Ingresar al Panel de Control"}
+                    {iniciando ? "Verificando acceso..." : `Ingresar al Panel de ${empresaInfo.nombreEmpresa}`}
                   </button>
                 </form>
 
                 <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid #f1f5f9", textAlign: "center", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <Link to="/registro" style={{ fontSize: "13px", fontWeight: 700, color: "#0284c7", textDecoration: "none" }}>
+                  <Link to="/registro" style={{ fontSize: "13px", fontWeight: 700, color: primaryColor, textDecoration: "none" }}>
                     🚀 ¿Eres dueño de un Rent a Car? Solicita tu empresa ↗
                   </Link>
                   <a href="/reservar" target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "#94a3b8", textDecoration: "none" }}>
@@ -926,11 +672,10 @@ export default function LoginPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* VISTA 2: GLASSMORPHISM NEÓN CENTRADO (ESTILO FINTECH)                      */}
+      {/* VISTA 2: GLASSMORPHISM NEÓN                                               */}
       {/* ========================================================================= */}
       {diseno === "neon" && (
         <div style={{ minHeight: "calc(100vh - 65px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "30px 16px", position: "relative", overflow: "hidden" }}>
-          {/* Orbes de neón luminosos animados de fondo */}
           <div
             className="anim-orb-1"
             style={{
@@ -960,7 +705,6 @@ export default function LoginPage() {
             }}
           />
 
-          {/* Tarjeta Glassmorphism de Alta Gama */}
           <div
             style={{
               position: "relative",
@@ -972,39 +716,48 @@ export default function LoginPage() {
               border: "1px solid rgba(255, 255, 255, 0.16)",
               borderRadius: "28px",
               padding: "40px 34px",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99,102,241,0.2)",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.6)",
               color: "#f8fafc",
             }}
           >
             <div style={{ textAlign: "center", marginBottom: "26px" }}>
-              <div
-                style={{
-                  width: "52px",
-                  height: "52px",
-                  margin: "0 auto 14px",
-                  background: "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
-                  borderRadius: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "24px",
-                  fontWeight: 900,
-                  color: "#ffffff",
-                  boxShadow: "0 8px 24px rgba(99,102,241,0.45)",
-                }}
-              >
-                R
-              </div>
+              {empresaInfo.logoUrl ? (
+                <img
+                  src={empresaInfo.logoUrl}
+                  alt={empresaInfo.nombreEmpresa}
+                  className="anim-logo"
+                  style={{ maxHeight: "56px", maxWidth: "180px", objectFit: "contain", margin: "0 auto 12px", display: "block" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "52px",
+                    height: "52px",
+                    margin: "0 auto 14px",
+                    background: `linear-gradient(135deg, ${primaryColor} 0%, #6366f1 100%)`,
+                    borderRadius: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "24px",
+                    fontWeight: 900,
+                    color: "#ffffff",
+                    boxShadow: "0 8px 24px rgba(99,102,241,0.45)",
+                  }}
+                >
+                  {empresaInfo.tipo === "EMPRESA" ? empresaInfo.nombreEmpresa.charAt(0).toUpperCase() : "R"}
+                </div>
+              )}
               <h2 style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "-0.5px", margin: "0 0 4px 0", color: "#ffffff" }}>
-                RentOS
+                {empresaInfo.nombreEmpresa}
               </h2>
               <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>
-                Plataforma Operativa de Alto Rendimiento
+                {empresaInfo.eslogan}
               </p>
             </div>
 
             {error && (
-              <div style={{ backgroundColor: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: "10px", padding: "12px", color: "#fca5a5", fontSize: "12px", marginBottom: "18px", lineHeight: 1.4 }}>
+              <div style={{ backgroundColor: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: "10px", padding: "12px", color: "#fca5a5", fontSize: "12px", marginBottom: "18px" }}>
                 {error}
               </div>
             )}
@@ -1108,7 +861,7 @@ export default function LoginPage() {
                   boxShadow: "0 8px 24px rgba(99,102,241,0.45)",
                 }}
               >
-                {iniciando ? "Accediendo..." : "Iniciar Sesión Segura →"}
+                {iniciando ? "Accediendo..." : `Ingresar a ${empresaInfo.nombreEmpresa}`}
               </button>
             </form>
 
@@ -1125,7 +878,7 @@ export default function LoginPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* VISTA 3: SHOWCASE CORPORATIVO CON 3 PILARES                               */}
+      {/* VISTA 3: SHOWCASE CORPORATIVO                                             */}
       {/* ========================================================================= */}
       {diseno === "showcase" && (
         <div style={{ minHeight: "calc(100vh - 65px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px" }}>
@@ -1142,7 +895,6 @@ export default function LoginPage() {
               backgroundColor: "#0f172a",
             }}
           >
-            {/* Lado Izquierdo: Pilares del Sistema */}
             <div
               style={{
                 flex: "1 1 480px",
@@ -1156,19 +908,19 @@ export default function LoginPage() {
             >
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
-                  <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#ffffff" }}>
-                    R
+                  <div style={{ width: "34px", height: "34px", borderRadius: "10px", backgroundColor: primaryColor, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#ffffff" }}>
+                    {empresaInfo.tipo === "EMPRESA" ? empresaInfo.nombreEmpresa.charAt(0).toUpperCase() : "R"}
                   </div>
                   <span style={{ fontSize: "13px", fontWeight: 800, color: "#ffffff", letterSpacing: "1px" }}>
-                    RENTOS ECOSYSTEM
+                    {empresaInfo.tipo === "EMPRESA" ? empresaInfo.nombreEmpresa.toUpperCase() : "RENTOS ECOSYSTEM"}
                   </span>
                 </div>
 
                 <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#ffffff", lineHeight: 1.3, margin: "0 0 12px 0" }}>
-                  Todo el ciclo de tu Rent a Car en una sola pantalla.
+                  {empresaInfo.tipo === "EMPRESA" ? `Bienvenido al sistema de ${empresaInfo.nombreEmpresa}.` : "Todo el ciclo de tu Rent a Car en una sola pantalla."}
                 </h2>
                 <p style={{ fontSize: "13px", color: "#94a3b8", lineHeight: 1.5, margin: "0 0 28px 0" }}>
-                  Diseñado para el mercado dominicano: tasa BCRD, marbetes, revistas y contratos legales.
+                  {empresaInfo.eslogan}
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1194,7 +946,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Lado Derecho: Formulario Slate Corporativo */}
             <div
               style={{
                 flex: "1 1 360px",
@@ -1207,16 +958,19 @@ export default function LoginPage() {
             >
               <div style={{ maxWidth: "340px", width: "100%", margin: "0 auto" }}>
                 <div style={{ marginBottom: "24px" }}>
+                  {empresaInfo.logoUrl ? (
+                    <img src={empresaInfo.logoUrl} alt={empresaInfo.nombreEmpresa} className="anim-logo" style={{ maxHeight: "48px", maxWidth: "160px", objectFit: "contain", marginBottom: "12px", display: "block" }} />
+                  ) : null}
                   <h3 style={{ fontSize: "20px", fontWeight: 800, color: "#ffffff", margin: "0 0 4px 0" }}>
-                    Portal Corporativo
+                    {empresaInfo.nombreEmpresa}
                   </h3>
                   <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>
-                    SuperAdmin y Administradores RentOS
+                    {empresaInfo.tipo === "EMPRESA" ? "Acceso de Empresa Autorizada" : "SuperAdmin y Administradores RentOS"}
                   </p>
                 </div>
 
                 {error && (
-                  <div style={{ backgroundColor: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: "10px", padding: "12px", color: "#fca5a5", fontSize: "12px", marginBottom: "18px", lineHeight: 1.4 }}>
+                  <div style={{ backgroundColor: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.4)", borderRadius: "10px", padding: "12px", color: "#fca5a5", fontSize: "12px", marginBottom: "18px" }}>
                     {error}
                   </div>
                 )}
@@ -1228,7 +982,7 @@ export default function LoginPage() {
                     </label>
                     <input
                       type="email"
-                      placeholder="rentosrd@gmail.com"
+                      placeholder="rentosrd@gmail.com o correo de tu empresa"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -1310,16 +1064,16 @@ export default function LoginPage() {
                       width: "100%",
                       padding: "13px",
                       borderRadius: "10px",
-                      backgroundColor: "#2563eb",
+                      backgroundColor: primaryColor,
                       color: "#ffffff",
                       fontSize: "14px",
                       fontWeight: 700,
                       border: "none",
                       cursor: "pointer",
-                      boxShadow: "0 6px 18px rgba(37,99,235,0.4)",
+                      boxShadow: `0 6px 18px ${primaryColor}50`,
                     }}
                   >
-                    {iniciando ? "Accediendo..." : "Ingresar al Sistema"}
+                    {iniciando ? "Accediendo..." : `Ingresar al Sistema (${empresaInfo.nombreEmpresa})`}
                   </button>
                 </form>
 
