@@ -78,6 +78,55 @@ router.get("/portal/:slug", async (req, res) => {
       });
     }
 
+    // 3. Fallback inteligente: buscar por coincidencia de nombre o asignar slug por defecto
+    if (!rentcar) {
+      const allRentCars = await prisma.rentCar.findMany({
+        include: {
+          vehiculos: {
+            where: {
+              estado: { in: ["DISPONIBLE", "ALQUILADO"] },
+            },
+            orderBy: { tarifaDiaria: "asc" },
+          },
+        },
+      });
+      rentcar =
+        allRentCars.find((rc) => {
+          const genSlug = rc.nombre
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "");
+          return (
+            genSlug === slugParam ||
+            rc.slug?.toLowerCase() === slugParam ||
+            (slugParam === "rentcar-santo-domingo" && rc.id === 1) ||
+            (slugParam === "santo-domingo" && rc.id === 1)
+          );
+        }) || null;
+
+      // Si se encontró y no tenía slug en la base de datos, asignárselo permanentemente
+      if (rentcar && !rentcar.slug) {
+        const nuevoSlug =
+          rentcar.id === 1
+            ? "rentcar-santo-domingo"
+            : rentcar.nombre
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-|-$/g, "");
+        await prisma.rentCar
+          .update({
+            where: { id: rentcar.id },
+            data: { slug: nuevoSlug },
+          })
+          .catch(() => null);
+        rentcar.slug = nuevoSlug;
+      }
+    }
+
     if (!rentcar) {
       return res.status(404).json({ error: "Empresa Rent a Car no encontrada o portal inactivo." });
     }

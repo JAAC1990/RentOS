@@ -22,6 +22,7 @@ export type UsuarioAuth = {
   rol: Rol;
   rentCarId: number | null;
   rentCarNombre?: string;
+  rentCarSlug?: string | null;
   impersonadoPor?: {
     id: number;
     nombre: string;

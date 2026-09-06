@@ -29,7 +29,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const [diseno, setDiseno] = useState<DisenoTipo>(() => {
-    return (localStorage.getItem("rentos_login_diseno") as DisenoTipo) || "split";
+    return (localStorage.getItem("rentos_login_diseno") as DisenoTipo) || "neon";
   });
 
   const cambiarDiseno = (nuevo: DisenoTipo) => {
@@ -229,7 +229,7 @@ export default function LoginPage() {
               boxShadow: diseno === "split" ? `0 2px 10px ${primaryColor}66` : "none",
             }}
           >
-            1. Split-Screen (Recomendado) ⭐
+            1. Split-Screen
           </button>
           <button
             type="button"
@@ -244,9 +244,10 @@ export default function LoginPage() {
               transition: "all 0.2s",
               backgroundColor: diseno === "neon" ? "#6366f1" : "transparent",
               color: diseno === "neon" ? "#ffffff" : "#94a3b8",
+              boxShadow: diseno === "neon" ? "0 2px 10px rgba(99,102,241,0.6)" : "none",
             }}
           >
-            2. Neón Glass
+            2. Neón Glass (Activo) ⭐
           </button>
           <button
             type="button"
@@ -559,7 +560,7 @@ export default function LoginPage() {
                     </div>
                     <input
                       type="email"
-                      placeholder="rentosrd@gmail.com o correo de tu empresa"
+                      placeholder="tu@correo.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -769,7 +770,7 @@ export default function LoginPage() {
                 </label>
                 <input
                   type="email"
-                  placeholder="rentosrd@gmail.com o tu correo"
+                  placeholder="tu@correo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -982,7 +983,7 @@ export default function LoginPage() {
                     </label>
                     <input
                       type="email"
-                      placeholder="rentosrd@gmail.com o correo de tu empresa"
+                      placeholder="tu@correo.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required

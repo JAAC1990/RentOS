@@ -157,17 +157,28 @@ function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </NavLink>
         ))}
 
-        <div className="nav-section-title" style={{ marginTop: "16px" }}>PORTAL CLIENTES</div>
+        <div className="nav-section-title" style={{ marginTop: "16px" }}>
+          {usuario?.rol === "SUPERADMIN" ? "PORTAL GLOBAL" : "MI WEB & CATÁLOGO"}
+        </div>
         <a
-          href="/reservar"
+          href={
+            usuario?.rol === "SUPERADMIN"
+              ? "/reservar"
+              : `/portal/${usuario?.rentCarSlug || usuario?.rentCarId || "rentcar-santo-domingo"}`
+          }
           target="_blank"
           rel="noreferrer"
           onClick={onClose}
           className="nav-item"
           style={{ color: "#38bdf8" }}
+          title={
+            usuario?.rol === "SUPERADMIN"
+              ? "Catálogo global del sistema"
+              : "Ver la página web y catálogo oficial de tu negocio para clientes"
+          }
         >
           <span className="nav-icon">🌐</span>
-          <span>Catálogo Web Online ↗</span>
+          <span>{usuario?.rol === "SUPERADMIN" ? "Catálogo Global ↗" : "Mi Web & Catálogo ↗"}</span>
         </a>
       </nav>
 

@@ -379,6 +379,7 @@ router.post("/login", async (req, res) => {
       usuario: {
         ...payload,
         rentCarNombre: usuario.rentCar?.nombre || (usuario.rol === "SUPERADMIN" ? "RentOS SaaS Global" : "RentOS Principal"),
+        rentCarSlug: usuario.rentCar?.slug || (usuario.rentCarId ? "rentcar-santo-domingo" : null),
       },
     });
   } catch (error) {
@@ -421,6 +422,7 @@ router.get("/perfil", async (req, res) => {
           select: {
             id: true,
             nombre: true,
+            slug: true,
             ciudad: true,
           },
         },
@@ -439,7 +441,10 @@ router.get("/perfil", async (req, res) => {
       });
     }
 
-    res.json(usuario);
+    res.json({
+      ...usuario,
+      rentCarSlug: usuario.rentCar?.slug || (usuario.rentCarId ? "rentcar-santo-domingo" : null),
+    });
   } catch {
     res.status(401).json({ error: "Token inválido o expirado." });
   }

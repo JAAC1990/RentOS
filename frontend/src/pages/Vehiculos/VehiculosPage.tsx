@@ -131,9 +131,13 @@ function obtenerFotoDefault(v: Vehiculo): string {
 }
 
 export default function VehiculosPage() {
-  const { tenantActivoId } = useAuth();
+  const { tenantActivoId, usuario } = useAuth();
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [formulario, setFormulario] = useState<FormularioVehiculo>(formularioInicial);
+
+  // Modal para compartir catálogo web del Rent a Car con clientes
+  const [mostrarModalCatalogo, setMostrarModalCatalogo] = useState(false);
+  const [copiadoCatalogo, setCopiadoCatalogo] = useState(false);
 
   // Control de tasa de cambio y visualización
   const [tasaCambio, setTasaCambio] = useState<number>(TASA_DOLAR_PESO_DEFAULT);
@@ -684,6 +688,24 @@ export default function VehiculosPage() {
               RD$
             </span>
           </div>
+
+          <button
+            type="button"
+            className="secondary-button"
+            style={{
+              borderColor: "#0284c7",
+              color: "#0284c7",
+              backgroundColor: "rgba(2, 132, 199, 0.08)",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontWeight: 700,
+            }}
+            onClick={() => setMostrarModalCatalogo(true)}
+            title="Compartir catálogo con clientes o ver tu página web oficial"
+          >
+            🌐 Catálogo Web Clientes ↗
+          </button>
 
           <button
             className="secondary-button"
@@ -1703,6 +1725,178 @@ export default function VehiculosPage() {
                 Cerrar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Catálogo Web de la Empresa & Compartir con Clientes */}
+      {mostrarModalCatalogo && (
+        <div
+          className="modal-overlay"
+          onClick={() => setMostrarModalCatalogo(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.75)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "16px",
+          }}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "16px",
+              maxWidth: "580px",
+              width: "100%",
+              padding: "28px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.4)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ width: "44px", height: "44px", borderRadius: "12px", backgroundColor: "rgba(2, 132, 199, 0.12)", color: "#0284c7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px" }}>
+                  🌐
+                </div>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: "var(--text)" }}>
+                    Catálogo Web & Página de tu Negocio
+                  </h2>
+                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--text-secondary)" }}>
+                    {usuario?.rentCarNombre || "Tu Rent a Car"} • Enlace oficial para tus clientes
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMostrarModalCatalogo(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "18px",
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                  padding: "4px",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: "13px", color: "var(--text)", lineHeight: 1.5, margin: "0 0 16px 0" }}>
+              Este es el sitio web exclusivo de tu empresa. Envíale este enlace a tus clientes por WhatsApp o colócalo en tus redes para que revisen los autos disponibles, vean las fotos y coticen en tiempo real:
+            </p>
+
+            {(() => {
+              const slugPortal = usuario?.rentCarSlug || (tenantActivoId === 1 ? "rentcar-santo-domingo" : tenantActivoId);
+              const urlCatalogoWeb = `${window.location.origin}/portal/${slugPortal}`;
+              const textoCompartir = `¡Hola! Te comparto nuestro catálogo oficial de vehículos disponibles en ${usuario?.rentCarNombre || "nuestro Rent a Car"}. Puedes ver los autos, fotos, tarifas y cotizar en línea aquí:\n${urlCatalogoWeb}`;
+
+              return (
+                <>
+                  <div style={{ backgroundColor: "var(--background)", borderRadius: "12px", padding: "16px", marginBottom: "20px", border: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>
+                      Enlace de tus vehículos para clientes:
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <input
+                        type="text"
+                        readOnly
+                        value={urlCatalogoWeb}
+                        style={{
+                          flex: 1,
+                          padding: "10px 12px",
+                          borderRadius: "8px",
+                          border: "1px solid var(--border)",
+                          backgroundColor: "var(--surface)",
+                          color: "#0284c7",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          outline: "none",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="primary-button"
+                        style={{ padding: "10px 16px", whiteSpace: "nowrap" }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(urlCatalogoWeb);
+                          setCopiadoCatalogo(true);
+                          setTimeout(() => setCopiadoCatalogo(false), 2500);
+                        }}
+                      >
+                        {copiadoCatalogo ? "✓ ¡Copiado!" : "📋 Copiar"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Botones de acción directa */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(textoCompartir)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        padding: "12px",
+                        borderRadius: "10px",
+                        backgroundColor: "#16a34a",
+                        color: "#ffffff",
+                        fontWeight: 700,
+                        fontSize: "13px",
+                        textDecoration: "none",
+                        boxShadow: "0 4px 12px rgba(22, 163, 74, 0.25)",
+                      }}
+                    >
+                      <span>📲</span> Enviar por WhatsApp
+                    </a>
+
+                    <a
+                      href={urlCatalogoWeb}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                        padding: "12px",
+                        borderRadius: "10px",
+                        backgroundColor: "#0284c7",
+                        color: "#ffffff",
+                        fontWeight: 700,
+                        fontSize: "13px",
+                        textDecoration: "none",
+                        boxShadow: "0 4px 12px rgba(2, 132, 199, 0.25)",
+                      }}
+                    >
+                      <span>👁️</span> Abrir Mi Sitio Web ↗
+                    </a>
+                  </div>
+
+                  <div style={{ backgroundColor: "rgba(2, 132, 199, 0.06)", border: "1px solid rgba(2, 132, 199, 0.2)", borderRadius: "10px", padding: "14px", fontSize: "12px", color: "var(--text)", lineHeight: 1.5 }}>
+                    <strong style={{ color: "#0284c7", display: "block", marginBottom: "4px" }}>💡 Opciones para el Administrador:</strong>
+                    <ul style={{ margin: 0, paddingLeft: "18px", color: "var(--text-secondary)" }}>
+                      <li><strong>Web de tu Negocio:</strong> Tus clientes solo ven tu logotipo, tus datos de contacto y únicamente tus vehículos.</li>
+                      <li><strong>WhatsApp Business:</strong> Añade este enlace en el saludo o catálogo de tu WhatsApp para ahorrar tiempo contestando precios.</li>
+                      <li><strong>Reservas directas:</strong> Los clientes pueden seleccionar fechas, cotizar y enviarte la solicitud directamente a tu WhatsApp.</li>
+                    </ul>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
